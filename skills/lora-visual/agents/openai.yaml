@@ -1,0 +1,4 @@
+interface:
+  display_name: "Lora Visual"
+  short_description: "Create labeled explainers and transparent lora illustrations"
+  default_prompt: "Use $lora-visual to create either one finished explanatory image or one transparent lora illustration. Choose one output mode and do not mix the two production paths."

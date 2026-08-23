@@ -1,4 +1,6 @@
-# Lora Skills
+<p align="center">
+  <img src="./assets/readme/hero.png" width="100%" alt="Lora Skills，可安装、可复用的个人 Agent Skills 集合">
+</p>
 
 一个由 **lora-sys** 维护的个人 Agent Skills 集合，面向个人作品集、AI 工程、内容表达、静态站发布与开源工具工作流。每个技能都是一个包含 `SKILL.md` 的独立目录，可通过 [`skills`](https://github.com/vercel-labs/skills) CLI 安装到 Codex、Claude Code、Cursor 等支持 Agent Skills 的工具中。
 
@@ -44,6 +46,7 @@ npx skills list --global --agent codex
 | [`github-gem-seeker`](skills/github-gem-seeker/) | 从 GitHub 寻找成熟开源方案 | 下载、格式转换、媒体处理、归档、爬取、CLI 等成熟问题 |
 | [`web-development-team-playbook`](skills/web-development-team-playbook/) | Web 项目改造、审查、验收和发布门禁 | 网站、Web 应用、前端或全栈项目的团队级交付流程 |
 | [`teaching-html-story-deck`](skills/teaching-html-story-deck/) | 单文件互动教学故事卡与讲解页 | 技术讲解、产品 walkthrough、课程页、架构可视化、录屏演示 |
+| [`lora-visual`](skills/lora-visual/) | 统一的 lora 风格解释图与透明角色插画 | 概念图、工作流、对比图、Hero 配图和可复用角色素材 |
 | [`unslop`](skills/unslop/) | 去除 AI 腔并增加自然的人类表达 | 文案、说明、博客、技术内容和沟通文本润色 |
 
 ## Codex 安装提示词
@@ -86,6 +89,7 @@ Skills CLI 会发现 `skills/<skill-name>/SKILL.md`。每个 `SKILL.md` 的目�
 | Skill | 来源与归属 |
 |---|---|
 | `teaching-html-story-deck` | lora-sys 创建，MIT；原始许可文件保留于技能目录。 |
+| `lora-visual` | 改编自 [oil-oil/oil-visual](https://github.com/oil-oil/oil-visual)，MIT；上游版权与许可见技能目录内的 `THIRD_PARTY_NOTICES.md`。 |
 | `unslop` | 源自 [Cursor Plugins pstack/unslop](https://github.com/cursor/plugins/tree/main/pstack/skills/unslop)，作者 Lauren Tan，MIT；上游许可文件保留于技能目录。 |
 | 其余技能 | 由 lora-sys 策展并作为本个人工作流集合的一部分维护。 |
 

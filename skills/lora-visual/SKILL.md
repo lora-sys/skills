@@ -1,6 +1,6 @@
 ---
 name: lora-visual
-description: "Create a consistent lora-style visual system in two modes: finished explanatory images with bounded text repair, and validated transparent character illustrations produced through chroma-key checks and background removal. Use for concepts, mechanisms, comparisons, workflows, tradeoffs, hero artwork, editorial character scenes, and reusable layout illustrations featuring lora and Mochi."
+description: "Create a consistent lora-and-Mochi visual system in two modes: finished explanatory images with bounded text repair, and validated transparent character illustrations produced through chroma-key checks and background removal. Use for concepts, mechanisms, comparisons, workflows, tradeoffs, hero artwork, editorial character scenes, and reusable layout illustrations where lora and Mochi appear together by default."
 ---
 
 # Lora Visual
@@ -37,6 +37,7 @@ If the destination is unclear, choose Mode A when the image itself must communic
 - Keep the recurring characters visually consistent with `assets/lora-character-reference-v2.png`.
 - lora is a cute young-adult Japanese-anime heroine with dark brown-black hair in a loose high messy bun, soft face-framing strands, large warm dark-brown eyes, a small blank amber hair clip with no letters or symbols when visible, an oversized cream hoodie, loose dark cargo pants, and black-and-white sneakers.
 - Mochi is a small fictional warm-cream fluffy companion dog with floppy ears, round dark eyes, a black nose, and a compact friendly silhouette.
+- Treat lora and Mochi as a paired cast. Every newly generated image that includes lora must also include Mochi in the same scene or transparent asset. Omit Mochi only when the user explicitly requests lora alone or explicitly says not to include Mochi. Limited space, composition, props, or mode choice are not valid reasons to omit Mochi.
 - Keep characters secondary to the subject's evidence or action.
 - Use black, off-white, cream, warm gray, brown, and amber as the base visual system. Amber is the main identity accent.
 - Add at most one additional muted semantic color when the explanation truly needs it.
@@ -99,10 +100,12 @@ line work and restrained warm paper texture. Use the canonical lora reference:
 dark brown-black loose high messy bun, soft face-framing strands, large warm
 dark-brown eyes, small blank amber hair clip with no letters or symbols when
 visible, oversized cream hoodie, loose dark cargo pants, and black-and-white
-sneakers. Include Mochi,
-a small warm-cream fluffy companion dog with floppy ears, when the composition
-allows. Use an off-white lightly textured real environment, not a blank white
-canvas. Typography is modern sans-serif, medium or bold, large and readable.
+sneakers. Mochi must appear in the same scene unless the user explicitly asks
+for lora alone or says not to include Mochi. Mochi is a small warm-cream fluffy
+companion dog with floppy ears, round dark eyes, a black nose, and a compact
+friendly silhouette. Do not omit Mochi to simplify the composition. Use an
+off-white lightly textured real environment, not a blank white canvas.
+Typography is modern sans-serif, medium or bold, large and readable.
 Color is restrained: black, off-white, cream, warm gray, brown, and amber,
 plus at most one muted semantic accent color. Keep the scene cute, thoughtful,
 clean, warm, and editorial. No 3D, no glossy gradients, no photorealism,
@@ -134,7 +137,7 @@ The Mode B plus SVG fallback is the terminal path for that request. If the trans
 
 ### 1. Describe one reusable scene
 
-Use one character action and only the objects needed to establish it. Examples: thinking with a notebook, writing, pointing, using a laptop, sitting with Mochi, or celebrating a finished result. Leave generous padding around the subject so the cutout can be composed safely.
+Use one paired lora-and-Mochi action and only the objects needed to establish it. Examples: lora thinking while Mochi watches, lora writing with Mochi beside the notebook, lora pointing while Mochi follows the gesture, or both celebrating a finished result. Leave generous padding around the complete pair so the cutout can be composed safely. If the user explicitly requests lora alone or no Mochi, follow that request.
 
 ### 2. Build the prompt
 
@@ -148,10 +151,12 @@ charcoal/black line work with controlled detail, not photorealistic and not 3D.
 Use the canonical lora reference: dark brown-black loose high messy bun, soft
 face-framing strands, large warm dark-brown eyes, small blank amber hair clip
 with no letters or symbols when visible, oversized cream hoodie, loose dark cargo
-pants, and black-and-white sneakers. Include Mochi only when requested or when the asset is a lora + Mochi
-pair: a small warm-cream fluffy dog with floppy ears, round dark eyes, and a
-compact friendly silhouette. Color is restrained: black, off-white, cream,
-warm gray, brown, and amber.
+pants, and black-and-white sneakers. Mochi must appear in the same transparent
+asset unless the user explicitly asks for lora alone or says not to include
+Mochi. Mochi is a small warm-cream fluffy dog with floppy ears, round dark eyes,
+a black nose, and a compact friendly silhouette. Keep both characters fully
+visible with safe space between them and the image border. Color is restrained:
+black, off-white, cream, warm gray, brown, and amber.
 
 The background must be a perfectly uniform flat <KEY_COLOR> rectangle with zero
 gradient, texture, noise, speckles, shadows, floor plane, or lighting variation.
@@ -242,6 +247,7 @@ For every output:
 - The main action or relation is clear in about 10 seconds.
 - Characters support the subject instead of becoming generic decoration.
 - lora, Mochi, the black/cream/amber palette, and the warm editorial feel remain consistent.
+- Every output containing lora also contains a recognizable, complete Mochi unless the user explicitly requested lora alone or no Mochi.
 
 For Mode A:
 

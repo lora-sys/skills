@@ -1,7 +1,7 @@
 {
   "name": "lora-visual",
-  "version": "1.1.0",
-  "status": "stable-v1.1",
+  "version": "1.1.1",
+  "status": "stable-v1.1.1",
   "upstream_workflow": {
     "repository": "oil-oil/oil-visual",
     "license": "MIT",
@@ -16,6 +16,7 @@
     "sha256": "94a6da03dce399550a1ad5db70ea2f0c095f19a36ff40fc9291c010b1f2e4e07",
     "constraints": "No text, logos, labels, pseudo-text, or symbols on the blank amber hair clip."
   },
+  "pairing_policy": "Every image containing lora must also contain Mochi unless the user explicitly requests lora alone or no Mochi.",
   "validators": [
     {
       "path": "scripts/validate_mode_b.py",

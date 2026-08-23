@@ -1,4 +1,4 @@
-# lora-visual v1.1 acceptance tests
+# lora-visual v1.1.1 acceptance tests
 
 ## Mode A — explanatory image
 
@@ -20,7 +20,7 @@ Exact labels:
 结果
 
 Show one left-to-right workflow.
-Use lora + Mochi once as a narrative anchor.
+Use lora + Mochi together once as a narrative anchor. Mochi is required.
 No other readable text.
 ```
 
@@ -48,7 +48,7 @@ Prompt:
 ```text
 Use $lora-visual in Mode B.
 
-Create one reusable lora thinking asset.
+Create one reusable lora + Mochi thinking asset. Both characters are required.
 No text.
 ```
 
@@ -64,6 +64,7 @@ Pass only when:
 - four corners have alpha 0
 - subject is complete and not cropped
 - lora identity matches the canonical reference
+- Mochi appears with lora as a recognizable, complete warm-cream fluffy dog
 - the amber hair clip is blank and contains no letters or symbols
 - no checkerboard or presentation board is treated as transparency
 

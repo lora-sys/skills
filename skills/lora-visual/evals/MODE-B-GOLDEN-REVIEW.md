@@ -26,7 +26,7 @@ These eight assets are frozen as the first Mode B golden set after deterministic
 
 ## Character watch list
 
-- Keep the amber `lora` hair clip visible when the angle allows.
+- Keep the blank amber hair clip visible when the angle allows. It must contain no letters or symbols.
 - Keep lora's loose high messy bun and face-framing strands.
 - Keep the cream oversized hoodie + dark loose cargo identity as the default.
 - Mochi must remain a warm-cream fictional fluffy dog with floppy ears; do not drift into strongly curly poodle/bichon styling.

@@ -1,4 +1,4 @@
-# lora-visual v1.0 acceptance tests
+# lora-visual v1.1 acceptance tests
 
 ## Mode A — explanatory image
 
@@ -34,6 +34,8 @@ Pass only when:
 - the workflow remains obvious without reading the labels
 - palette remains black / cream / amber
 - no purple-blue AI SaaS styling
+- no more than two targeted text-repair attempts are made
+- text still wrong after the second repair triggers Mode B plus deterministic SVG typography instead of another bitmap retry
 
 Golden reference:
 
@@ -54,13 +56,27 @@ Pass only when:
 
 - one reusable asset is produced
 - source is on a uniform chroma-key background
+- a background-only failure gets exactly one background replacement edit without redrawing the subject
+- `scripts/validate_mode_b.py source.png --expected-key '#00FF00'` passes before removal
 - `scripts/cutout.py` is actually run
+- `scripts/validate_mode_b.py source.png transparent.png --expected-key '#00FF00'` passes after removal
 - final output is RGBA PNG
 - four corners have alpha 0
 - subject is complete and not cropped
 - lora identity matches the canonical reference
+- the amber hair clip is blank and contains no letters or symbols
 - no checkerboard or presentation board is treated as transparency
 
 Golden references live in:
 
 `assets/golden/mode-b/`
+
+## Automated validator tests
+
+Run:
+
+```bash
+python3 -m unittest discover -s tests -p 'test_*.py' -v
+```
+
+The suite must cover a clean pass plus failures for background variation, opaque corners, key-color fringe, and a subject touching the border.

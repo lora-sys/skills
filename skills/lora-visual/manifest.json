@@ -1,16 +1,33 @@
 {
   "name": "lora-visual",
-  "version": "1.0.0",
-  "status": "frozen-v1",
+  "version": "1.1.0",
+  "status": "stable-v1.1",
   "upstream_workflow": {
     "repository": "oil-oil/oil-visual",
     "license": "MIT",
-    "notes": "SKILL workflow adapted; scripts/cutout.py copied verbatim."
+    "notes": "SKILL workflow adapted; scripts/cutout.py copied verbatim; scripts/validate_mode_b.py is maintained by lora-sys."
   },
   "modes": {
     "A": "finished explanatory image",
-    "B": "transparent illustration via chroma-key + cutout.py"
+    "B": "validated transparent illustration via chroma-key + cutout.py"
   },
+  "canonical_reference": {
+    "path": "assets/lora-character-reference-v2.png",
+    "sha256": "94a6da03dce399550a1ad5db70ea2f0c095f19a36ff40fc9291c010b1f2e4e07",
+    "constraints": "No text, logos, labels, pseudo-text, or symbols on the blank amber hair clip."
+  },
+  "validators": [
+    {
+      "path": "scripts/validate_mode_b.py",
+      "checks": [
+        "background variance",
+        "expected key distance",
+        "transparent corners",
+        "key-color fringe",
+        "subject edge padding"
+      ]
+    }
+  ],
   "golden_assets": [
     {
       "path": "assets/golden/mode-a/agent-harness-workflow.png",

@@ -40,6 +40,7 @@ npx skills list --global --agent codex
 
 | Skill | 用途 | 适用场景 |
 |---|---|---|
+| [`step_image`](skills/step_image/) | 使用 StepFun 的 `step-image-edit-2` 模型生成或编辑图片 | 文生图、图编辑、项目视觉资产、风格迁移、背景替换 |
 | [`static-site-experience-release`](skills/static-site-experience-release/) | 静态个人站体验审查、交互精修、质量验证与 GitHub Pages 发布 | Astro / 静态作品集、博客、GitHub Pages 上线前验收 |
 | [`html-stable-publish`](skills/html-stable-publish/) | 匿名短期 HTML Drop 发布 | 需要无需账号的临时 HTML / 静态站预览链接 |
 | [`chinese-ai-resume`](skills/chinese-ai-resume/) | 中文 AI Agent / LLM / 全栈简历的事实核验与 ATS 交付 | 由 GitHub 项目、经历和证据生成或修订中文简历 |
@@ -94,6 +95,7 @@ Skills CLI 会发现 `skills/<skill-name>/SKILL.md`。每个 `SKILL.md` 的目�
 | `unslop` | 源自 [Cursor Plugins pstack/unslop](https://github.com/cursor/plugins/tree/main/pstack/skills/unslop)，作者 Lauren Tan，MIT；上游许可文件保留于技能目录。 |
 | 其余技能 | 由 lora-sys 策展并作为本个人工作流集合的一部分维护。 |
 | `notion` | 包装官方 [Notion CLI (`ntn`)](https://github.com/makenotion/notion-cli)，MIT；上游版权与许可见技能目录内的 `THIRD_PARTY_NOTICES.md`。 |
+| `step_image` | lora-sys 创建，MIT；基于 StepFun `step-image-edit-2` API 封装。 |
 
 ## 维护
 

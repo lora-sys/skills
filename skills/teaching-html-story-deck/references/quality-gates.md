@@ -57,3 +57,10 @@
 3. Is the most visually impressive element also conceptually important?
 4. Would removing the animation reduce understanding?
 5. Does the CTA logically follow from the story?
+
+## Neighbors (handoff boundary)
+
+- **html-stable-publish** is the default handoff target. After the deck passes `python3 scripts/validate_deck.py <deck>.html`, automatically hand it to `html-stable-publish` for anonymous-drop hosting; the receiving skill runs its own preflight and picks the platform. The public link is part of the deliverable.
+- **postplan** is the fallback publisher. Use it only when the user explicitly asks for postplan hosting instead of (or in addition to) the anonymous drop: `npx postplan upload ./<deck>.html`. postplan assigns the URL; do not hard-code it in the deck or in this skill.
+- **Local-only output** is also valid: when the user explicitly says "不要部署" / "本地就行" / "给我文件就行", skip both handoffs and deliver the file path only.
+- This skill produces the deck. Hosting defaults to html-stable-publish; opt-outs must be explicit.

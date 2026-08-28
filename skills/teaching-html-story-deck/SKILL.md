@@ -1,8 +1,7 @@
 ---
 name: teaching-html-story-deck
-description: Create or upgrade standalone interactive teaching HTML story decks with problem-first narrative, content-specific inline SVG diagrams, architecture and mind-map visuals, restrained Linear/Vercel-inspired motion, presenter notes, keyboard navigation, responsive layout, and accessibility checks. Use for teaching HTML, explainer webpages, technical or product walkthroughs, architecture visualization, course pages, screen-recording decks, or improving an existing HTML presentation.
+description: "Create or upgrade standalone interactive teaching HTML story decks with problem-first narrative, content-specific inline SVG diagrams, presenter notes, keyboard navigation, responsive layout, and accessibility checks. Use for teaching HTML, 讲解页, 教学网页, 教学演示, story deck, explainer webpage, course page, 架构可视化, 产品/系统设计 walkthrough, 升级既有 HTML 演示页, 出一份 HTML 报告, B 站/抖音讲解页. Do not use for: copying a single short article to HTML, marketing landing pages without a teaching arc, dashboards, or any task whose output is not a self-contained HTML file. Default delivery contract: after producing the deck, automatically hand it to html-stable-publish for anonymous-drop hosting and return the public link as part of the deliverable; only fall back to local-file-only / postplan when the user explicitly asks for it."
 license: MIT
-compatibility: Requires local text file read/write access. Output must run as a single modern-browser HTML file without a build step. Python 3 is optional for scaffolding and validation.
 ---
 
 # Teaching HTML Story Deck
@@ -216,6 +215,15 @@ Deliver:
 2. a concise explanation of the narrative and controls;
 3. assumptions or unverified conceptual models;
 4. optionally a story blueprint and visual map when ongoing editing is useful.
+
+## Delivery contract (default handoff)
+
+The default delivery path is **automatic anonymous-drop hosting** — do not ask the user "要不要部署" unless they have already said they want local-only output.
+
+1. After the deck passes `python3 scripts/validate_deck.py <deck>.html`, automatically invoke the `html-stable-publish` skill to upload the file and return the public link as part of the deliverable.
+2. If the user explicitly says "不要部署" / "本地就行" / "给我文件就行" — skip the handoff and deliver the file path only.
+3. If the user explicitly wants postplan hosting instead of (or in addition to) the anonymous drop — run `npx postplan upload ./<deck>.html`. The postplan platform picks the URL; do not hard-code a publish URL in this skill.
+4. Never publish a deck that fails validation. The quality bar in `references/quality-gates.md` is non-negotiable for any handoff.
 
 ## Failure modes
 

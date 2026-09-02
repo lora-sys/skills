@@ -5,4 +5,5 @@ node_modules/
 *.zip
 .env
 .env.*
+.claude/
 __pycache__/

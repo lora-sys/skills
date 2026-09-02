@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "skills": {
+    "open-ppt": {
+      "source": ".",
+      "sourceType": "local",
+      "computedHash": "fb68bb53df2f8e8d3ef98f385a62139a8bbc20d4a0d9131f3a7a47b6f3ec49f2"
+    },
+    "samuel-video-coach": {
+      "source": ".",
+      "sourceType": "local",
+      "computedHash": "71087a0810d7751a11a32c3895f5db40081eb84df09da9a75168cfc598b138d9"
+    },
+    "video-publisher": {
+      "source": ".",
+      "sourceType": "local",
+      "computedHash": "cfdbb798911d4a385debeceed1f9103e40e58c1a886def6638e2318aad918af9"
+    }
+  }
+}

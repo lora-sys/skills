@@ -44,7 +44,7 @@ npx skills list --global --agent codex
 | [`samuel-video-coach`](skills/samuel-video-coach/) | Samuel 风格的短视频导演 Skill：分镜、台词、拍摄指导、AI 过渡与共鸣设计 | 抖音、TikTok、Reels、Shorts、Bilibili、YouTube 前期策划 |
 | [`step_image`](skills/step_image/) | 使用 StepFun 的 `step-image-edit-2` 模型生成或编辑图片 | 文生图、图编辑、项目视觉资产、风格迁移、背景替换 |
 | [`static-site-experience-release`](skills/static-site-experience-release/) | 静态个人站体验审查、交互精修、质量验证与 GitHub Pages 发布 | Astro / 静态作品集、博客、GitHub Pages 上线前验收 |
-| [`html-stable-publish`](skills/html-stable-publish/) | 匿名短期 HTML Drop 发布 | 需要无需账号的临时 HTML / 静态站预览链接 |
+| [`html-stable-publish`](skills/html-stable-publish/) | 使用 Postplan 发布和更新 HTML draft | 需要发布单页 HTML 或静态页面，并获得可访问的 draft 链接 |
 | [`chinese-ai-resume`](skills/chinese-ai-resume/) | 中文 AI Agent / LLM / 全栈简历的事实核验与 ATS 交付 | 由 GitHub 项目、经历和证据生成或修订中文简历 |
 | [`github-gem-seeker`](skills/github-gem-seeker/) | 从 GitHub 寻找成熟开源方案 | 下载、格式转换、媒体处理、归档、爬取、CLI 等成熟问题 |
 | [`web-development-team-playbook`](skills/web-development-team-playbook/) | Web 项目改造、审查、验收和发布门禁 | 网站、Web 应用、前端或全栈项目的团队级交付流程 |

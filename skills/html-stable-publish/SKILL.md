@@ -1,93 +1,55 @@
 ---
 name: html-stable-publish
-description: 当最终交付物是单页 HTML 或静态 HTML/CSS/JS 站点时，使用无需登录或注册的匿名 Drop 平台发布公开即时分享链接。适用于“部署 HTML”“给我一个立刻可打开的链接”“不要登录”“匿名 Drop”“上传静态页面”；明确不同平台的一小时、24 小时或三天有效期，绝不将匿名链接称为永久托管。
+description: 当最终交付物是单页 HTML 或静态 HTML/CSS/JS 页面时，使用 Postplan 发布可访问、可更新的 HTML draft。适用于“部署 HTML”“发布页面”“给我一个可打开的链接”；默认使用本机 Postplan 凭据，不把 key 写入产物。
 ---
 
-# 匿名 HTML Drop 发布
+# Postplan HTML 发布
 
 ## 适用范围
 
-仅处理已完成的静态产物：单个 HTML 文件，或根目录包含 `index.html` 的静态目录/已构建 ZIP。**不使用任何需要登录、注册、Token、Git 仓库或用户账户的托管方案。**
+处理单个 HTML 文件，或根目录包含 `index.html` 的静态页面。目标平台固定为 `https://postplan.dev`，使用官方 `postplan` CLI 发布。Postplan 返回公开 draft URL 和 Raw HTML URL；同一个本地文件再次上传时默认更新对应 draft。
 
-> 经核验，没有可信的“无需登录且可保证永久保存”的静态 HTML Drop 服务。匿名链接缺少账户归属，无法承诺可长期存续、恢复或更新。本技能只交付**即时分享链接**，并始终写明官方可验证的最长有效期。
+## 凭据与安全
 
-## 发布前规则
+- CLI 凭据由 `npx postplan auth set <api-key>` 保存到用户目录的 `.postplan/credentials.json`，权限应保持为仅用户可读写。
+- 也可临时使用环境变量 `POSTPLAN_API_KEY`；API 地址可用 `POSTPLAN_API_URL` 覆盖，默认是 `https://postplan.dev`。
+- 绝不把 API key 写入 HTML、项目文件、日志、对话回复或版本库；不要上传 `.env`、密码、真实用户数据、内网 URL 或私密资源。
+- 实际上传属于外部发布。执行 `npx postplan upload` 前，必须向用户确认将公开发布；仅做本地检查或 dry-run 不需要确认。
 
-1. 先运行 `scripts/preflight_static_site.py <目录或 index.html>`，修复入口缺失、本地绝对路径、敏感文件和体积问题。
-2. 公开上传 HTML 属于最终外部发布。实际点击 Generate / Publish / Upload 或执行匿名 CLI 前，必须向用户确认。
-3. 禁止上传 API Key、密码、真实用户数据、内网 URL、私密图片、`.env` 文件或任何不可公开的内容；匿名 URL 不是访问控制。
-4. 交付时在 URL 旁边写清楚平台和到期时间；不能写“永久”“稳定生产地址”或“后续可无条件更新”。
-5. 若用户后来要求长期保留、固定地址或更新能力，明确说明这与“不要登录”的约束冲突，必须另行切换到其账号持有的平台；不要暗中创建账户。
+## 发布流程
 
-## 已核验的匿名 Drop 候选
+1. 确认产物是单个 HTML，或目录中存在 `index.html`。对目录发布时先准备一个构建输出目录，不上传源码项目、依赖目录或敏感文件。
+2. 运行 `scripts/preflight_static_site.py <文件或目录>`，修复入口、绝对本地路径和敏感文件问题。该检查是发布前辅助检查，最终 HTML 规则仍以 Postplan CLI 返回的验证结果为准。
+3. 在得到用户明确确认后执行：
 
-| 静态产物类型 | 首选平台 | 账号要求 | 官方期限/边界 | 适用场景 |
-|---|---|---:|---|---|
-| 多文件 HTML/CSS/JS、单文件、ZIP | PreviewShip | 无 | 约 24 小时；登录后才可延长和固定 URL | 多文件网站的首选匿名预览 |
-| 单个 HTML 文件（最大 20 MB） | HTMLtoURL | 无 | 免费链接默认 3 天；付费才可延长同一 URL | 需要最长匿名窗口的单页 HTML |
-| 多文件静态网页 | EdgeOne Makers Drop（Global） | 无 | 无注册链接仅 1 小时；中国大陆须注册登录才能获域名链接 | 一小时内的快速分享与全球预览 |
-| 单个 HTML / 轻量多文件项目 | HtmlSave | 无；可选编辑密码 | 免费页面 24 小时不活跃时会周期性删除 | 小型原型；若使用密码，用户自行安全保存 |
-| 单个 HTML、静态 ZIP | Stacktree | 首次无 | 首个匿名发布约 24 小时；固定链接/管理需账号 | 需要不可猜测链接的短期预览 |
-| 静态目录、CLI 场景 | Netlify anonymous deploy | 无 | 临时项目必须在 1 小时内认领；否则不可管理 | 可脚本化的临时备用方案 |
+   ```sh
+   npx postplan upload <html-file>
+   ```
 
-仅以 `references/drop-provider-research.md` 中已经官方核验的平台作为候选。不要因广告文案或搜索摘要把未经核验的平台加入“持久化”列表。
+   可选参数：`--description "简短说明"`、`--new`（强制创建新 draft）、`--api-url <url>`。
+4. 记录 CLI 输出的 `URL`、`Raw HTML`、draft ID 和版本号。打开 URL 验证标题和页面内容；如交给另一个 agent 读取，优先提供 `Raw HTML` URL。
+5. 交付时说明平台为 Postplan、这是公开 draft、是否使用了已有 draft 的更新，以及对应的版本号。不要称为永久生产托管；长期域名、生产发布或细粒度访问控制需要另行选择正式托管方案。
 
-## 选择步骤
+## 常用命令
 
-1. **确认结构。** 单个 HTML → 优先 HTMLtoURL；多文件/ZIP → 优先 PreviewShip；只有一小时分享窗口也可接受 → EdgeOne Drop 或 Netlify。
-2. **确认时效。** 向用户复述平台和有效期。例如：“将上传为 PreviewShip 匿名公开预览，链接约 24 小时后过期。”
-3. **确认公开上传。** 得到明确确认后再进行网页上传或 CLI 匿名部署。
-4. **发布并验证。** 打开完整 URL，检查首页标题和本地资源。若失败，改用另一条匿名候选路径，不重复同一失败操作。
-5. **交付。** 先给完整 URL，再给到期时间、平台和产物范围。不要要求或暗示用户应登录来“领取”链接，除非用户主动放宽约束。
+```sh
+# 配置或更新本机凭据（不要把真实 key 写进脚本）
+npx postplan auth set <api-key>
 
-## 平台专用说明
+# 检查凭据是否有效；不会打印 key 本身
+npx postplan whoami
 
-### PreviewShip
+# 发布或更新页面
+npx postplan upload <file.html> --description "页面说明"
 
-将前端构建输出打成 ZIP，或上传单个 HTML；不要上传源码项目。未登录时可直接发布，但页面明确标注预览 URL 约 24 小时过期。它是多文件匿名静态预览的默认选择。
-
-### HTMLtoURL
-
-用于单个 HTML 文件或粘贴 HTML；官方页面标注 20 MB 上限。服务条款写明免费链接默认保留 3 天，并可能进入有限恢复窗口；不要将 HTMLtoURL 用于多文件网站、生产服务或长期存档。
-
-### EdgeOne Makers Drop
-
-无注册链接只有 1 小时。在中国大陆，官方说明必须注册并登录才可获得域名访问链接，因此匿名路径不适用。若为全球区域的即时分享，可上传一个目录、ZIP 或 HTML，并在交付中标注一小时有效期。
-
-### HtmlSave
-
-可粘贴或拖放文本型 HTML/CSS/JS，并可设置可选编辑密码。免费页面若 24 小时不活跃会周期性删除。仅用于短小公开原型；不上传敏感信息，也不将密码写入对话或版本库。
-
-### Stacktree
-
-首次匿名 HTML 发布约 24 小时；需要固定 URL、替换或管理会要求账户。将其视为带不可猜测链接的临时分享渠道。
-
-### Netlify 匿名 CLI
-
-只在已有 Netlify CLI 且用户允许命令行匿名发布时使用：
-
-```bash
-netlify deploy --dir <已构建静态目录> --allow-anonymous
+# 查看当前账号的 drafts
+npx postplan list
 ```
 
-官方说明会创建临时项目，且需要一小时内认领才可管理。运行前先使用 `scripts/publish_netlify_anonymous.sh --dry-run`；实际执行前必须取得用户确认。
+## HTML 限制
 
-## 交付模板
-
-```markdown
-## 匿名即时分享已发布
-
-**公开链接：** <完整 URL>
-
-| 项目 | 状态 |
-|---|---|
-| 平台 | <平台名> |
-| 产物 | <单个 HTML / 已构建静态 ZIP> |
-| 链接预计有效期 | <1 小时 / 约 24 小时 / 3 天> |
-| 验证 | 已打开首页并检查静态资源 |
-| 管理边界 | 无账号匿名链接；到期后不可承诺恢复或更新 |
-```
+Postplan 会在上传时拒绝外部脚本、module script、事件处理属性、`javascript:` URL、表单、iframe/embed/object/applet 以及 meta refresh。允许语义 HTML、内联 CSS、普通 HTTPS 链接、HTTPS/data 图片，以及受平台规则允许的内联经典 JavaScript。页面不应依赖本地文件路径或未公开资源。
 
 ## 参考
 
-需要核对平台限制、到期时间或地区限制时，读取 `references/drop-provider-research.md`。该参考是匿名 Drop 候选的唯一事实来源。
+需要核对 CLI 参数、凭据位置或 API 行为时，读取 `references/postplan.md`；不要再使用旧的匿名 Drop/Netlify 流程。

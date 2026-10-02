@@ -1,6 +1,0 @@
-interface:
-  display_name: "Step Image"
-  short_description: "Generate or edit images with StepFun"
-  icon_small: "./assets/imagegen-small.svg"
-  icon_large: "./assets/imagegen.png"
-  default_prompt: "Use $step_image to make or edit an image for this project."

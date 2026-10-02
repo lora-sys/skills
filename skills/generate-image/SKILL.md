@@ -3,7 +3,7 @@ name: generate-image
 description: 使用七牛云 Modelink（GPT Image 2 / Gemini 图像模型）生成或编辑图片。凡是要文生图、改图、去水印、扩图、风格迁移、生成海报/封面/插画/透明底素材/项目配图，或用户提到"生成图片、画一张、做张图、generate image、text-to-image、image editing"时都应使用。只要用户想得到一张位图输出，就用本 skill；只有代码级 SVG/图表才不用它。
 license: MIT
 metadata:
-  version: "1.0"
+  version: "1.1"
   author: lora
   api: Qiniu Modelink (https://api.qnaigc.com/v1)
   primaryEnv: MODELINK_API_KEY
@@ -79,7 +79,18 @@ prompt 质量比选模型更影响产出。每方面一句话：
 4. **构图**——"广角，主体偏左，右侧留白放标题。"（给海报/幻灯片留标题位是最有用的构图指令）
 5. **排除项**——"无文字、无标签、无水印。"
 
-迭代策略：先用便宜模型把措辞调好，再用目标模型重新生成。要微调而非重画时，把上一次输出作为 `-i` 参考图喂回去，只描述改动。
+迭代措辞时走下面的「默认工作流」。
+
+## 默认工作流：Gemini 草稿，GPT 定稿
+
+**最终交付图一律用 `openai/gpt-image-2` 出。** 需要探索构图、风格，或预期多轮调整时，先在 `google/gemini-3.1-flash-image` 上低成本出草稿，定稿后再用 GPT 出图：
+
+1. 在 Gemini 上快速迭代 prompt 措辞与构图，直到草稿可用
+2. 定稿后二选一：
+   - **重画**：用定稿措辞直接在 GPT 上重新生成——构图更干净，海报/封面首选
+   - **续图**：把 Gemini 草稿作为参考图喂给 GPT（`-i draft.png`），保留已认可的构图，让 GPT 精修
+
+简单一次性图片（无迭代需求）跳过草稿，直接 GPT 出图。用户说"草稿用 Gemini、最终用 GPT 出图"之类的话时，严格走两阶段；只说"画一张 xx"时按本节默认执行。
 
 ## 编辑与参考图
 

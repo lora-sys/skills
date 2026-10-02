@@ -1,6 +1,6 @@
 ---
 name: teaching-html-story-deck
-description: "Create or upgrade standalone interactive teaching HTML story decks with problem-first narrative, content-specific inline SVG diagrams, presenter notes, keyboard navigation, responsive layout, and accessibility checks. Use for teaching HTML, 讲解页, 教学网页, 教学演示, story deck, explainer webpage, course page, 架构可视化, 产品/系统设计 walkthrough, 升级既有 HTML 演示页, 出一份 HTML 报告, B 站/抖音讲解页. Do not use for: copying a single short article to HTML, marketing landing pages without a teaching arc, dashboards, or any task whose output is not a self-contained HTML file. Default delivery contract: after producing the deck, automatically hand it to html-stable-publish for anonymous-drop hosting and return the public link as part of the deliverable; only fall back to local-file-only / postplan when the user explicitly asks for it."
+description: "Create or upgrade standalone interactive teaching HTML story decks with problem-first narrative, content-specific inline SVG diagrams, presenter notes, keyboard navigation, responsive layout, and accessibility checks. Use for teaching HTML, 讲解页, 教学网页, 教学演示, story deck, explainer webpage, course page, 架构可视化, 产品/系统设计 walkthrough, 升级既有 HTML 演示页, 出一份 HTML 报告, B 站/抖音讲解页. Do not use for: copying a single short article to HTML, marketing landing pages without a teaching arc, dashboards, or any task whose output is not a self-contained HTML file. Default delivery contract: after producing the deck, hand it to html-stable-publish (Postplan); the public upload is an external action that needs the user's explicit confirmation, and once published the public link is part of the deliverable. Deliver local-file-only when the user declines or asks for it."
 license: MIT
 ---
 
@@ -214,16 +214,16 @@ Deliver:
 1. the final standalone HTML;
 2. a concise explanation of the narrative and controls;
 3. assumptions or unverified conceptual models;
-4. optionally a story blueprint and visual map when ongoing editing is useful.
+4. optionally a story blueprint and visual map when ongoing editing is useful;
+5. when the user confirmed publishing, the public Postplan draft link and version.
 
 ## Delivery contract (default handoff)
 
-The default delivery path is **automatic anonymous-drop hosting** — do not ask the user "要不要部署" unless they have already said they want local-only output.
+The default delivery path is **html-stable-publish (Postplan)**. The old anonymous-drop/Netlify flow is deprecated — do not use it.
 
-1. After the deck passes `python3 scripts/validate_deck.py <deck>.html`, automatically invoke the `html-stable-publish` skill to upload the file and return the public link as part of the deliverable.
+1. After the deck passes `python scripts/validate_deck.py <deck>.html`, hand off to the `html-stable-publish` skill. Publishing is an external action: ask the user to confirm the public upload before running `npx postplan upload`, then return the public link as part of the deliverable.
 2. If the user explicitly says "不要部署" / "本地就行" / "给我文件就行" — skip the handoff and deliver the file path only.
-3. If the user explicitly wants postplan hosting instead of (or in addition to) the anonymous drop — run `npx postplan upload ./<deck>.html`. The postplan platform picks the URL; do not hard-code a publish URL in this skill.
-4. Never publish a deck that fails validation. The quality bar in `references/quality-gates.md` is non-negotiable for any handoff.
+3. Never publish a deck that fails validation. The quality bar in `references/quality-gates.md` is non-negotiable for any handoff.
 
 ## Failure modes
 

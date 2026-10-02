@@ -39,7 +39,7 @@ def slugify(value: str) -> str:
 
     ascii_slug = re.sub(r"-+", "-", "".join(ascii_parts)).strip("-")
     if ascii_slug and cjk_parts:
-        return f"{ascii_slug}-{"".join(cjk_parts)}"
+        return ascii_slug + "-" + "".join(cjk_parts)
     if ascii_slug:
         return ascii_slug
     if cjk_parts:

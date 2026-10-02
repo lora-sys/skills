@@ -60,7 +60,6 @@
 
 ## Neighbors (handoff boundary)
 
-- **html-stable-publish** is the default handoff target. After the deck passes `python3 scripts/validate_deck.py <deck>.html`, automatically hand it to `html-stable-publish` for anonymous-drop hosting; the receiving skill runs its own preflight and picks the platform. The public link is part of the deliverable.
-- **postplan** is the fallback publisher. Use it only when the user explicitly asks for postplan hosting instead of (or in addition to) the anonymous drop: `npx postplan upload ./<deck>.html`. postplan assigns the URL; do not hard-code it in the deck or in this skill.
-- **Local-only output** is also valid: when the user explicitly says "不要部署" / "本地就行" / "给我文件就行", skip both handoffs and deliver the file path only.
+- **html-stable-publish** is the default handoff target. After the deck passes `python scripts/validate_deck.py <deck>.html`, hand it to `html-stable-publish` (Postplan); the receiving skill runs its own preflight and requires the user's explicit confirmation before the public upload. Once published, the public link is part of the deliverable.
+- **Local-only output** is always valid: when the user explicitly says "不要部署" / "本地就行" / "给我文件就行", skip the handoff and deliver the file path only.
 - This skill produces the deck. Hosting defaults to html-stable-publish; opt-outs must be explicit.

@@ -24,7 +24,7 @@ Default delivery includes PPTX export (and optional `npx open-ppt-skill serve`),
 1. **Node.js 18+**: run `node --version`. If `node` is missing or the major version is below 18, **stop immediately**, tell the user to install Node.js 18+ from https://nodejs.org (or their OS package manager), and do not continue with PPTX export / `npx` until it is available. Only continue with PPTD-only output when the user explicitly opts out of PPTX.
 2. **npm / npx**: run `npm --version`. They ship with Node.js; if missing, treat Node.js as not installed correctly and guide the user to reinstall/fix PATH.
 3. **python3**: run `python3 --version` (on Windows, `python` may be the correct command). Needed for `export_pptx.py` / `export_images.py`.
-4. **Chrome / Chromium / Edge**: needed by `agent-browser` for **image QA** (`export_images.py`) and optional `--browser` PPTX path. Default PPTX export uses local WASM and does **not** require a browser. If image QA later fails with a browser-launch error, ask the user to install a Chromium-based browser.
+4. **Chrome / Chromium / Edge**: needed by `agent-browser` for **image QA** (`export_images.py`) and optional `--browser` PPTX path. Default PPTX export uses local WASM — but only when the patched WASM binary is present (it ships with the npm package / editor mirror, not with a bare skill copy); when it is missing, `export_pptx.py` logs the miss and falls back to the local browser editor, so a browser is then required. If image QA later fails with a browser-launch error, ask the user to install a Chromium-based browser.
 5. Soft deps are auto-handled by the scripts when missing: **PyYAML**, **agent-browser** (>=0.33.2 via npm, only for browser/image paths), and for image QA **Pillow** + **websocket-client**. **PPTX / image export / manual edit are offline** against the local editor mirror + patched WASM. Network is only needed if the deck references remote images/fonts.
 
 ### step1. Read the context thoroughly
@@ -166,7 +166,7 @@ When generating a PPT, adopt different production approaches for different user 
    - the `.pptd` manifest;
    - the `pages/` directory and `media/` directory when present;
    - the generated `.pptx` file.
-4. PPTX conversion: use `scripts/export_pptx.py`. **Default path is local patched WASM** (`scripts/local-export/export-pptd.mjs --no-sign`): no cookie, no signature API, no browser UI. Optional `--browser` uses the **local** editor mirror (same as `serve`), still offline.
+4. PPTX conversion: use `scripts/export_pptx.py`. **Preferred path is local patched WASM** (`scripts/local-export/export-pptd.mjs --no-sign`): no cookie, no signature API, no browser UI. It requires the patched WASM binary to resolve (see step 7); when it cannot be found the script logs `local WASM export unavailable` and automatically falls back to the local browser editor. Optional `--browser` forces the **local** editor mirror (same as `serve`), still offline.
 5. Default PPTX options:
    - page transition: `fade` (fade in/out), written to every slide after export;
    - font embedding: available on the browser path; local WASM path prioritizes reliability over embed;
@@ -188,7 +188,7 @@ When generating a PPT, adopt different production approaches for different user 
    A project directory may be passed instead of the manifest only when it contains exactly one `.pptd` file.
    Existing output files are not overwritten unless `--force` is passed.
 7. Offline model (local editor + local export):
-   - **PPTX export (default)**: local patched WASM via `scripts/local-export/export-pptd.mjs --no-sign`. Canonical binary: package `editor/neo-ppt/assets/pptd_wasm_bg-DPPWdROu.wasm` (skill install copies it into `scripts/local-export/pptd_wasm_bg.wasm`). Requires **Node.js 18+** only.
+   - **PPTX export (preferred)**: local patched WASM via `scripts/local-export/export-pptd.mjs --no-sign`. Canonical binary: package `editor/neo-ppt/assets/pptd_wasm_bg-DPPWdROu.wasm` (a full npm-package install copies it into `scripts/local-export/pptd_wasm_bg.wasm`). A bare skill copy (this repo) bundles **no** WASM binary and has no `editor/` tree — resolve_local_wasm() will not find one, and export falls back to the local browser editor. To enable the WASM path, copy the binary from the `open-ppt-skill` npm package into `scripts/local-export/pptd_wasm_bg.wasm`. Requires **Node.js 18+** only.
    - **Image QA / visual review**: `scripts/export_images.py` drives the **local** editor via agent-browser (Chromium required; no cloud service).
    - **Manual edit / preview**: `npx open-ppt-skill serve` serves the same offline editor mirror.
    - Browser PPTX path (`--browser`) uses the same local editor host; auto-installs `agent-browser@latest` when missing/outdated; **PyYAML** auto-installed with `pip --user` when missing; image QA additionally auto-installs Pillow and websocket-client.

@@ -38,15 +38,19 @@ async function loadYaml() {
       const yaml = require('js-yaml');
       return (s) => yaml.load(s);
     } catch {
-      // fallback: python3 + PyYAML
+      // fallback: python3/python + PyYAML
       return (text) => {
         const { spawnSync } = require('node:child_process');
-        const r = spawnSync(
-          'python3',
+        const run = (bin) => spawnSync(
+          bin,
           ['-c', 'import sys,yaml,json; print(json.dumps(yaml.safe_load(sys.stdin.read()), ensure_ascii=False))'],
           { input: text, encoding: 'utf8', maxBuffer: 50 * 1024 * 1024 },
         );
-        if (r.status !== 0) throw new Error('python yaml failed: ' + (r.stderr || r.stdout));
+        let r = run('python3');
+        if (r.error || r.status !== 0) r = run('python');
+        if (r.error || r.status !== 0) {
+          throw new Error('python yaml failed: ' + (r.stderr || r.stdout || (r.error && r.error.message) || ''));
+        }
         return JSON.parse(r.stdout);
       };
     }

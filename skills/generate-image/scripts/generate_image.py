@@ -149,11 +149,13 @@ def validate_size(size):
         sys.exit(1)
     w, h = int(m.group(1)), int(m.group(2))
     problems = []
+    if w <= 0 or h <= 0:
+        problems.append("width and height must be positive")
     if w % 16 or h % 16:
         problems.append("width and height must be multiples of 16")
     if max(w, h) > 3840:
         problems.append("max side must not exceed 3840")
-    if max(w, h) / min(w, h) > 3:
+    if min(w, h) > 0 and max(w, h) / min(w, h) > 3:
         problems.append("long/short side ratio must not exceed 3:1")
     if not 655360 <= w * h <= 8294400:
         problems.append("total pixels must be 655,360-8,294,400")

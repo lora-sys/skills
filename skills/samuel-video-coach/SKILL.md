@@ -701,7 +701,8 @@ AI 视频不能：
 - `assets/simple-intake.md`：最简单输入表；
 - `assets/beginner-output-template.md`：完整输出模板；
 - `assets/full-example.md`：从一个 AI 项目选题到完整拍摄方案的原创示例；
-- `assets/storyboard.schema.json`：可选结构化输出 Schema。
+- `assets/storyboard.schema.json`：可选结构化输出 Schema；
+- `scripts/validate_storyboard.py`：校验分镜 JSON 是否符合该 Schema（`python scripts/validate_storyboard.py <storyboard.json>`，需要 `pip install jsonschema`）；产出结构化输出时必须跑一次校验。
 
 ## 12. 最终自检
 

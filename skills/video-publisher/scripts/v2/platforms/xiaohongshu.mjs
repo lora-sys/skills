@@ -1,6 +1,6 @@
 const xhsTitle = pkg.platformTitle.xiaohongshu;
 const xhsTopics = pkg.xhsTopics;
-const xhsVideoName = videoPath.split('/').pop();
+const xhsVideoName = videoPath.split(/[\\/]/).pop();
 const xhsCustomCover = pkg.cover?.uploadCustomCover === true;
 const xhsCoverPath = String(pkg.cover?.vertical3x4Path || '');
 

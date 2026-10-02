@@ -56,19 +56,21 @@ Video Publisher 不是让四个 Agent 同时在页面上盲点。它使用一个
 
 ### 2. 安装 Skill
 
+本仓库内目录已摊平：`skills/video-publisher/` 即技能根目录（SKILL.md 在顶层）。把整个目录拷贝到目标技能目录即可：
+
 Codex：
 
 ```bash
 git clone https://github.com/oil-oil/video-publisher-skill.git
 mkdir -p ~/.codex/skills/video-publisher
-cp -R video-publisher-skill/video-publisher/. ~/.codex/skills/video-publisher/
+cp -R video-publisher/. ~/.codex/skills/video-publisher/
 ```
 
-Claude Code：
+Claude Code / ZCode：
 
 ```bash
-mkdir -p ~/.claude/skills/video-publisher
-cp -R video-publisher-skill/video-publisher/. ~/.claude/skills/video-publisher/
+mkdir -p ~/.agents/skills/video-publisher
+cp -R video-publisher/. ~/.agents/skills/video-publisher/
 ```
 
 ### 3. 在对话中使用

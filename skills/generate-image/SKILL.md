@@ -3,7 +3,7 @@ name: generate-image
 description: 使用七牛云 Modelink（GPT Image 2 / Gemini 图像模型）生成或编辑图片。凡是要文生图、改图、去水印、扩图、风格迁移、生成海报/封面/插画/透明底素材/项目配图，或用户提到"生成图片、画一张、做张图、generate image、text-to-image、image editing"时都应使用。只要用户想得到一张位图输出，就用本 skill；只有代码级 SVG/图表才不用它。
 license: MIT
 metadata:
-  version: "1.1"
+  version: "1.2"
   author: lora
   api: Qiniu Modelink (https://api.qnaigc.com/v1)
   primaryEnv: MODELINK_API_KEY
@@ -54,11 +54,11 @@ python scripts/generate_image.py "吉祥物贴纸" --background transparent -o m
 
 | 需求 | 模型 |
 | --- | --- |
-| 默认，指令遵循好 | `openai/gpt-image-2` |
+| 默认，草稿到定稿全流程 | `openai/gpt-image-2` |
 | 更高画质（2.5 系列，额外支持 `xhigh`/`max` 质量档） | `openai/gpt-image-2.5-flare`、`openai/gpt-image-2.5-sunburst` |
-| 便宜迭代草稿、多参考图 | `google/gemini-3.1-flash-image`（chat 路由） |
+| 多图合成、GPT 反复做不好的对话式改图（备选） | `google/gemini-3.1-flash-image`（chat 路由，约 $0.067/张） |
 
-路由规则由脚本自动处理：模型名含 `gemini` 走 chat 接口，其余（GPT Image 系列）走 images 接口。
+在七牛刊例价下 **gpt-image-2 才是便宜的那个**：1024² 一张，low 约 $0.006、medium 约 $0.053、high 约 $0.211；Gemini 1K 图约 $0.067，比 GPT low 贵 10 倍。省钱靠 quality 档位，不靠换模型。路由由脚本自动处理：模型名含 `gemini` 走 chat 接口，其余走 images 接口。
 
 ## 参数按模型路由分流
 
@@ -81,16 +81,15 @@ prompt 质量比选模型更影响产出。每方面一句话：
 
 迭代措辞时走下面的「默认工作流」。
 
-## 默认工作流：Gemini 草稿，GPT 定稿
+## 默认工作流：GPT low 草稿，GPT high 定稿
 
-**最终交付图一律用 `openai/gpt-image-2` 出。** 需要探索构图、风格，或预期多轮调整时，先在 `google/gemini-3.1-flash-image` 上低成本出草稿，定稿后再用 GPT 出图：
+**全程用 `openai/gpt-image-2`，省钱靠 quality 档位：**
 
-1. 在 Gemini 上快速迭代 prompt 措辞与构图，直到草稿可用
-2. 定稿后二选一：
-   - **重画**：用定稿措辞直接在 GPT 上重新生成——构图更干净，海报/封面首选
-   - **续图**：把 Gemini 草稿作为参考图喂给 GPT（`-i draft.png`），保留已认可的构图，让 GPT 精修
+1. **草稿/迭代**：`--quality low`（1024² 约 $0.006/张），快速试措辞、构图、风格，随便废
+2. **定稿**：措辞认可后，用定稿 prompt 以 `--quality high` 正式出图（1024² 约 $0.21/张，海报/封面首选）；质量要求一般的配图用 `medium`（约 $0.053）即可；要微调而非重画时，把 low 草稿作为 `-i` 参考图喂给定稿请求
+3. **Gemini 只做特殊场景备选**：多参考图合成、GPT 反复做不好的对话式改图；不要用它出草稿——七牛价格下它比 GPT low 贵约 10 倍
 
-简单一次性图片（无迭代需求）跳过草稿，直接 GPT 出图。用户说"草稿用 Gemini、最终用 GPT 出图"之类的话时，严格走两阶段；只说"画一张 xx"时按本节默认执行。
+简单一次性图片直接 medium/high 一步出图，跳过草稿。价格为刊例价估算，以控制台账单为准。
 
 ## 编辑与参考图
 

@@ -54,6 +54,8 @@ npx skills list --global --agent codex
 | [`video-publisher`](skills/video-publisher/) | 多平台视频草稿自动化（小红书、抖音、Bilibili、微信视频号），默认停在发布前 | 视频上传、标题标签、原创声明、封面、发布前验收 |
 | [`notion`](skills/notion/) | 通过官方 `ntn` CLI 操作 Notion 工作空间 | 读、搜、建、改 Notion 页面，查询数据源，上传文件，运行 Notion Workers |
 | [`debug`](skills/debug/) | 根因修复纪律：复现→二分定位（git bisect / 路径中点观测 / pstack 栈采样）→假设→验证→最小修复，附真实教训库 | 修 bug、测试失败、接口不通、行为不符预期、性能回退、进程卡死挂起等一切排查场景 |
+| [`oil-frontend`](skills/oil-frontend/) | 前端实现规范：界面、交互、前端状态与数据流、组件与样式组织的实现、修改、重构与评审 | 前端/全栈项目的代码级前端交付；不做视觉设计判断 |
+| [`oil-ui`](skills/oil-ui/) | UI 设计规范：设计方向探索、多风格同屏比较、视觉层级与基于实际画面的迭代 | 新界面设计、风格比较、视觉精修、截图还原、界面评审；与 oil-frontend 分工（设计 vs 实现） |
 
 ## Codex 安装提示词
 
@@ -103,6 +105,8 @@ Skills CLI 会发现 `skills/<skill-name>/SKILL.md`。每个 `SKILL.md` 的目�
 | `open-ppt` | lora-sys 创建，MIT；基于 PPTD 格式 + 浏览器端 WASM PPTX 写入器。 |
 | `samuel-video-coach` | lora-sys 创建，MIT；改编自 Samuel 短视频导演方法论。 |
 | `video-publisher` | 改编自 [oil-oil/video-publisher-skill](https://github.com/oil-oil/video-publisher-skill)，MIT；上游版权与许可见技能目录内的 `LICENSE`。 |
+| `oil-frontend` | 源自 [oil-oil/oil-frontend](https://github.com/oil-oil/oil-frontend)，MIT；以镜像方式跟踪上游，每日自动同步。 |
+| `oil-ui` | 源自 [oil-oil/oil-ui](https://github.com/oil-oil/oil-ui)，MIT；以镜像方式跟踪上游，每日自动同步。 |
 
 ## 维护
 
@@ -120,6 +124,7 @@ npx skills add . --list
 
 - **发布（仓库 → 安装）**：仓库里的修改完成后，把技能目录同步到安装位置。整目录覆盖即可（skills CLI 的 `npx skills add . --skill <name>` 也会做同样的事）。
 - **回写（安装 → 仓库）**：在会话中直接修改了某个已安装技能（修 bug、改 description 等）之后，必须把改动写回仓库，否则下次发布就会把修复覆盖掉。做法：先 diff 找出漂移，再把确认过的文件拷回仓库。
+- **上游镜像（`oil-frontend` / `oil-ui`）**：这两个目录是 [oil-oil](https://github.com/oil-oil) 上游的镜像，由 [`.github/workflows/sync-oil.yml`](.github/workflows/sync-oil.yml) 每日自动同步并整目录覆盖——**不要手改这两个目录**，手改会被下次同步覆盖；上游更新后，本机安装副本重新安装即可（`npx skills add lora-sys/skills --global`）或按发布流程同步。
 - **检测漂移**：任何一条同步之前，先看差异再动手：
 
 ```bash

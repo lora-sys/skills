@@ -1,0 +1,48 @@
+name: sync-oil-upstream
+
+# oil-frontend / oil-ui 是上游镜像目录：每日自动跟踪 oil-oil 上游，
+# 有变化就提交。不要手动修改这两个目录——手改会被下次同步覆盖。
+# 手动触发：gh workflow run sync-oil-upstream
+
+on:
+  schedule:
+    - cron: "23 2 * * *" # 每天 UTC 02:23（北京时间 10:23）
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Mirror oil-* skills from upstream
+        run: |
+          set -euo pipefail
+          sync_one () {
+            name="$1"
+            repo="$2"
+            git clone --depth 1 "https://github.com/$repo.git" "/tmp/up-$name"
+            sha=$(git -C "/tmp/up-$name" rev-parse --short HEAD)
+            rm -rf "skills/$name"
+            cp -a "/tmp/up-$name" "skills/$name"
+            rm -rf "skills/$name/.git"
+            echo "$name@$sha" >> /tmp/synced.txt
+          }
+          sync_one oil-frontend oil-oil/oil-frontend
+          sync_one oil-ui oil-oil/oil-ui
+
+      - name: Commit and push if upstream changed
+        run: |
+          set -euo pipefail
+          git config user.name "lora-sys-sync"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A skills/oil-frontend skills/oil-ui
+          if git diff --cached --quiet; then
+            echo "No upstream changes."
+            exit 0
+          fi
+          git commit -m "chore(oil-*): sync from upstream $(paste -sd ' ' /tmp/synced.txt)"
+          git push

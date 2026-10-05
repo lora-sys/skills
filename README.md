@@ -53,6 +53,7 @@ npx skills list --global --agent codex
 | [`unslop`](skills/unslop/) | 去除 AI 腔并增加自然的人类表达 | 文案、说明、博客、技术内容和沟通文本润色 |
 | [`video-publisher`](skills/video-publisher/) | 多平台视频草稿自动化（小红书、抖音、Bilibili、微信视频号），默认停在发布前 | 视频上传、标题标签、原创声明、封面、发布前验收 |
 | [`notion`](skills/notion/) | 通过官方 `ntn` CLI 操作 Notion 工作空间 | 读、搜、建、改 Notion 页面，查询数据源，上传文件，运行 Notion Workers |
+| [`debug`](skills/debug/) | 根因修复纪律：复现→二分定位（git bisect / 路径中点观测 / pstack 栈采样）→假设→验证→最小修复，附真实教训库 | 修 bug、测试失败、接口不通、行为不符预期、性能回退、进程卡死挂起等一切排查场景 |
 
 ## Codex 安装提示词
 

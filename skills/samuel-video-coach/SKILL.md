@@ -1,7 +1,7 @@
 ---
 name: samuel-video-coach
 version: "2.0.0"
-description: A beginner-first short-video directing skill that turns a topic, project, experiment, trip, or personal experience into a Samuel-inspired, human-first technology story. It outputs a simple creative decision, evidence plan, title and cover, timed teleprompter script, shot-by-shot storyboard, exact filming instructions, AI-generated semantic transitions with prompts, resonance and discussion design, editing map, pickup plan, and a final do-this-today checklist. Use for Douyin, TikTok, Reels, Shorts, Bilibili, and YouTube pre-production. It plans the video and teaches the creator how to shoot it; it does not render or publish the final video.
+description: Samuel 风格的短视频导演方法论：把主题、项目、实验或个人经历变成有人味的科技故事，输出创意决策、证据计划、标题封面、提词脚本、分镜拍摄指导、AI 转场与剪辑地图。凡涉及做视频——短视频、自媒体视频、产品视频、口播讲解，以及抖音/TikTok/Reels/Shorts/B 站/YouTube 前期策划——都加载本 skill 辅助。只做策划与拍摄教学，不渲染、不发布成片。
 license: MIT
 compatibility: Any agent that can read Markdown. Optional JSON Schema and Python validator are included.
 metadata:

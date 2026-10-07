@@ -40,6 +40,7 @@ npx skills list --global --agent codex
 
 | Skill | 用途 | 适用场景 |
 |---|---|---|
+| [`lora-mode`](skills/lora-mode/) | 个人开发总控：playbook 路由 + 七步骨架 + 隔离对抗审查，调度本仓库全部 skill | 前后端开发、调试、调查、发布等开发流程任务（多步交付） |
 | [`open-ppt`](skills/open-ppt/) | PPTD 格式的演示文稿创建、编辑与 PPTX/图片导出 | 幻灯片、PPT/PPTX、海报、infographic、教学演示 |
 | [`samuel-video-coach`](skills/samuel-video-coach/) | Samuel 风格的短视频导演 Skill：分镜、台词、拍摄指导、AI 过渡与共鸣设计 | 抖音、TikTok、Reels、Shorts、Bilibili、YouTube 前期策划 |
 | [`generate-image`](skills/generate-image/) | 使用七牛云 Modelink（GPT Image 2 / Gemini）生成或编辑图片 | 文生图、图编辑、多图合成、风格迁移、海报封面插画、透明底素材 |
@@ -47,7 +48,6 @@ npx skills list --global --agent codex
 | [`html-stable-publish`](skills/html-stable-publish/) | 使用 Postplan 发布和更新 HTML draft | 需要发布单页 HTML 或静态页面，并获得可访问的 draft 链接 |
 | [`chinese-ai-resume`](skills/chinese-ai-resume/) | 中文 AI Agent / LLM / 全栈简历的事实核验与 ATS 交付 | 由 GitHub 项目、经历和证据生成或修订中文简历 |
 | [`github-gem-seeker`](skills/github-gem-seeker/) | 从 GitHub 寻找成熟开源方案 | 下载、格式转换、媒体处理、归档、爬取、CLI 等成熟问题 |
-| [`web-development-team-playbook`](skills/web-development-team-playbook/) | Web 项目改造、审查、验收和发布门禁 | 网站、Web 应用、前端或全栈项目的团队级交付流程 |
 | [`teaching-html-story-deck`](skills/teaching-html-story-deck/) | 单文件互动教学故事卡与讲解页 | 技术讲解、产品 walkthrough、课程页、架构可视化、录屏演示 |
 | [`lora-visual`](skills/lora-visual/) | 统一的 lora 风格解释图与透明角色插画 | 概念图、工作流、对比图、Hero 配图和可复用角色素材 |
 | [`unslop`](skills/unslop/) | 去除 AI 腔并增加自然的人类表达 | 文案、说明、博客、技术内容和沟通文本润色 |

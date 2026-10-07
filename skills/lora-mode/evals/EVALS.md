@@ -51,7 +51,7 @@ Pass only when：消歧仍成立——后者 → `bug-fix`，前者**不进** bu
 Fail when：两者路由相同；或前者套 playbook 七步仪式杀鸡用牛刀。
 （成规模调查——选型对比、需仓库侦察/外部核实的"为什么"——仍须走 `investigation`，见 SKILL.md 直连规则"调查下限"。）
 
-## E04 — 接手 vs 调查（来源：真实场景 Glassbox / lora-pi-kit）
+## E04 — 接手 vs 调查（来源：真实场景两个仓库）
 
 派发 prompt（对任一真实仓库）：
 

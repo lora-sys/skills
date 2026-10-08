@@ -6,6 +6,7 @@ import importlib.util
 from html.parser import HTMLParser
 import io
 import json
+import re
 from pathlib import Path
 import shutil
 import subprocess
@@ -34,6 +35,187 @@ class ExplorerBuildTests(unittest.TestCase):
 
     def save(self):
         self.manifest.write_text(json.dumps(self.data, ensure_ascii=False), encoding="utf-8")
+
+    def payload(self, page):
+        return json.loads(page.split("const DATA = ", 1)[1].split(";\n", 1)[0])
+
+    def test_lang_is_optional_and_preserved_when_explicit(self):
+        builder.build(self.manifest, self.output)
+        self.assertNotIn("lang", self.payload(self.output.read_text(encoding="utf-8")))
+        for lang in ("zh", "en"):
+            with self.subTest(lang=lang):
+                self.data["lang"] = lang
+                self.save()
+                builder.build(self.manifest, self.output, force=True)
+                self.assertEqual(self.payload(self.output.read_text(encoding="utf-8"))["lang"], lang)
+
+    def test_invalid_lang_preserves_existing_output(self):
+        builder.build(self.manifest, self.output)
+        original = self.output.read_bytes()
+        for lang in (None, "", "ZH", "zh-CN", "en-US", "fr", 1, True, [], {}):
+            with self.subTest(lang=lang):
+                self.data["lang"] = lang
+                self.save()
+                with self.assertRaisesRegex(ValueError, "manifest.lang"):
+                    builder.build(self.manifest, self.output, force=True)
+                self.assertEqual(original, self.output.read_bytes())
+
+    def test_interface_strings_are_complete_and_centralized(self):
+        template = builder.TEMPLATE.read_text(encoding="utf-8")
+        table_text = template.split("const I18N = ", 1)[1].split(";\n", 1)[0]
+        table = json.loads(table_text)
+        self.assertEqual(set(table), {"zh", "en"})
+        self.assertEqual(set(table["zh"]), set(table["en"]))
+        keys = set(re.findall(r"\bt\('([^']+)'", template))
+        keys.update(re.findall(r'data-i18n(?:-[\w-]+)?="([^"]+)"', template))
+        self.assertEqual(keys, set(table["zh"]))
+        for key in keys:
+            self.assertTrue(table["zh"][key], key)
+            self.assertTrue(table["en"][key], key)
+            self.assertNotRegex(table["en"][key], r"[\u3400-\u9fff]", key)
+            placeholders = lambda value: set(re.findall(r"\{(\w+)\}", value))
+            self.assertEqual(placeholders(table["zh"][key]), placeholders(table["en"][key]), key)
+        # Both locales are shipped for browser detection; neither may leak into
+        # markup or JavaScript outside this single table (comments are not UI).
+        shell = template.replace(table_text, "{}")
+        shell = re.sub(r"/\*.*?\*/|(?m:^\s*//[^\n]*)", "", shell, flags=re.S)
+        self.assertNotRegex(shell, r"[\u3400-\u9fff]")
+
+    @unittest.skipUnless(shutil.which("node"), "Node.js is needed to execute the page's language and copy functions")
+    def test_browser_language_fallback_and_copied_sentence(self):
+        template = builder.TEMPLATE.read_text(encoding="utf-8")
+        translations = template.split("// Interface strings:", 1)[1].split("(()=>{", 1)[0]
+        translations = translations[translations.index("const I18N = "):]
+        copy_function = template.split(" function copyText()", 1)[1].split("\n async function copy", 1)[0]
+        number_function = template.split("no=c=>", 1)[1].split(",vtName=", 1)[0]
+        cases = [(None, "zh-CN", "zh"), (None, "ZH-hant", "zh"),
+                 (None, "en-US", "en"), (None, "fr-FR", "en"),
+                 (None, "", "en"), ("zh", "en-US", "zh"), ("en", "zh-CN", "en")]
+        program = "const results=[];\n"
+        for lang, browser_lang, expected in cases:
+            for round_value, notes, baseline in (("01", "  More space  ", False), ("", "", False), ("02", "", True)):
+                data = {"round": round_value}
+                if lang is not None:
+                    data["lang"] = lang
+                program += "{\nconst DATA=" + json.dumps(data) + ";const navigator={language:" + json.dumps(browser_lang) + "};\n"
+                program += translations
+                program += "const c={name:'Direction A',baseline:" + json.dumps(baseline) + "};const DIRS=[c],byId={a:c},st={chosen:'a',notes:" + json.dumps(notes) + "};\n"
+                program += "const no=c=>" + number_function + ";\nfunction copyText()" + copy_function
+                program += "\nresults.push({lang:LANG,text:copyText()});\n}\n"
+        program += "console.log(JSON.stringify(results));"
+        run = subprocess.run([shutil.which("node"), "-e", program], capture_output=True, text=True, timeout=10)
+        self.assertEqual(run.returncode, 0, run.stderr)
+        results = iter(json.loads(run.stdout))
+        for _, _, expected in cases:
+            number = "现状" if expected == "zh" else "Current"
+            texts = (["01：选 01 Direction A", "选 01 Direction A", f"02：选 {number} Direction A"]
+                     if expected == "zh" else ["Round 01: Go with 01 Direction A", "Go with 01 Direction A", f"Round 02: Go with {number} Direction A"])
+            for text in texts:
+                self.assertEqual(next(results), {"lang": expected, "text": text})
+
+    @unittest.skipUnless(shutil.which("node") and (shutil.which("google-chrome") or shutil.which("chromium") or
+                         Path("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome").is_file()),
+                         "Chrome/Chromium is needed for rendered interface checks")
+    def test_rendered_interfaces_do_not_mix_languages(self):
+        chrome = (shutil.which("google-chrome") or shutil.which("chromium") or
+                  "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome")
+        self.source.write_text('<html><head></head><body>Sample</body></html>', encoding="utf-8")
+        self.data.update(project="Demo", brief="Compare directions", round="01")
+        self.data["candidates"][0].update(name="Direction A", concept="Clear hierarchy", typography="System font", traits=["Large headings"])
+        self.data["candidates"].append(dict(self.data["candidates"][0], id="b", baseline=True, interactive=True))
+        probe = r"""<script>
+(async()=>{
+ const snapshots=[],copied=[];
+ Object.defineProperty(navigator,'clipboard',{value:{writeText:async text=>copied.push(text)},configurable:true});
+ const capture=()=>{
+  const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
+  let n;while(n=walker.nextNode())if(!n.parentElement.closest('script,style'))snapshots.push(n.textContent.trim());
+  document.querySelectorAll('[aria-label],[title],[placeholder]').forEach(n=>['aria-label','title','placeholder'].forEach(a=>{if(n.hasAttribute(a))snapshots.push(n.getAttribute(a));}));
+ };
+ const initial={loupe:!document.querySelector('#loupe').hidden,current:document.querySelector('.slide.is-current').dataset.id,mobile:document.querySelector('[data-viewport=mobile]').getAttribute('aria-pressed'),cards:document.querySelectorAll('.card').length,descriptions:[...document.querySelectorAll('.lede')].every(n=>getComputedStyle(n).display!=='none')};
+ capture();document.querySelector('[data-layout=loupe]').click();capture();
+ document.querySelector('#zoom').click();capture();document.querySelector('#zoom').click();
+ document.querySelector('#info-body [data-pick]').click();await Promise.resolve();capture();
+ navigator.clipboard.writeText=async()=>{throw Error('denied')};document.execCommand=()=>false;
+ document.querySelector('#info-body [data-pick]').click();await Promise.resolve();await Promise.resolve();capture();
+ const result=document.createElement('pre');result.id='i18n-result';result.textContent=JSON.stringify({lang:document.documentElement.lang,title:document.title,snapshots,copied,initial,saved:JSON.parse(localStorage.getItem(`oil-ui:${DATA.fingerprint}`))});document.body.append(result);
+})();
+</script>"""
+        table = json.loads(builder.TEMPLATE.read_text(encoding="utf-8").split("const I18N = ", 1)[1].split(";\n", 1)[0])
+        for lang in ("zh", "en"):
+            with self.subTest(lang=lang):
+                self.data["lang"] = lang
+                self.save()
+                builder.build(self.manifest, self.output, force=True)
+                page = self.output.read_text(encoding="utf-8")
+                key = "oil-ui:" + self.payload(page)["fingerprint"]
+                legacy = {"layout": "loupe", "viewport": "mobile", "current": "b", "chosen": "a",
+                          "visible": [], "notesOn": False, "notes": "Old private note"}
+                seed = "<script>localStorage.setItem(" + json.dumps(key) + "," + json.dumps(json.dumps(legacy)) + ");</script>"
+                page = page.replace("<script>\nconst DATA", seed + "<script>\nconst DATA", 1)
+                page = page.replace("</body></html>", probe + "</body></html>")
+                self.output.write_text(page, encoding="utf-8")
+                # Use the debugging pipe rather than virtual time: previews can
+                # keep animation frames alive, so --dump-dom may never finish.
+                runner = r"""
+import {spawn} from 'node:child_process';
+const chrome=spawn(process.argv[1],['--headless=new','--remote-debugging-pipe',
+ '--no-first-run','--no-default-browser-check','--disable-extensions',
+ '--force-prefers-reduced-motion',`--user-data-dir=${process.argv[2]}`,'about:blank'],
+ {stdio:['ignore','ignore','ignore','pipe','pipe']});
+let seq=0,buffer='';const pending=new Map();
+chrome.on('error',error=>{console.error(error);process.exitCode=1;});
+chrome.stdio[4].on('data',data=>{
+ buffer+=data.toString();let end;
+ while((end=buffer.indexOf('\0'))>=0){
+  const message=JSON.parse(buffer.slice(0,end));buffer=buffer.slice(end+1);
+  if(pending.has(message.id)){const {resolve,reject}=pending.get(message.id);pending.delete(message.id);
+   message.error?reject(Error(message.error.message)):resolve(message.result);}
+ }
+});
+const send=(method,params={},sessionId)=>new Promise((resolve,reject)=>{
+ const id=++seq;pending.set(id,{resolve,reject});
+ chrome.stdio[3].write(JSON.stringify({id,method,params,...(sessionId?{sessionId}:{})})+'\0');
+});
+const deadline=setTimeout(()=>{console.error('Browser probe timed out');chrome.kill('SIGKILL');process.exitCode=1;},15000);
+try{
+ const {targetId}=await send('Target.createTarget',{url:'about:blank'});
+ const {sessionId}=await send('Target.attachToTarget',{targetId,flatten:true});
+ await send('Page.enable',{},sessionId);
+ await send('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]},sessionId);
+ await send('Page.navigate',{url:process.argv[3]},sessionId);
+ let result;
+ for(let i=0;i<100;i++){
+  const response=await send('Runtime.evaluate',{expression:"document.querySelector('#i18n-result')?.textContent",returnByValue:true},sessionId);
+  result=response.result.value;if(result)break;
+  await new Promise(resolve=>setTimeout(resolve,50));
+ }
+ if(!result)throw Error('The page did not complete its interface/copy probe');
+ console.log(result);
+}catch(error){console.error(error);process.exitCode=1;}
+finally{clearTimeout(deadline);chrome.kill();}
+"""
+                run = subprocess.run([shutil.which("node"), "--input-type=module", "-e", runner, chrome,
+                                      str(self.folder / ("chrome-" + lang)), self.output.as_uri()],
+                                     capture_output=True, text=True, timeout=25)
+                self.assertEqual(run.returncode, 0, run.stderr)
+                observed = json.loads(run.stdout)
+                self.assertEqual(observed["lang"], table[lang]["htmlLang"])
+                self.assertEqual(observed["title"], table[lang]["projectTitle"].replace("{project}", "Demo").replace("{edition}", " Pro" if builder.SKILL_ROOT.name == "oil-ui-pro" else ""))
+                self.assertEqual(observed["initial"], {"loupe": True, "current": "b", "mobile": "true", "cards": 2, "descriptions": True})
+                self.assertEqual(set(observed["saved"]), {"layout", "viewport", "current", "chosen"})
+                self.assertEqual(observed["saved"]["chosen"], "b")
+                strings = observed["snapshots"]
+                self.assertNotIn("Old private note", strings)
+                for key in ("compare", "loupe", "layoutLabel", "viewportLabel",
+                            "baseline", "fonts", "traits", "actual", "fit", "empty", "copied", "copyFailed"):
+                    self.assertIn(table[lang][key], strings, key)
+                    other = table["en" if lang == "zh" else "zh"][key]
+                    self.assertNotIn(other, strings, key)
+                if lang == "en":
+                    self.assertNotRegex("\n".join(strings), r"[\u3400-\u9fff]")
+                self.assertEqual(observed["copied"], ["01：选 现状 Direction A"] if lang == "zh"
+                                 else ["Round 01: Go with Current Direction A"])
 
     def test_portable_single_file_and_html_payload(self):
         result = builder.build(self.manifest, self.output)
@@ -333,11 +515,8 @@ class ExplorerBuildTests(unittest.TestCase):
         hooks = {
             "并排与单张": 'data-layout="loupe"',
             "手机视口": 'data-viewport="mobile"',
-            "筛选": 'id="filter-list"',
-            "设计说明开关": 'id="notes-toggle"',
             "实际尺寸": '实际尺寸 100%',
             "选择": "st.chosen",
-            "备注": 'id="notes"',
             "选择即复制": 'navigator.clipboard',
             "本地地址候选": "c.kind==='url'",
             "服务未运行提示": "开发服务器没有运行",
@@ -345,12 +524,35 @@ class ExplorerBuildTests(unittest.TestCase):
             "现状基线": "c.baseline",
             "可操作小样": "c.interactive",
             "按轮次保存": "DATA.fingerprint",
-            "存储不可用提示": "浏览器存储不可用",
             "展示北极星": "c.concept",
             "展示色板": "c.palette",
         }
         missing = [name for name, hook in hooks.items() if hook not in page]
         self.assertEqual(missing, [], "模板缺少对比页承诺的功能，见 .github/EXPLORER.md")
+        for removed in ('class="bar-r"', 'id="round"', 'id="filter-list"', 'id="notes-toggle"',
+                        'id="notes"', 'id="show-all"', "liveSource", "imageSource", "interactiveSource", "htmlSource"):
+            self.assertNotIn(removed, page)
+
+    def test_brand_assets_and_edition_survive_relocation(self):
+        copy = self.folder / "relocated"
+        shutil.copytree(ROOT / "scripts", copy / "scripts", ignore=shutil.ignore_patterns("__pycache__"))
+        shutil.copytree(ROOT / "assets", copy / "assets")
+        logo = "data:image/png;base64," + base64.b64encode((ROOT / "assets/logo.png").read_bytes()).decode("ascii")
+        font = "data:font/ttf;base64," + base64.b64encode((ROOT / "assets/fonts/instrument-serif/InstrumentSerif-Regular.ttf").read_bytes()).decode("ascii")
+        for name, edition in (("oil-ui-pro", "pro"), ("oil-ui", "open")):
+            with self.subTest(edition=edition):
+                (copy / "SKILL.md").write_text("---\nname: " + name + "\n---\n", encoding="utf-8")
+                output = self.folder / (edition + ".html")
+                run = subprocess.run([sys.executable, str(copy / "scripts/build_explorer.py"), str(self.manifest),
+                                      "--output", str(output)], cwd=self.folder, capture_output=True, text=True)
+                self.assertEqual(run.returncode, 0, run.stderr)
+                page = output.read_text(encoding="utf-8")
+                self.assertEqual(self.payload(page)["edition"], edition)
+                self.assertIn(logo, page)
+                self.assertIn(font, page)
+                self.assertNotIn('href="logo.png"', page)
+                self.assertNotIn('src="logo.png"', page)
+                self.assertNotIn('url("fonts/', page)
 
     def test_copied_skill_works_from_another_directory(self):
         copy = self.folder / "relocated"

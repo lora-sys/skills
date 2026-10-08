@@ -153,6 +153,33 @@ document.querySelector('#go').onclick = () => show(document.body.dataset.state =
         self.assertNotEqual((output / "a.png").read_bytes(), (output / "a-masked.png").read_bytes())
         self.assertEqual(list(self.profile_root.glob("oil-shoot-*")), [], "Temporary browser profiles leaked")
 
+    def test_mark_draws_numbered_boxes_without_touching_plain_shot(self):
+        output = self.folder / "marked"
+        result = self.shoot(output, "--mark", "#go; h1")
+        self.assert_artifacts(output, ("page.png", "page-marked.png"))
+        self.assertIn("page-marked.png", result.stdout)
+        self.assertNotEqual((output / "page.png").read_bytes(), (output / "page-marked.png").read_bytes())
+        plain = self.folder / "plain"
+        self.shoot(plain)
+        self.assertEqual((output / "page.png").read_bytes(), (plain / "page.png").read_bytes(),
+                         "Marks must not leak into the plain screenshot")
+
+    def test_mark_accepts_explicit_numbers(self):
+        numbered, by_order, reversed_order = self.folder / "numbered", self.folder / "by-order", self.folder / "reversed"
+        self.shoot(numbered, "--mark", "2=#go; 1=h1")
+        self.shoot(by_order, "--mark", "h1; #go")
+        self.shoot(reversed_order, "--mark", "#go; h1")
+        self.assertEqual((numbered / "page-marked.png").read_bytes(), (by_order / "page-marked.png").read_bytes())
+        self.assertNotEqual((numbered / "page-marked.png").read_bytes(), (reversed_order / "page-marked.png").read_bytes(),
+                            "Explicit numbers must decide the labels, not the order")
+
+    def test_mark_reports_missing_elements(self):
+        output = self.folder / "missing"
+        result = subprocess.run([NODE, str(SCRIPT), str(self.page), "--out", str(output), "--mark", "#go; .nope"],
+                                cwd=ROOT, env=self.env, capture_output=True, text=True, timeout=90)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn(".nope", result.stderr)
+
     def test_force_overwrites_existing_output(self):
         output = self.folder / "shots"
         output.mkdir()
@@ -168,7 +195,17 @@ document.querySelector('#go').onclick = () => show(document.body.dataset.state =
         (self.folder / 'leak.txt').symlink_to(outside / 'secret.txt')
         (self.folder / 'nested').mkdir()
         (self.folder / 'nested/okay.txt').write_text('allowed-resource', encoding='utf-8')
-        blocked = ['/..%2f' + outside.name + '%2fsecret.txt', '/leak.txt', '/%E0%A4%A']
+        (self.folder / '.env.production.local').write_text('synthetic-secret', encoding='utf-8')
+        (self.folder / '.git').mkdir()
+        (self.folder / '.git/config').write_text('synthetic-git-config', encoding='utf-8')
+        (self.folder / 'credentials.json').write_text('{"token":"synthetic"}', encoding='utf-8')
+        (self.folder / 'server.pem').write_text('synthetic-private-key', encoding='utf-8')
+        (self.folder / 'env.txt').symlink_to(self.folder / '.env.production.local')
+        (self.folder / 'nested/hidden').symlink_to(self.folder / '.git', target_is_directory=True)
+        (self.folder / 'nested/module.mjs').write_text('export const value = "module-works";', encoding='utf-8')
+        blocked = ['/..%2f' + outside.name + '%2fsecret.txt', '/leak.txt', '/%E0%A4%A',
+                   '/.env.production.local', '/%2eenv.production.local', '/.git/config',
+                   '/credentials.json', '/server.pem', '/env.txt', '/nested/hidden/config']
         probe = '''<script>(async () => {
           for (const path of PATHS) {
             const response = await fetch(path);
@@ -176,6 +213,8 @@ document.querySelector('#go').onclick = () => show(document.body.dataset.state =
           }
           const allowed = await fetch('/nested/okay.txt');
           if (await allowed.text() !== 'allowed-resource') console.error('LEGIT_RESOURCE_BLOCKED');
+          const module = await import('/nested/module.mjs');
+          if (module.value !== 'module-works') console.error('LEGIT_RESOURCE_BLOCKED');
           console.error('AUDIT_FINISHED');
         })().catch(() => console.error('AUDIT_FAILED'));</script>'''.replace('PATHS', json.dumps(blocked))
         self.page.write_text(self.page.read_text().replace('</body>', probe + '</body>'), encoding='utf-8')
@@ -272,6 +311,41 @@ new IntersectionObserver(e=>e.forEach(x=>x.isIntersecting&&x.target.classList.ad
         self.assertIn("首次进入：没有检测到动画", issues)
         self.assertIn("滚动：没有检测到", issues)
 
+    def test_steps_reject_unquoted_selectors_with_spaces(self):
+        output = self.folder / "unquoted"
+        result = subprocess.run([NODE, str(SCRIPT), str(self.page), "--out", str(output), "--steps", "click body #go"],
+                                cwd=ROOT, env=self.env, capture_output=True, text=True, timeout=90)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("加引号", result.stdout + result.stderr)
+        self.shoot(self.folder / "quoted", "--steps", 'click "body #go"')
+
+    def test_motion_skips_scroll_check_on_single_screen(self):
+        self.page.write_text('''<!doctype html><html><head><link rel="icon" href="data:,"><style>
+html,body{margin:0;height:100%;overflow:hidden}
+@keyframes rise{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
+h1{animation:rise .5s ease-out both}</style></head><body><h1>Game</h1></body></html>''', encoding="utf-8")
+        output = self.folder / "single-screen"
+        result = self.shoot(output, "--motion")
+        probe = json.loads((output / "report.json").read_text(encoding="utf-8"))[0]
+        self.assertEqual(probe["issues"], [])
+        self.assertFalse(probe["motion"]["scroll"]["scrollable"])
+        self.assertIn("页面不滚动", result.stdout)
+
+    def test_record_entry_captures_first_appearance(self):
+        self.page.write_text('''<!doctype html><html><head><link rel="icon" href="data:,"><style>
+body{margin:0;background:#fde68a}
+@keyframes rise{from{opacity:0;transform:translateY(160px)}to{opacity:1;transform:none}}
+h1{margin:40px;height:300px;background:#1e3a8a;animation:rise .3s ease-out both}</style></head>
+<body><h1></h1></body></html>''', encoding="utf-8")
+        # 出场 0.3 秒就结束：默认录屏开录时已经播完，只有 --entry 能录到它
+        late = self.folder / "late"
+        self.shoot(late, "--record", "--hold", "300")
+        self.assertEqual((late / "motion-start.jpg").read_bytes(), (late / "motion-end.jpg").read_bytes())
+        output = self.folder / "entry"
+        self.shoot(output, "--record", "--entry", "--hold", "300")
+        self.assert_artifacts(output, ("motion-start.jpg", "motion-mid.jpg", "motion-end.jpg"))
+        self.assertNotEqual((output / "motion-start.jpg").read_bytes(), (output / "motion-end.jpg").read_bytes())
+
     def test_reports_page_problems(self):
         self.page.write_text(self.page.read_text(encoding="utf-8").replace("</body>", '''
 <div style="width:2000px">溢出</div><img src="missing.png">
@@ -285,6 +359,20 @@ new IntersectionObserver(e=>e.forEach(x=>x.isIntersecting&&x.target.classList.ad
                 issues = "\n".join(report[0]["issues"])
                 for expected in ("shoot-test-error", "shoot-test-exception", "横向溢出", "图片没加载出来"):
                     self.assertIn(expected, issues)
+
+
+    def test_reports_blank_webgl_canvas(self):
+        # 同一块画布已经拿了 2d 上下文，再要 webgl 必然失败，用它模拟“截图成功但画布是空的”
+        self.page.write_text(self.page.read_text(encoding="utf-8").replace("</body>", '''
+<canvas id="bad"></canvas><canvas id="good"></canvas>
+<script>
+const bad = document.querySelector('#bad'); bad.getContext('2d'); bad.getContext('webgl');
+const good = document.querySelector('#good'); good.getContext('webgl2') || good.getContext('webgl');
+</script></body>'''), encoding="utf-8")
+        output = self.folder / "webgl"
+        self.shoot(output)
+        issues = "\n".join(json.loads((output / "report.json").read_text(encoding="utf-8"))[0]["issues"])
+        self.assertIn("WebGL：1 个画布没能创建绘图上下文", issues)
 
 
 if __name__ == "__main__":

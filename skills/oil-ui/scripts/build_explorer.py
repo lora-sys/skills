@@ -284,6 +284,10 @@ def load_manifest(path: Path) -> tuple[dict, set[Path]]:
         raise ValueError("manifest.schemaVersion 必须为 1")
     data = {"schemaVersion": 1, "project": text_field(raw, "project"),
             "brief": text_field(raw, "brief"), "round": text_field(raw, "round", default="01")}
+    if "lang" in raw:
+        if raw["lang"] not in ("zh", "en"):
+            raise ValueError('manifest.lang 只能是 "zh" 或 "en"')
+        data["lang"] = raw["lang"]
     if "serve" in raw:
         serve = raw["serve"]
         if not isinstance(serve, dict):
@@ -356,7 +360,10 @@ def build(manifest: Path, output: Path, *, force: bool = False) -> dict:
         raise ValueError("输出不能覆盖输入或写进 Skill 安装目录")
     if output.exists() and not force:
         raise FileExistsError("输出已存在；使用新路径，或明确加 --force 更新")
-    template = TEMPLATE.read_text(encoding="utf-8")
+    template = embed_local_files(TEMPLATE.read_text(encoding="utf-8"), TEMPLATE.parent, SKILL_ROOT, inputs)
+    skill_file = SKILL_ROOT / "SKILL.md"
+    skill = skill_file.read_text(encoding="utf-8") if skill_file.is_file() else ""
+    data["edition"] = "pro" if re.search(r"^name:\s*oil-ui-pro\s*$", skill, re.MULTILINE) else "open"
     if template.count(MARKER) != 1:
         raise ValueError("模板数据入口缺失或重复")
     if template.count(CONNECT_CSP) != 1:

@@ -18,14 +18,20 @@ const HELP = `用法：node shoot.mjs <页面地址或文件> [选项]
   --full                截整页，默认只截视口
   --mask                另截一份遮掉全部文字的版本
   --sheet               把所有状态拼成一张并排图（配合 --mask 再拼一张遮字版）
+  --mark "1=<选择器>;..." 另截一份标注版：给每组元素画框，标上写明的编号；
+                        不写编号时按顺序标 1、2、3。一组选择器匹配到的元素都框上，
+                        编号标在第一个上
   --steps "<动作>"      截图前先执行的动作，用分号分隔：
                         click <选择器> | hover <选择器> | drag <选择器> <dx> <dy>
+                        选择器里有空格时加引号：click ".nav .item"
                         type <选择器> <文字> | key <按键> | scroll <dy> | wait <毫秒>
   --record              录下 --steps 的执行过程，输出 record.mp4 和开始、中间、结束三帧
+  --entry               配合 --record：先开始录再打开页面，录下首次进入的出场
   --hold <毫秒>         录屏时动作结束后再录多久，默认 1200
   --motion              探测动效：首次进入、--steps 动作、首屏滚动、从头滚到底里
                         有没有动画、幅度多大，没有或太小记为问题；首屏滚动
-                        1.5 屏内几层在变只作报告，供选了首屏景深的页面核对
+                        1.5 屏内几层在变只作报告，供选了首屏景深的页面核对；
+                        页面本身不能滚动时（单屏 App）跳过滚动检查
   --wait <毫秒>         页面加载后等多久再截，默认 400
 
 每张图都会检查控制台错误、横向溢出和加载失败的图片，结果写进 report.json。`;
@@ -44,7 +50,7 @@ let target = null;
 for (let i = 0; i < args.length; i++) {
   const a = args[i];
   if (a === "--force") continue;
-  if (["--full", "--mask", "--sheet", "--record", "--motion"].includes(a)) flags.add(a.slice(2));
+  if (["--full", "--mask", "--sheet", "--record", "--motion", "--entry"].includes(a)) flags.add(a.slice(2));
   else if (a.startsWith("--")) {
     if (!options.includes(a)) fail(`不认识的选项 ${a}\n可用选项：${options.join(" ")}`);
     if (i + 1 >= args.length || args[i + 1].startsWith("--")) fail(`${a} 需要一个值`);
@@ -76,7 +82,14 @@ const MIME = {
   ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
   ".webp": "image/webp", ".gif": "image/gif", ".avif": "image/avif", ".woff2": "font/woff2", ".woff": "font/woff",
   ".ttf": "font/ttf", ".otf": "font/otf", ".mp4": "video/mp4", ".webm": "video/webm",
+  ".txt": "text/plain; charset=utf-8", ".wasm": "application/wasm", ".glb": "model/gltf-binary",
+  ".gltf": "model/gltf+json", ".bin": "application/octet-stream", ".geojson": "application/geo+json",
+  ".mp3": "audio/mpeg", ".wav": "audio/wav", ".ogg": "audio/ogg", ".pdf": "application/pdf",
+  ".csv": "text/csv; charset=utf-8", ".ico": "image/x-icon", ".mov": "video/quicktime", ".m4a": "audio/mp4",
+  ".hdr": "application/octet-stream", ".exr": "image/x-exr", ".ktx2": "image/ktx2",
 };
+const privatePath = (path) => path.split(/[\\/]/).some((part) => part.startsWith(".")
+  || /^(?:credentials?|secrets?|id_(?:rsa|dsa|ecdsa|ed25519))(?:[._-]|$)/i.test(part));
 let server = null;
 async function resolveTarget(t) {
   if (/^https?:\/\//.test(t)) return t;
@@ -86,15 +99,23 @@ async function resolveTarget(t) {
   const page = statSync(file).isDirectory() ? "index.html" : basename(file);
   server = createServer((req, res) => {
     try {
-      const path = decodeURIComponent(new URL(req.url, "http://x").pathname);
-      const local = realpathSync(resolve(join(root, path)));
-      const fromRoot = relative(root, local);
-      if (fromRoot === ".." || fromRoot.startsWith(`..${sep}`) || isAbsolute(fromRoot) || !statSync(local).isFile()) {
+      const origin = `http://127.0.0.1:${server.address().port}`;
+      const url = new URL(req.url, origin);
+      if (req.headers.host !== new URL(origin).host || url.origin !== origin || !["GET", "HEAD"].includes(req.method)) {
         res.writeHead(404).end();
         return;
       }
-      res.writeHead(200, { "Content-Type": MIME[extname(local).toLowerCase()] || "application/octet-stream" });
-      res.end(readFileSync(local));
+      const path = decodeURIComponent(url.pathname);
+      if (privatePath(path)) { res.writeHead(404).end(); return; }
+      const local = realpathSync(resolve(join(root, path)));
+      const fromRoot = relative(root, local);
+      const type = MIME[extname(local).toLowerCase()];
+      if (fromRoot === ".." || fromRoot.startsWith(`..${sep}`) || isAbsolute(fromRoot) || privatePath(fromRoot) || !type || !statSync(local).isFile()) {
+        res.writeHead(404).end();
+        return;
+      }
+      res.writeHead(200, { "Content-Type": type, "X-Content-Type-Options": "nosniff", "Cache-Control": "no-store" });
+      res.end(req.method === "HEAD" ? undefined : readFileSync(local));
     } catch {
       res.writeHead(404).end();
     }
@@ -130,7 +151,7 @@ function findChrome() {
 const chromePath = findChrome();
 const profile = mkdtempSync(join(tmpdir(), "oil-shoot-"));
 const chrome = spawn(chromePath, [
-  "--headless=new", "--remote-debugging-port=0", `--user-data-dir=${profile}`, "--no-first-run",
+  "--headless=new", "--enable-unsafe-swiftshader", "--remote-debugging-port=0", `--user-data-dir=${profile}`, "--no-first-run",
   "--no-default-browser-check", "--hide-scrollbars", "--mute-audio", "--disable-extensions", "about:blank",
 ], { stdio: ["ignore", "ignore", "pipe"] });
 
@@ -194,6 +215,20 @@ const cdp = (method, params) => send(method, params, sessionId);
 await cdp("Page.enable");
 await cdp("Runtime.enable");
 await cdp("Log.enable");
+// 记下创建失败或丢失的 WebGL 上下文：截图照样成功，画布却是空的。
+// 先试 webgl2、失败后退回 webgl 的页面不算失败，只看最后有没有拿到。
+await cdp("Page.addScriptToEvaluateOnNewDocument", { source: `(() => {
+  const gl = window.__oilWebgl = { failed: [], ok: [], lost: 0 };
+  const get = HTMLCanvasElement.prototype.getContext;
+  HTMLCanvasElement.prototype.getContext = function (type, ...rest) {
+    const ctx = get.call(this, type, ...rest);
+    if (/^(webgl2?|experimental-webgl)$/.test(type)) {
+      if (!ctx) gl.failed.push(this);
+      else if (!gl.ok.includes(this)) { gl.ok.push(this); this.addEventListener("webglcontextlost", () => gl.lost++); }
+    }
+    return ctx;
+  };
+})()` });
 
 let problems = [];
 listeners.push((m) => {
@@ -233,6 +268,12 @@ async function check() {
     const doc = document.documentElement;
     if (doc.scrollWidth > innerWidth + 1) out.push("横向溢出：页面宽 " + doc.scrollWidth + "px，视口 " + innerWidth + "px");
     for (const img of document.images) if (img.complete && img.naturalWidth === 0) out.push("图片没加载出来：" + (img.getAttribute("src") || "").slice(0, 120));
+    const gl = window.__oilWebgl;
+    if (gl) {
+      const blank = new Set(gl.failed.filter((c) => !gl.ok.includes(c))).size;
+      if (blank) out.push("WebGL：" + blank + " 个画布没能创建绘图上下文，截图里是空的");
+      if (gl.lost) out.push("WebGL：绘图上下文丢失 " + gl.lost + " 次");
+    }
     return out;
   })()`);
   return [...problems, ...found];
@@ -254,6 +295,47 @@ const MASK_CSS = `*,*::before,*::after{text-shadow:none!important;-webkit-text-f
 ::placeholder{color:transparent!important}svg text,svg tspan{fill:transparent!important;stroke:transparent!important}`;
 const mask = () => evaluate(`(() => { const s = document.createElement("style"); s.id = "oil-mask"; s.textContent = ${JSON.stringify(MASK_CSS)}; document.head.append(s); return true; })()`);
 
+// 标注版：框和编号画在页面最上层，按文档坐标定位，整页截图时也对得上。
+const marks = (opt.mark ? opt.mark.split(";").map((s) => s.trim()).filter(Boolean) : []).map((s, i) => {
+  const m = s.match(/^(\d+)\s*=\s*(.+)$/);
+  return m ? { label: m[1], selector: m[2].trim() } : { label: String(i + 1), selector: s };
+});
+async function mark() {
+  const result = await evaluate(`((selectors) => {
+    const layer = document.createElement("div");
+    layer.id = "oil-mark";
+    layer.style.cssText = "position:absolute;left:0;top:0;width:0;height:0;z-index:2147483647;pointer-events:none";
+    const color = "#e8175d";
+    const missing = [];
+    selectors.forEach(({ label, selector }) => {
+      let found;
+      try { found = [...document.querySelectorAll(selector)]; } catch { missing.push(selector + "（选择器写错了）"); return; }
+      const boxes = found.map((el) => el.getBoundingClientRect()).filter((r) => r.width > 0 && r.height > 0);
+      if (!boxes.length) { missing.push(selector + (found.length ? "（元素不可见）" : "")); return; }
+      boxes.forEach((r, j) => {
+        const box = document.createElement("div");
+        box.style.cssText = "position:absolute;box-sizing:border-box;border:2px solid " + color + ";border-radius:3px;" +
+          "left:" + (r.left + scrollX - 4) + "px;top:" + (r.top + scrollY - 4) + "px;width:" + (r.width + 8) + "px;height:" + (r.height + 8) + "px";
+        if (j === 0) {
+          // 小元素的编号放到框外，免得盖住元素；左边放不下就放右边。
+          const small = r.width < 48 || r.height < 28;
+          const pos = !small ? "left:-12px;top:-12px" : r.left + scrollX - 34 >= 0 ? "left:-30px;top:" + (r.height / 2 - 7) + "px" : "right:-30px;top:" + (r.height / 2 - 7) + "px";
+          const tag = document.createElement("span");
+          tag.textContent = label;
+          tag.style.cssText = "position:absolute;" + pos + ";min-width:22px;height:22px;padding:0 6px;box-sizing:border-box;border-radius:11px;" +
+            "background:" + color + ";color:#fff;font:600 13px/22px -apple-system,'PingFang SC',sans-serif;text-align:center;box-shadow:0 0 0 2px #fff";
+          box.append(tag);
+        }
+        layer.append(box);
+      });
+    });
+    document.body.append(layer);
+    return missing;
+  })(${JSON.stringify(marks)})`);
+  if (result.length) throw new Error(`--mark 找不到元素：${result.join("；")}`);
+}
+const unmark = () => evaluate(`(document.getElementById("oil-mark")?.remove(), true)`);
+
 // ---------- 动作 ----------
 function tokenize(text) {
   return [...text.matchAll(/"([^"]*)"|'([^']*)'|(\S+)/g)].map((m) => m[1] ?? m[2] ?? m[3]);
@@ -268,6 +350,8 @@ const mouse = (type, x, y, extra = {}) => cdp("Input.dispatchMouseEvent", { type
 async function runSteps(text) {
   for (const raw of (text || "").split(";").map((s) => s.trim()).filter(Boolean)) {
     const [verb, ...rest] = tokenize(raw);
+    const arity = { click: 1, hover: 1, drag: 3 }[verb];
+    if (arity && rest.length !== arity) throw new Error(`动作参数不对：${raw}。选择器里有空格时要加引号，例如 ${verb} ".nav .item"${verb === "drag" ? " 0 -80" : ""}`);
     if (verb === "wait") await sleep(Number(rest[0]) || 0);
     else if (verb === "click") { const p = await center(rest[0]); await mouse("mouseMoved", p.x, p.y); await mouse("mousePressed", p.x, p.y, { clickCount: 1 }); await mouse("mouseReleased", p.x, p.y, { clickCount: 1 }); await sleep(120); }
     else if (verb === "hover") { const p = await center(rest[0]); await mouse("mouseMoved", p.x, p.y); await sleep(200); }
@@ -318,10 +402,16 @@ async function record(url, w, h) {
     cdp("Page.screencastFrameAck", { sessionId: m.params.sessionId }).catch(() => {});
   };
   await setViewport(w, h, zoom);
-  await open(url);
+  const entry = flags.has("entry");
+  if (!entry) await open(url);
   listeners.push(onFrame);
   await cdp("Page.startScreencast", { format: "jpeg", quality: 88, everyNthFrame: 1 });
-  await sleep(500);
+  if (entry) {
+    await open(url);
+    // 丢掉页面第一次有内容之前的空白帧，开始帧就是出场的起点
+    const painted = await evaluate(`(() => { const p = performance.getEntriesByName("first-contentful-paint")[0] || performance.getEntriesByType("paint")[0]; return p ? (performance.timeOrigin + p.startTime) / 1000 : 0; })()`);
+    if (painted) { const firstPainted = frames.findIndex((f) => f.t >= painted - 0.02); if (firstPainted > 0) frames.splice(0, firstPainted); }
+  } else await sleep(500);
   await runSteps(opt.steps);
   await sleep(Number(opt.hold));
   const finished = Date.now() / 1000;
@@ -437,6 +527,7 @@ async function probeMotion(url, w, h) {
   await evaluate(`(scrollTo(0, 0), __oilMotion.setPhase("hero"), true)`);
   await sleep(150);
   const height = await evaluate(`document.documentElement.scrollHeight - innerHeight`);
+  const scrollable = height > 4;
   const heroEnd = Math.min(height, Math.round(h * 1.5));
   for (let y = 0; y <= heroEnd; y += Math.round(h / 10)) { await evaluate(`scrollTo(0, ${y}), true`); await sleep(70); }
   await sleep(400);
@@ -458,14 +549,15 @@ async function probeMotion(url, w, h) {
       continue;
     }
     if (k === "scroll") {
-      if (!p.elements) issues.push("滚动：没有检测到随滚动出现的变化；落地页、品牌页、发布页和展览页需要一段滚动叙事");
+      p.scrollable = scrollable;
+      if (!p.elements && scrollable) issues.push("滚动：没有检测到随滚动出现的变化；落地页、品牌页、发布页和展览页需要一段滚动叙事");
       continue;
     }
     if (!p.elements) issues.push(`${names[k]}：没有检测到动画`);
     else if (p.loops === p.elements) issues.push(`${names[k]}：只有持续循环的动画，没有一次性的${k === "load" ? "出场" : "反馈"}`);
     else if (weak(p)) issues.push(`${names[k]}：动画幅度太小，看不出来（最大位移 ${p.maxMove}px，尺寸变化 ${(p.maxSize * 100).toFixed(1)}%，透明度变化 ${p.maxOpacity}）`);
   }
-  const brief = (k, p) => k === "hero" ? `首屏滚动 ${p.layers} 层在变，最大缩放 ${(p.maxSize * 100).toFixed(1)}%，最大位移 ${p.maxMove}px`
+  const brief = (k, p) => k === "scroll" && !p.scrollable ? "页面不滚动，跳过滚动检查" : k === "hero" ? `首屏滚动 ${p.layers} 层在变，最大缩放 ${(p.maxSize * 100).toFixed(1)}%，最大位移 ${p.maxMove}px`
     : `${names[k]} ${p.elements} 个元素在动，最大位移 ${p.maxMove}px，透明度变化 ${p.maxOpacity}`;
   return { phases, issues: [...problems, ...issues], message: "动效探测：" + Object.entries(phases).map(([k, p]) => brief(k, p)).join("；") };
 }
@@ -503,12 +595,17 @@ try {
         const issues = await check();
         report.push({ file: basename(file), state: s, size: `${w}x${h}`, zoom, issues });
         shots.push({ path: file, label: s || "page" });
+        lines.push(`${basename(file)}${issues.length ? "  ⚠ " + issues.join("；") : ""}`);
+        if (marks.length) {
+          await mark();
+          lines.push(basename(await screenshot(join(out, `${name}-marked.png`), flags.has("full"))));
+          await unmark();
+        }
         if (flags.has("mask")) {
           await mask();
           await sleep(60);
           masked.push({ path: await screenshot(join(out, `${name}-masked.png`), flags.has("full")), label: s || "page" });
         }
-        lines.push(`${basename(file)}${issues.length ? "  ⚠ " + issues.join("；") : ""}`);
       }
       if (flags.has("sheet") && shots.length > 1) {
         const suffix = sizes.length > 1 ? `-${w}x${h}` : "";

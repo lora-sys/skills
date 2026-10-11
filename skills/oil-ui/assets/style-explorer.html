@@ -296,8 +296,8 @@ function t(key, values={}) {
  }
  function fit(s){
   if(!s.isConnected)return;
-  const size=SIZES[st.viewport],m=s.querySelector('iframe,img'),box=s.parentElement;let r;
-  if(box.classList.contains('slide')){const cs=getComputedStyle(box),w=box.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight),h=narrow()?Infinity:box.clientHeight-parseFloat(cs.paddingTop)-parseFloat(cs.paddingBottom);r=box.dataset.zoom==='actual'?1:Math.min(w/size.w,h/size.h,1);}
+  const native=byId[s.dataset.id].nativeViewport,size=native?{w:native.width,h:native.height}:SIZES[st.viewport],m=s.querySelector('iframe,img'),box=s.parentElement;let r;
+  if(box.classList.contains('slide')){const cs=getComputedStyle(box),w=box.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight),h=narrow()?(native?innerHeight-$('#bar').offsetHeight-parseFloat(cs.paddingTop)-parseFloat(cs.paddingBottom):Infinity):box.clientHeight-parseFloat(cs.paddingTop)-parseFloat(cs.paddingBottom);r=box.dataset.zoom==='actual'?1:Math.min(w/size.w,h/size.h,1);}
   else r=Math.min(box.clientWidth/size.w,1);
   if(!(r>0))return;
   s.style.width=`${size.w*r}px`;s.style.height=`${size.h*r}px`;m.style.width=`${size.w}px`;m.style.height=`${size.h}px`;m.style.transform=`scale(${r})`;
@@ -322,7 +322,7 @@ function t(key, values={}) {
   const list=shown(),g=$('#grid'),key=list.map(c=>c.id).join();
   if(key!==gridKey){gridKey=key;g.replaceChildren(...list.map(card));}
   g.style.setProperty('--cols',Math.min(Math.max(list.length,1),st.viewport==='mobile'?4:3));
-  $$('.card .frame').forEach(f=>f.dataset.viewport=st.viewport);
+  $$('.card .frame').forEach(f=>f.dataset.viewport=byId[f.parentElement.dataset.id].nativeViewport?'native':st.viewport);
  }
 
  // 单张查看：所有方向预先排成一条横向轨道，切换时整条轨道滑动，不重新加载画面
@@ -416,6 +416,8 @@ function t(key, values={}) {
 
  $$('button[data-layout]').forEach(b=>b.addEventListener('click',()=>setLayout(b.dataset.layout)));
  $$('button[data-viewport]').forEach(b=>b.addEventListener('click',()=>{if(st.viewport===b.dataset.viewport)return;st.viewport=b.dataset.viewport;save();morph(render,'reshape');}));
+ // 每个候选都声明了固定画布时，桌面和手机的切换不起作用，收起来。
+ if(C.every(c=>c.nativeViewport))$('[data-i18n-aria-label="viewportLabel"]').style.display='none';
  $('#prev').addEventListener('click',()=>step(-1));$('#next').addEventListener('click',()=>step(1));
  document.addEventListener('keydown',e=>{
   if(e.target.closest?.('textarea,input,summary')||e.metaKey||e.ctrlKey||e.altKey||st.layout!=='loupe')return;

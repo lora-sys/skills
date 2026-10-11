@@ -86,10 +86,14 @@ npx skills add oil-oil/oil-ui
 
 Oil UI Pro 69 元，一次买断，永久更新，在 [ui.oiloil.org/pro](https://ui.oiloil.org/pro/) 购买。
 
+## 版本检查
+
+每次使用时，Skill 会检查一次有没有新版本，最多每 10 分钟联网一次。它只读取 ui.oiloil.org 公开的版本列表，不上传项目内容；默认只提示，不下载、不替换任何文件，只有你明确要求更新时才更新。检查结果缓存在 `~/.local/state/oil/`（设置了 `XDG_STATE_HOME` 时用它，Windows 在 `%LOCALAPPDATA%\oil\`）。需要 Python 3；不想检查时设置环境变量 `OIL_NO_UPDATE_CHECK=1`。
+
 ## 搭配使用
 
-- [draw-ui](https://github.com/oil-oil/draw-ui)：先用生图工具出设计图，挑中了再照图实现。写代码做出来的设计怎么改都不满意，而你的 Agent 又能生成图片时，可以换它试试。
 - [oil-motion](https://github.com/oil-oil/oil-motion)：用生成的视频或序列帧做随滚动、拖动变化的网页动画，比如产品拆解、镜头穿越。想要很强的首屏动画时用它。
+- [oil-tone](https://github.com/oil-oil/oil-tone)：把页面上的标题、说明和介绍改得自然、清楚、好读，中文和英文都能用。觉得文案像 AI 写的、读着不顺时用它。
 
 ## 许可
 

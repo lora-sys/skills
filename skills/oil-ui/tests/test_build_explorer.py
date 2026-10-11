@@ -39,6 +39,52 @@ class ExplorerBuildTests(unittest.TestCase):
     def payload(self, page):
         return json.loads(page.split("const DATA = ", 1)[1].split(";\n", 1)[0])
 
+    def run_browser_probe(self, result_id="i18n-result", profile="chrome-probe"):
+        chrome = (shutil.which("google-chrome") or shutil.which("chromium") or
+                  "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome")
+        runner = r"""
+import {spawn} from 'node:child_process';
+const chrome=spawn(process.argv[1],['--headless=new','--remote-debugging-pipe',
+ '--no-first-run','--no-default-browser-check','--disable-extensions',
+ '--force-prefers-reduced-motion',`--user-data-dir=${process.argv[2]}`,'about:blank'],
+ {stdio:['ignore','ignore','ignore','pipe','pipe']});
+let seq=0,buffer='';const pending=new Map();
+chrome.on('error',error=>{console.error(error);process.exitCode=1;});
+chrome.stdio[4].on('data',data=>{
+ buffer+=data.toString();let end;
+ while((end=buffer.indexOf('\0'))>=0){
+  const message=JSON.parse(buffer.slice(0,end));buffer=buffer.slice(end+1);
+  if(pending.has(message.id)){const {resolve,reject}=pending.get(message.id);pending.delete(message.id);
+   message.error?reject(Error(message.error.message)):resolve(message.result);}
+ }
+});
+const send=(method,params={},sessionId)=>new Promise((resolve,reject)=>{
+ const id=++seq;pending.set(id,{resolve,reject});
+ chrome.stdio[3].write(JSON.stringify({id,method,params,...(sessionId?{sessionId}:{})})+'\0');
+});
+const deadline=setTimeout(()=>{console.error('Browser probe timed out');chrome.kill('SIGKILL');process.exitCode=1;},15000);
+try{
+ const {targetId}=await send('Target.createTarget',{url:'about:blank'});
+ const {sessionId}=await send('Target.attachToTarget',{targetId,flatten:true});
+ await send('Page.enable',{},sessionId);
+ await send('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]},sessionId);
+ await send('Page.navigate',{url:process.argv[3]},sessionId);
+ let result;
+ for(let i=0;i<100;i++){
+  const response=await send('Runtime.evaluate',{expression:"document.querySelector('#i18n-result')?.textContent",returnByValue:true},sessionId);
+  result=response.result.value;if(result)break;
+  await new Promise(resolve=>setTimeout(resolve,50));
+ }
+ if(!result)throw Error('The page did not complete its interface/copy probe');
+ console.log(result);
+}catch(error){console.error(error);process.exitCode=1;}
+finally{clearTimeout(deadline);chrome.kill();}
+"""
+        runner = runner.replace("#i18n-result", "#" + result_id)
+        return subprocess.run([shutil.which("node"), "--input-type=module", "-e", runner, chrome,
+                               str(self.folder / profile), self.output.as_uri()],
+                              capture_output=True, text=True, timeout=25)
+
     def test_lang_is_optional_and_preserved_when_explicit(self):
         builder.build(self.manifest, self.output)
         self.assertNotIn("lang", self.payload(self.output.read_text(encoding="utf-8")))
@@ -59,6 +105,169 @@ class ExplorerBuildTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "manifest.lang"):
                     builder.build(self.manifest, self.output, force=True)
                 self.assertEqual(original, self.output.read_bytes())
+
+    def test_native_viewport_formats_are_normalized_and_equivalent(self):
+        fingerprints = set()
+        for value in ("1920x1080", "1920×1080", " 1920 X 1080 ",
+                      {"width": 1920, "height": 1080}, {"width": 1920.0, "height": 1080.0}):
+            for top_level in (True, False):
+                with self.subTest(value=value, top_level=top_level):
+                    self.data.pop("nativeViewport", None)
+                    self.data["candidates"][0].pop("nativeViewport", None)
+                    target = self.data if top_level else self.data["candidates"][0]
+                    target["nativeViewport"] = value
+                    self.save()
+                    fingerprints.add(builder.build(self.manifest, self.output, force=True)["fingerprint"])
+                    payload = self.payload(self.output.read_text(encoding="utf-8"))
+                    self.assertEqual(payload["candidates"][0]["nativeViewport"], {"width": 1920, "height": 1080})
+        self.assertEqual(len(fingerprints), 1)
+
+    def test_native_viewport_inheritance_override_and_identity(self):
+        default = builder.build(self.manifest, self.output)
+        self.assertNotIn("nativeViewport", self.payload(self.output.read_text())["candidates"][0])
+        self.data["nativeViewport"] = "1920x720"
+        self.data["candidates"].extend([
+            dict(self.data["candidates"][0], id="b", nativeViewport={"width": 1366, "height": 1024}),
+            dict(self.data["candidates"][0], id="c", nativeViewport="198×242"),
+        ])
+        self.save()
+        result = builder.build(self.manifest, self.output, force=True)
+        candidates = self.payload(self.output.read_text())["candidates"]
+        self.assertEqual([c["nativeViewport"] for c in candidates], [
+            {"width": 1920, "height": 720}, {"width": 1366, "height": 1024}, {"width": 198, "height": 242}])
+        self.assertNotEqual(result["fingerprint"], default["fingerprint"])
+        self.data["candidates"][0]["nativeViewport"] = "1920x1080"
+        self.save()
+        self.assertNotEqual(builder.build(self.manifest, self.output, force=True)["fingerprint"], result["fingerprint"])
+
+    def test_invalid_native_viewports_report_received_values_and_preserve_output(self):
+        builder.build(self.manifest, self.output)
+        original = self.output.read_bytes()
+        invalid = (None, True, 1920, [], {}, "", "1920", "1920:1080", "-1x1080", "0×1080",
+                   "1920.5x1080", {"width": 1920}, {"width": "1920", "height": 1080},
+                   {"width": True, "height": 1080}, {"width": 1920, "height": 0},
+                   {"width": 1920, "height": 1.5})
+        for value in invalid:
+            for top_level in (True, False):
+                with self.subTest(value=value, top_level=top_level):
+                    self.data.pop("nativeViewport", None)
+                    self.data["candidates"][0].pop("nativeViewport", None)
+                    target = self.data if top_level else self.data["candidates"][0]
+                    target["nativeViewport"] = value
+                    self.save()
+                    with self.assertRaises(builder.ManifestError) as caught:
+                        builder.build(self.manifest, self.output, force=True)
+                    message = str(caught.exception)
+                    for expected in ("候选 a", "nativeViewport", json.dumps(value, ensure_ascii=False),
+                                     '"1920x1080"', '"1920×1080"', '{"width":1920,"height":1080}'):
+                        self.assertIn(expected, message)
+                    self.assertEqual(self.output.read_bytes(), original)
+
+    def test_native_viewport_errors_are_collected_with_other_manifest_problems(self):
+        self.data["nativeViewport"] = "bad-default"
+        self.data["candidates"].append(dict(self.data["candidates"][0], id="b", nativeViewport="bad-b", palette=["red"]))
+        self.data["candidates"].append(dict(self.data["candidates"][0], id="c", nativeViewport={"height": 242}))
+        self.save()
+        with self.assertRaises(builder.ManifestError) as caught:
+            builder.build(self.manifest, self.output)
+        self.assertEqual(len(caught.exception.problems), 4)
+        for expected in ("manifest（用于候选 a）", "bad-default", "候选 b：nativeViewport", "bad-b",
+                         "候选 b：palette", "候选 c：nativeViewport", '{"height": 242}'):
+            self.assertIn(expected, str(caught.exception))
+
+    @unittest.skipUnless(shutil.which("node"), "Node.js is needed to execute preview fitting")
+    def test_default_viewports_and_narrow_native_canvas_fitting(self):
+        template = builder.TEMPLATE.read_text(encoding="utf-8")
+        fit = template.split(" function fit(s){", 1)[1].split("\n const fitAll=", 1)[0]
+        program = r"""
+const SIZES={desktop:{w:1280,h:900},mobile:{w:390,h:844}},st={viewport:'desktop'};
+const byId={a:{}},innerHeight=844,$=()=>({offsetHeight:100});
+const narrow=()=>true,getComputedStyle=()=>({paddingLeft:'12',paddingRight:'12',paddingTop:'16',paddingBottom:'16'});
+const m={style:{}},box={clientWidth:390,clientHeight:0,dataset:{zoom:'fit'},classList:{contains:()=>false}};
+const s={isConnected:true,dataset:{id:'a'},parentElement:box,querySelector:()=>m,style:{}};
+""" + "function fit(s){" + fit + r"""
+const result=[];
+fit(s);result.push({...m.style,stage:{...s.style}});
+st.viewport='mobile';fit(s);result.push({...m.style,stage:{...s.style}});
+byId.a.nativeViewport={width:198,height:242};fit(s);result.push({...m.style,stage:{...s.style}});
+byId.a.nativeViewport={width:1366,height:1024};box.classList.contains=()=>true;
+fit(s);result.push({...m.style,stage:{...s.style}});
+byId.a.nativeViewport={width:198,height:2000};fit(s);result.push({...m.style,stage:{...s.style}});
+box.dataset.zoom='actual';fit(s);result.push({...m.style,stage:{...s.style}});
+console.log(JSON.stringify(result));
+"""
+        run = subprocess.run([shutil.which("node"), "-e", program], capture_output=True, text=True, timeout=10)
+        self.assertEqual(run.returncode, 0, run.stderr)
+        results = json.loads(run.stdout)
+        for result, (width, height, scale) in zip(results, [
+                (1280, 900, 390 / 1280), (390, 844, 1), (198, 242, 1),
+                (1366, 1024, 366 / 1366), (198, 2000, 712 / 2000), (198, 2000, 1)]):
+            self.assertEqual(result["width"], f"{width}px")
+            self.assertEqual(result["height"], f"{height}px")
+            self.assertAlmostEqual(float(result["transform"][6:-1]), scale)
+            self.assertAlmostEqual(float(result["stage"]["width"][:-2]), width * scale)
+            self.assertAlmostEqual(float(result["stage"]["height"][:-2]), height * scale)
+
+    @unittest.skipUnless(shutil.which("node") and (shutil.which("google-chrome") or shutil.which("chromium") or
+                         Path("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome").is_file()),
+                         "Chrome/Chromium is needed for rendered viewport checks")
+    def test_rendered_native_viewports_fit_cards_loupe_and_actual_size(self):
+        self.data["nativeViewport"] = "1920x1080"
+        self.data["candidates"].extend([
+            dict(self.data["candidates"][0], id="b", nativeViewport="1920×720"),
+            dict(self.data["candidates"][0], id="c", nativeViewport={"width": 198, "height": 242}),
+        ])
+        self.save()
+        builder.build(self.manifest, self.output)
+        probe = r"""<script>
+(async()=>{
+ const tick=()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+ const measure=s=>{
+  const m=s.querySelector('iframe'),r=m.getBoundingClientRect(),b=s.getBoundingClientRect();
+  const box=s.parentElement,cs=getComputedStyle(box);
+  return {id:s.dataset.id,width:parseFloat(m.style.width),height:parseFloat(m.style.height),
+   scale:new DOMMatrix(getComputedStyle(m).transform).a,stage:[b.width,b.height],media:[r.width,r.height],
+   available:[box.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight),
+              box.clientHeight-parseFloat(cs.paddingTop)-parseFloat(cs.paddingBottom)]};
+ };
+ await tick();const cards=[...document.querySelectorAll('.card .stage')].map(measure);
+ document.querySelector('[data-viewport=mobile]').click();await tick();
+ const mobile=[...document.querySelectorAll('.card .stage')].map(measure);
+ const loupe=[],actual=[];
+ for(const card of document.querySelectorAll('.card')){
+  card.querySelector('.hit').click();await tick();
+  loupe.push(measure(document.querySelector('.slide.is-current .stage')));
+  document.querySelector('#zoom').click();await tick();
+  actual.push(measure(document.querySelector('.slide.is-current .stage')));
+  document.querySelector('[data-layout=compare]').click();await tick();
+ }
+ const out=document.createElement('pre');out.id='viewport-result';
+ out.textContent=JSON.stringify({cards,mobile,loupe,actual});document.body.append(out);
+})();
+</script>"""
+        self.output.write_text(self.output.read_text().replace("</body></html>", probe + "</body></html>"))
+        run = self.run_browser_probe("viewport-result", "chrome-native")
+        self.assertEqual(run.returncode, 0, run.stderr)
+        result = json.loads(run.stdout)
+        sizes = {"a": (1920, 1080), "b": (1920, 720), "c": (198, 242)}
+        for mode, samples in result.items():
+            self.assertEqual(len(samples), 3, mode)
+            for sample in samples:
+                with self.subTest(mode=mode, id=sample["id"]):
+                    width, height = sizes[sample["id"]]
+                    self.assertEqual((sample["width"], sample["height"]), (width, height))
+                    scale = sample["scale"]
+                    self.assertGreater(scale, 0)
+                    self.assertLessEqual(scale, 1)
+                    if mode == "actual":
+                        self.assertEqual(scale, 1)
+                    else:
+                        self.assertLessEqual(sample["stage"][0], sample["available"][0] + .1)
+                        if mode == "loupe":
+                            self.assertLessEqual(sample["stage"][1], sample["available"][1] + .1)
+                    for dimension, native in enumerate((width, height)):
+                        self.assertAlmostEqual(sample["stage"][dimension], native * scale, delta=.1)
+                        self.assertAlmostEqual(sample["media"][dimension], native * scale, delta=.1)
 
     def test_interface_strings_are_complete_and_centralized(self):
         template = builder.TEMPLATE.read_text(encoding="utf-8")
@@ -157,47 +366,7 @@ class ExplorerBuildTests(unittest.TestCase):
                 self.output.write_text(page, encoding="utf-8")
                 # Use the debugging pipe rather than virtual time: previews can
                 # keep animation frames alive, so --dump-dom may never finish.
-                runner = r"""
-import {spawn} from 'node:child_process';
-const chrome=spawn(process.argv[1],['--headless=new','--remote-debugging-pipe',
- '--no-first-run','--no-default-browser-check','--disable-extensions',
- '--force-prefers-reduced-motion',`--user-data-dir=${process.argv[2]}`,'about:blank'],
- {stdio:['ignore','ignore','ignore','pipe','pipe']});
-let seq=0,buffer='';const pending=new Map();
-chrome.on('error',error=>{console.error(error);process.exitCode=1;});
-chrome.stdio[4].on('data',data=>{
- buffer+=data.toString();let end;
- while((end=buffer.indexOf('\0'))>=0){
-  const message=JSON.parse(buffer.slice(0,end));buffer=buffer.slice(end+1);
-  if(pending.has(message.id)){const {resolve,reject}=pending.get(message.id);pending.delete(message.id);
-   message.error?reject(Error(message.error.message)):resolve(message.result);}
- }
-});
-const send=(method,params={},sessionId)=>new Promise((resolve,reject)=>{
- const id=++seq;pending.set(id,{resolve,reject});
- chrome.stdio[3].write(JSON.stringify({id,method,params,...(sessionId?{sessionId}:{})})+'\0');
-});
-const deadline=setTimeout(()=>{console.error('Browser probe timed out');chrome.kill('SIGKILL');process.exitCode=1;},15000);
-try{
- const {targetId}=await send('Target.createTarget',{url:'about:blank'});
- const {sessionId}=await send('Target.attachToTarget',{targetId,flatten:true});
- await send('Page.enable',{},sessionId);
- await send('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]},sessionId);
- await send('Page.navigate',{url:process.argv[3]},sessionId);
- let result;
- for(let i=0;i<100;i++){
-  const response=await send('Runtime.evaluate',{expression:"document.querySelector('#i18n-result')?.textContent",returnByValue:true},sessionId);
-  result=response.result.value;if(result)break;
-  await new Promise(resolve=>setTimeout(resolve,50));
- }
- if(!result)throw Error('The page did not complete its interface/copy probe');
- console.log(result);
-}catch(error){console.error(error);process.exitCode=1;}
-finally{clearTimeout(deadline);chrome.kill();}
-"""
-                run = subprocess.run([shutil.which("node"), "--input-type=module", "-e", runner, chrome,
-                                      str(self.folder / ("chrome-" + lang)), self.output.as_uri()],
-                                     capture_output=True, text=True, timeout=25)
+                run = self.run_browser_probe(profile="chrome-" + lang)
                 self.assertEqual(run.returncode, 0, run.stderr)
                 observed = json.loads(run.stdout)
                 self.assertEqual(observed["lang"], table[lang]["htmlLang"])
@@ -317,7 +486,7 @@ finally{clearTimeout(deadline);chrome.kill();}
     def test_source_escape_and_overwriting_inputs_are_rejected(self):
         self.data["candidates"][0]["source"] = "../outside.html"
         self.save()
-        with self.assertRaises(ValueError):
+        with self.assertRaisesRegex(ValueError, "把文件复制进 manifest 目录"):
             builder.build(self.manifest, self.output)
         self.data["candidates"][0]["source"] = "sample.html"
         self.save()
@@ -354,9 +523,16 @@ finally{clearTimeout(deadline);chrome.kill();}
         outside = Path(self.tmp.name).parent / f"{Path(self.tmp.name).name}-outside.png"
         outside.write_bytes(b"\x89PNG\r\n\x1a\n")
         self.addCleanup(outside.unlink)
-        self.source.write_text(f'<!doctype html><html><head></head><body><img src="../{outside.name}" alt=""><img src="https://example.com/a.png" alt=""></body></html>', encoding="utf-8")
-        with self.assertRaises(ValueError):
-            builder.build(self.manifest, self.output)
+        for fragment in (f'<img src="../{outside.name}" alt="">',
+                         f'<style>body{{background:url("../{outside.name}")}}</style>',
+                         f'<link rel="stylesheet" href="../{outside.name}">',
+                         f'<script src="../{outside.name}"></script>'):
+            with self.subTest(fragment=fragment):
+                self.source.write_text(f'<!doctype html><html><head>{fragment}</head><body></body></html>', encoding="utf-8")
+                with self.assertRaises(ValueError) as caught:
+                    builder.build(self.manifest, self.output)
+                for expected in ("候选 a", outside.name, "把文件复制进 manifest 目录"):
+                    self.assertIn(expected, str(caught.exception))
 
     def test_live_candidates_accept_only_local_dev_servers(self):
         self.data["candidates"].append({"id": "live", "name": "现状", "concept": "当前版本", "typography": "系统字体", "palette": ["#fff"], "traits": ["现有页面"], "kind": "url", "url": "http://localhost:5173/orders", "baseline": True})
@@ -561,6 +737,58 @@ finally{clearTimeout(deadline);chrome.kill();}
         run = subprocess.run([sys.executable, str(copy / "scripts" / "build_explorer.py"), str(self.manifest), "--output", str(self.output)], cwd=self.folder, capture_output=True, text=True)
         self.assertEqual(run.returncode, 0, run.stderr)
         self.assertTrue(self.output.is_file())
+
+
+    def test_every_manifest_problem_is_reported_in_one_pass(self):
+        self.data["schemaVersion"] = 2
+        self.data["candidates"][0].update(id="A", palette=["red", "#fff"], source="missing.html")
+        self.data["candidates"].append({"id": "b", "concept": "c", "typography": "t", "palette": ["#123456"], "traits": [], "kind": "pdf"})
+        self.save()
+        with self.assertRaises(builder.ManifestError) as caught:
+            builder.build(self.manifest, self.output)
+        text = str(caught.exception)
+        self.assertGreaterEqual(len(caught.exception.problems), 6)
+        for expected in ("schemaVersion", '候选 id "A" 无效', "missing.html", "red", 'kind 只能是', "候选 b：name", "候选 b：traits"):
+            self.assertIn(expected, text)
+        self.assertNotIn("#fff", text)
+        self.assertFalse(self.output.exists())
+
+    def test_single_problem_reads_as_one_sentence(self):
+        self.data["candidates"][0]["palette"] = ["blue"]
+        self.save()
+        with self.assertRaises(ValueError) as caught:
+            builder.build(self.manifest, self.output)
+        self.assertNotIn("处要改", str(caught.exception))
+        self.assertIn("候选 a：palette", str(caught.exception))
+
+    def test_output_defaults_to_a_file_beside_the_manifest(self):
+        run = subprocess.run([sys.executable, str(ROOT / "scripts" / "build_explorer.py"), str(self.manifest)], capture_output=True, text=True)
+        self.assertEqual(run.returncode, 0, run.stderr)
+        expected = self.folder.resolve() / "style-explorer.html"
+        self.assertEqual(Path(json.loads(run.stdout)["output"]), expected)
+        self.assertTrue(expected.is_file())
+        again = subprocess.run([sys.executable, str(ROOT / "scripts" / "build_explorer.py"), str(self.manifest)], capture_output=True, text=True)
+        self.assertEqual(again.returncode, 1)
+        self.assertIn("--force", again.stderr)
+
+    def test_missing_and_malformed_manifests_say_what_to_do(self):
+        script = str(ROOT / "scripts" / "build_explorer.py")
+        missing = subprocess.run([sys.executable, script, str(self.folder / "nope.json")], capture_output=True, text=True)
+        self.assertEqual(missing.returncode, 1)
+        self.assertIn("找不到 manifest", missing.stderr)
+        self.assertNotIn("Errno", missing.stderr)
+        broken = self.folder / "broken.json"
+        broken.write_text('{"schemaVersion": 1,', encoding="utf-8")
+        malformed = subprocess.run([sys.executable, script, str(broken)], capture_output=True, text=True)
+        self.assertEqual(malformed.returncode, 1)
+        self.assertRegex(malformed.stderr, r"不是合法的 JSON：第 \d+ 行第 \d+ 列")
+        self.assertNotIn("Traceback", malformed.stderr)
+
+    def test_help_shows_a_complete_example(self):
+        run = subprocess.run([sys.executable, str(ROOT / "scripts" / "build_explorer.py"), "--help"], capture_output=True, text=True)
+        self.assertEqual(run.returncode, 0)
+        for expected in ("manifest.json", '"schemaVersion": 1', "--force", "style-explorer.html"):
+            self.assertIn(expected, run.stdout)
 
 
 if __name__ == "__main__":

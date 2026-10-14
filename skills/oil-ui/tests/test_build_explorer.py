@@ -374,7 +374,7 @@ console.log(JSON.stringify(result));
                 self.assertEqual(run.returncode, 0, run.stderr)
                 observed = json.loads(run.stdout)
                 self.assertEqual(observed["lang"], table[lang]["htmlLang"])
-                self.assertEqual(observed["title"], table[lang]["projectTitle"].replace("{project}", "Demo").replace("{edition}", " Pro" if builder.SKILL_ROOT.name == "oil-ui-pro" else ""))
+                self.assertEqual(observed["title"], table[lang]["projectTitle"].replace("{project}", "Demo").replace("{edition}", " Pro" if self.payload(page)["edition"] == "pro" else ""))
                 self.assertEqual(observed["initial"], {"loupe": True, "current": "b", "mobile": "true", "cards": 2, "descriptions": True})
                 self.assertEqual(set(observed["saved"]), {"layout", "viewport", "current", "chosen"})
                 self.assertEqual(observed["saved"]["chosen"], "b")

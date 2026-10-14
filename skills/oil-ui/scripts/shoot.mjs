@@ -734,26 +734,48 @@ function lintPage() {
     if (above >= 0 && below >= 12 && above + 4 < below) add("headingSpacing", h, "上 " + Math.round(above) + "px，下 " + Math.round(below) + "px");
   }
 
+  const hasCurrentSemantics = (n) => {
+    if (!n) return false;
+    const ariaCurrent = typeof n.getAttribute === "function" ? n.getAttribute("aria-current") : null;
+    if (ariaCurrent && ariaCurrent !== "false") return true;
+    const ariaSelected = typeof n.getAttribute === "function" ? n.getAttribute("aria-selected") : null;
+    if (ariaSelected === "true") return true;
+    if (typeof n.matches === "function" && n.matches("[aria-current]:not([aria-current='false']),[aria-selected='true']")) return true;
+    const cls = typeof n.className === "string" ? n.className : "";
+    return /\b(is-)?(active|current|selected)\b/i.test(cls);
+  };
+  const isNavCurrent = (node) => {
+    if (!node.closest("nav,[role='navigation'],[role='tablist']")) return false;
+    if (hasCurrentSemantics(node)) return true;
+    if (node.tagName === "LI" && typeof node.querySelector === "function") {
+      return hasCurrentSemantics(node.querySelector("a,button,[role='tab'],[role='menuitem']"));
+    }
+    return false;
+  };
+
   for (const el of all) {
     const s = css(el);
     if (s.display === "none") continue;
     const r = el.getBoundingClientRect();
     if (!r.width || !r.height) continue;
 
-    // 单侧彩色边线：边框或贴边的伪元素，中性色的结构分隔线不算
-    const sides = { left: parseFloat(s.borderLeftWidth), right: parseFloat(s.borderRightWidth), top: parseFloat(s.borderTopWidth), bottom: parseFloat(s.borderBottomWidth) };
-    for (const side of ["left", "right"]) {
-      const w = sides[side], others = Math.max(sides[side === "left" ? "right" : "left"], sides.top, sides.bottom);
-      const c = rgba(s[side === "left" ? "borderLeftColor" : "borderRightColor"]);
-      if (w >= 2 && w >= others * 2 && /solid|double/.test(s[side === "left" ? "borderLeftStyle" : "borderRightStyle"])
-        && c.a >= 0.4 && chroma(c) >= 0.15 && r.height >= 16 && r.width > sides.left + sides.right + 24 && r.height < innerHeight * 0.8) add("sideStripe", el, w + "px");
-    }
-    for (const pseudo of ["::before", "::after"]) {
-      const p = css(el, pseudo);
-      if (p.content === "none" || p.position !== "absolute") continue;
-      const pw = parseFloat(p.width), ph = parseFloat(p.height), c = rgba(p.backgroundColor);
-      if (pw >= 2 && pw <= 8 && ph >= r.height * 0.6 && r.height >= 24 && r.width > 60 && c.a >= 0.4 && chroma(c) >= 0.15
-        && (parseFloat(p.left) <= 2 || parseFloat(p.right) <= 2)) add("sideStripe", el, pseudo);
+    // 单侧彩色边线：边框或贴边的伪元素，中性色的结构分隔线、blockquote 引文、导航当前选中指示不算
+    const isQuoteOrNav = el.matches("blockquote") || isNavCurrent(el);
+    if (!isQuoteOrNav) {
+      const sides = { left: parseFloat(s.borderLeftWidth), right: parseFloat(s.borderRightWidth), top: parseFloat(s.borderTopWidth), bottom: parseFloat(s.borderBottomWidth) };
+      for (const side of ["left", "right"]) {
+        const w = sides[side], others = Math.max(sides[side === "left" ? "right" : "left"], sides.top, sides.bottom);
+        const c = rgba(s[side === "left" ? "borderLeftColor" : "borderRightColor"]);
+        if (w >= 2 && w >= others * 2 && /solid|double/.test(s[side === "left" ? "borderLeftStyle" : "borderRightStyle"])
+          && c.a >= 0.4 && chroma(c) >= 0.15 && r.height >= 16 && r.width > sides.left + sides.right + 24 && r.height < innerHeight * 0.8) add("sideStripe", el, w + "px");
+      }
+      for (const pseudo of ["::before", "::after"]) {
+        const p = css(el, pseudo);
+        if (p.content === "none" || p.position !== "absolute") continue;
+        const pw = parseFloat(p.width), ph = parseFloat(p.height), c = rgba(p.backgroundColor);
+        if (pw >= 2 && pw <= 8 && ph >= r.height * 0.6 && r.height >= 24 && r.width > 60 && c.a >= 0.4 && chroma(c) >= 0.15
+          && (parseFloat(p.left) <= 2 || parseFloat(p.right) <= 2)) add("sideStripe", el, pseudo);
+      }
     }
 
     if (/text/.test(s.backgroundClip + " " + s.getPropertyValue("-webkit-background-clip")) && /gradient/.test(s.backgroundImage) && (el.textContent || "").trim()) add("gradientText", el);
@@ -817,6 +839,40 @@ function lintPage() {
     if (labels.length >= 2) labels.forEach((el) => add("englishLabel", el));
   }
 
+  const isAncestor = (anc, node) => {
+    for (let p = node; p; p = p.parentElement) if (p === anc) return true;
+    return false;
+  };
+  const containingRect = (node, pos) => {
+    if (pos === "fixed") return { left: 0, top: 0 };
+    for (let p = node; p && p.nodeType === 1; p = p.parentElement) {
+      if (css(p).position !== "static") return p.getBoundingClientRect();
+    }
+    return document.documentElement?.getBoundingClientRect?.() || { left: 0, top: 0 };
+  };
+  const hasOverlayPlate = (el, r) => {
+    const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    for (let node = el; node && node.nodeType === 1; node = node.parentElement) {
+      for (const pseudo of ["::before", "::after"]) {
+        const ps = css(node, pseudo);
+        if (!ps || !ps.content || ps.content === "none" || !(ps.backgroundImage !== "none" || rgba(ps.backgroundColor).a > 0.05)) continue;
+        const pw = parseFloat(ps.width), ph = parseFloat(ps.height);
+        if (!(pw >= r.width * 0.5 && ph >= r.height * 0.5)) continue;
+        const base = (ps.position === "absolute" || ps.position === "fixed") ? containingRect(node, ps.position) : node.getBoundingClientRect();
+        const pl = base.left + (parseFloat(ps.left) || 0), pt = base.top + (parseFloat(ps.top) || 0);
+        if (cx >= pl && cx <= pl + pw && cy >= pt && cy <= pt + ph) return true;
+      }
+      if (rgba(css(node).backgroundColor).a >= 0.99) break;
+    }
+    return all.some((other) => {
+      if (other === el || isAncestor(other, el) || isAncestor(el, other)) return false;
+      const or = other.getBoundingClientRect();
+      if (cx < or.left || cx > or.right || cy < or.top || cy > or.bottom) return false;
+      const os = css(other);
+      return os.backgroundImage !== "none" || rgba(os.backgroundColor).a > 0.05;
+    });
+  };
+
   for (const el of texts) {
     const s = css(el), r = el.getBoundingClientRect();
     if (el.closest("button:disabled,[disabled],[aria-disabled='true'],input,textarea,select,option")) continue;
@@ -829,10 +885,11 @@ function lintPage() {
       const color = over({ ...fg, a: fg.a * alpha }, bg);
       const contrast = ratio(color, bg);
       const large = size >= 24 || (size >= 18.6 && parseInt(s.fontWeight, 10) >= 700);
-      // 低于 1.5:1 时文字几乎看不见，多半是文字后面还垫着一层查不到的元素（滑块、绝对定位的底板），不报
-      if (contrast < 1.5) continue;
-      if (contrast < (large ? 3 : 4.5)) add("contrastLow", el, contrast.toFixed(2) + ":1");
-      else if (chroma(bg) >= 0.25 && chroma(color) < 0.06 && luminance(color) > 0.08 && luminance(color) < 0.6) add("grayOnColor", el);
+      // 低于 1.5:1 且背后垫着非祖先底板或伪元素（滑块、绝对定位胶囊）时，不误报对比度；确定底色上的极低对比度照常报错
+      if (!(contrast < 1.5 && hasOverlayPlate(el, r))) {
+        if (contrast < (large ? 3 : 4.5)) add("contrastLow", el, contrast.toFixed(2) + ":1");
+        else if (chroma(bg) >= 0.25 && chroma(color) < 0.06 && luminance(color) > 0.08 && luminance(color) < 0.6) add("grayOnColor", el);
+      }
     }
     // 正文：两行以上的段落
     const text = ownText(el);

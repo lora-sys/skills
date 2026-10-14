@@ -788,24 +788,59 @@ body{margin:0}.outer{border-radius:12px;background:#eee;padding:12px;width:340px
     def test_lint_requires_body_contrast_of_4_5(self):
         self.page.write_text('''<!doctype html><html><head><link rel="icon" href="data:,"><style>
 body{margin:0;padding:40px;font:16px/1.6 sans-serif;color:#222;background:#fff}
+body::before{content:"";position:absolute;left:0;top:0;width:12px;height:12px;background:#111}
 .soft{color:#8a8a8a}
-</style></head><body><p class="soft">Body text at about 3.5 to 1 contrast still fails the 4.5 to 1 floor.</p></body></html>''', encoding="utf-8")
+.faint{color:#eee}
+.faint-tiny{color:#eee;font-size:11px;line-height:1.2;width:280px}
+.seg{position:relative;display:inline-block;padding:8px 16px}
+.seg-pill{position:absolute;inset:0;background:#111;border-radius:8px}
+.seg-label{position:relative;color:#fff}
+.pseudo-seg{position:relative;display:inline-block;padding:8px 16px;color:#fff}
+.pseudo-seg::before{content:"";position:absolute;inset:0;background:#111;border-radius:8px;z-index:-1}
+</style></head><body>
+<p class="soft">Body text at about 3.5 to 1 contrast still fails the 4.5 to 1 floor.</p>
+<p class="faint">Body text at 1.16 to 1 on a plain white background must also be reported.</p>
+<p class="faint-tiny">这是一段在白底上几乎看不见而且字号过小、行高过紧的多行中文正文，用来验证极低对比度不会跳过排版检查。</p>
+<div class="seg"><span class="seg-pill"></span><span class="seg-label">Active Tab</span></div>
+<div class="pseudo-seg">Pseudo Pill Tab</div>
+</body></html>''', encoding="utf-8")
         output = self.folder / "soft"
         self.shoot(output, "--size", "1280x800")
-        lint = json.loads((output / "report.json").read_text(encoding="utf-8"))[0]["lint"]
-        self.assertIn("contrastLow", {item["rule"] for item in lint})
+        lint = {item["rule"]: item for item in json.loads((output / "report.json").read_text(encoding="utf-8"))[0]["lint"]}
+        self.assertIn("contrastLow", lint)
+        self.assertEqual(lint["contrastLow"]["count"], 3)
+        self.assertIn("smallText", lint)
+        self.assertIn("tightLeading", lint)
 
     def test_lint_spares_css_triangles_and_neutral_dividers(self):
         self.page.write_text('''<!doctype html><html><head><link rel="icon" href="data:,"><style>
 body{margin:0;padding:40px;font:16px/1.6 sans-serif;color:#222}
 .play{width:0;height:0;border-top:12px solid transparent;border-bottom:12px solid transparent;border-left:20px solid #e11d48}
 aside{border-right:1px solid #ddd;height:200px;width:200px}
+blockquote{border-left:4px solid #e11d48;padding:8px 16px;margin:16px 0}
+nav a{display:block;position:relative;padding:8px 16px;width:120px}
+nav a[aria-current="page"]{border-left:3px solid #2563eb}
+nav a.active::before{content:"";position:absolute;left:0;top:4px;width:3px;height:32px;background:#2563eb}
 @keyframes rise{from{opacity:0}to{opacity:1}}h1{animation:rise .6s ease-out both;font-size:40px;margin:48px 0 12px}
-</style></head><body><span class="play"></span><aside>Sidebar</aside><p>Intro paragraph above the heading.</p>
+</style></head><body><span class="play"></span><aside>Sidebar</aside><blockquote>Quoted passage with semantic blockquote border.</blockquote>
+<nav><a href="#a" aria-current="page">Overview</a><a href="#b" class="active">Settings</a><a href="#c">Billing</a></nav>
+<p>Intro paragraph above the heading.</p>
 <h1>Plain heading</h1><p>Body text that follows the heading closely.</p></body></html>''', encoding="utf-8")
         output = self.folder / "clean"
         self.shoot(output, "--size", "1280x800")
         self.assertEqual(json.loads((output / "report.json").read_text(encoding="utf-8"))[0]["lint"], [])
+
+        self.page.write_text('''<!doctype html><html><head><link rel="icon" href="data:,"><style>
+body{margin:0;padding:40px;font:16px/1.6 sans-serif;color:#222}
+nav a{display:block;position:relative;padding:8px 16px;width:120px}
+nav a.plain-border{border-left:4px solid #e11d48}
+nav a.plain-pseudo::before{content:"";position:absolute;left:0;top:4px;width:4px;height:32px;background:#e11d48}
+</style></head><body><nav><a href="#a" class="plain-border">Unselected A</a><a href="#b" class="plain-pseudo">Unselected B</a></nav></body></html>''', encoding="utf-8")
+        flagged = self.folder / "nav-unselected"
+        self.shoot(flagged, "--size", "1280x800")
+        lint = {item["rule"]: item for item in json.loads((flagged / "report.json").read_text(encoding="utf-8"))[0]["lint"]}
+        self.assertIn("sideStripe", lint)
+        self.assertEqual(lint["sideStripe"]["count"], 2)
 
     def test_compare_against_reference(self):
         reference = self.folder / "reference"

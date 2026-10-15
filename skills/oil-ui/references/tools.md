@@ -32,6 +32,27 @@ node <skill>/scripts/shoot.mjs <页面地址或 HTML 文件> [选项]
 
 状态靠地址参数进入，所以页面要能用 `?state=<名字>` 直接打开每个状态。其余选项、选择器和动作的写法、输出文件和 `report.json` 的结构：运行 `node <skill>/scripts/shoot.mjs --help`。拿不准写法时先加 `--dry-run` 检查，不会启动浏览器。同时开着很多任务、截图超时的时候，加 `--timeout-scale 2`。
 
+### 检索和下载真实素材
+
+在项目工作目录运行，建议用英文关键词；`<skill>` 是 Skill 安装路径：
+
+```text
+node <skill>/scripts/curate-media.mjs search "<关键词>" --kind texture --limit 6 --sheet --dir candidates
+node <skill>/scripts/curate-media.mjs preview V1,T2 --sheet --dir candidates
+node <skill>/scripts/curate-media.mjs fetch V1,T2 --dir assets --sheet
+node <skill>/scripts/curate-media.mjs fetch T2 --maps all --resolution 1k --dir assets
+```
+
+`--kind` 支持 `all|texture|design|photo|blueprint|map|plate|science|video`。Poly Haven 提供材质与模型预览，V&A 提供设计馆藏，LOC 提供历史摄影、测绘蓝图与古地图，Wellcome 提供版画与科学手稿，NASA 提供科技照片与视频。`all` 交错取各信源，`--limit` 是总结果数。
+
+搜索返回 JSON，`T/V/L/W/N` 编号依次对应五个信源，存入当前目录 `.curate-cache.json`，跨次搜索保留。后续命令在同一目录运行，或传同一个 `--cache <路径>`。错误单独列出，正常零匹配与请求失败分开报告。
+
+`search --sheet` 和 `preview` 出 HTML 候选联系表，打开后显示预览尺寸；`fetch --sheet` 出本地联系表并检查真实宽高、完整解码。视频自动截首帧 poster；检查和 poster 需要 ffmpeg/ffprobe，缺少时保留下载并报告未完成项。视频尺寸、版本回退及超时选项见 `--help`。
+
+贴图默认下载 1k Diffuse，`--maps all` 拉取 Diffuse、Roughness、OpenGL Normal JPG，并校验大小与 MD5。模型默认下载渲染预览，搜索另给 glTF 依赖清单。贴图使用与素材许可见 [配图](media.md#真实贴图与科学工程素材)。
+
+仍兼容 `fetch "<媒体 URL>" --out assets/<文件名> --note "来源说明"`。成功下载及 poster 自动写入同目录 `SOURCES.md`，已有文件不会覆盖；URL 权利资料缺失时记为未核实。全部选项、输出和修正示例：`node <skill>/scripts/curate-media.mjs --help`。
+
 ### 看结果
 
 交给评审前先自己看一眼：默认状态是不是已经加载完，遮字版有没有把图形也一起盖掉。证据有错先重截，再交给评审。汇总里提示录屏和截图不一致时，静止的终态以截图为准，再单独重录那一段核对过渡。画面是空的 WebGL 截图不能当证据。

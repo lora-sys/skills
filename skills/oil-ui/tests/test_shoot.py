@@ -37,6 +37,17 @@ def find_browser():
     return next((path for path in candidates if path and Path(path).is_file()), None)
 
 
+def write_solid_png(path, width, height, rgb):
+    import struct
+    import zlib
+
+    def chunk(kind, data):
+        return struct.pack('>I', len(data)) + kind + data + struct.pack('>I', zlib.crc32(kind + data))
+
+    path.write_bytes(b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR', struct.pack('>IIBBBBB', width, height, 8, 2, 0, 0, 0))
+                     + chunk(b'IDAT', zlib.compress((b'\0' + bytes(rgb) * width) * height)) + chunk(b'IEND', b''))
+
+
 @unittest.skipUnless(NODE, "Node is not installed")
 class ShootCLITests(unittest.TestCase):
     @unittest.skipUnless(shutil.which('ffmpeg'), 'ffmpeg is needed to inspect encoded frames')
@@ -96,6 +107,8 @@ process.stdout.write(eval(writer+'; screencastList(frames,finished)'));'''
         self.assertIn("不进入 iframe 或 Shadow DOM", result.stdout)
         self.assertIn("中心点遮挡和禁用状态", result.stdout)
         self.assertIn("显式 --zoom 按倍数截每个状态", result.stdout)
+        for example in ['button:text-is("Save")', '.item >> nth=1', '--hold1000', '双倍时限整次重跑一次']:
+            self.assertIn(example, result.stdout)
 
     def test_help_carries_the_reference_and_report_structure_example(self):
         """参考内容放在 --help 里；references/tools.md 只讲什么时候用，并指到这里。"""
@@ -138,6 +151,8 @@ process.stdout.write(eval(writer+'; screencastList(frames,finished)'));'''
         self.assertEqual(help_result.returncode, 0, help_result.stderr)
         options = [line.split()[0] for line in help_result.stdout.splitlines()
                    if line.startswith("  --")]
+        # The short stitching/sequence sentence documents these three inline value options.
+        options += ['--label', '--columns', '--frames']
         for args in (("--xxx",), ("--xxx", "value")):
             with self.subTest(args=args):
                 result = subprocess.run([NODE, str(SCRIPT), *args], cwd=ROOT,
@@ -267,7 +282,7 @@ process.stdout.write(eval(writer+'; screencastList(frames,finished)'));'''
                 self.assertIn("page.html 和 extra", error)
                 self.assertIn(flag + " 不带参数", error)
         for args, expected in [
-            (("--hold1000",), "--hold 1000"), (("--zoon", "2"), "--zoom"),
+            (("--zoon", "2"), "--zoom"),
             (("--motion", ".respond"), '--motion 不带参数'),
             (("other.html",), "page.html 和 other.html"),
             (("--full", "extra"), "page.html 和 extra"),
@@ -283,9 +298,87 @@ process.stdout.write(eval(writer+'; screencastList(frames,finished)'));'''
             with self.subTest(args=args):
                 error = self.dry(*args, ok=False)
                 self.assertIn(expected, error)
-                if args == ("--hold1000",):
-                    self.assertEqual(error.count("--hold 1000"), 1)
-                    self.assertNotIn("例如", error)
+
+    def test_action_names_are_valid_group_names(self):
+        for name, body in [('scroll', 'scroll 950; wait 300'), ('hover', 'hover .x'),
+                           ('click', 'click .x'), ('sleep', 'wait 0')]:
+            group = self.dry('--steps', name + ': ' + body)['groups'][0]
+            self.assertEqual(group['name'], name)
+            self.assertEqual(group['id'], name)
+            self.assertEqual(group['steps'][0]['raw'], body.split(';')[0])
+
+    def test_glued_numbers_only_apply_to_numeric_options(self):
+        compact = self.dry('--hold1000', '--wait450', '--zoom1,2', '--timeout-scale2',
+                           '--steps', 'wait450; wait0.5s; sleep450')
+        spaced = self.dry('--hold', '1000', '--wait', '450', '--zoom', '1,2', '--timeout-scale', '2',
+                          '--steps', 'wait450; wait0.5s; sleep450')
+        self.assertEqual(compact, spaced)
+        self.assertEqual([step['params']['ms'] for step in compact['groups'][0]['steps']], [450, 500, 450])
+        for arg in ['--out123', '--size390x844', '--states123', '--full1000', '--steps450']:
+            self.assertIn('不认识的选项', self.dry(arg, ok=False))
+        for arg in ['--hold1000ms', '--wait450ms', '--zoom0', '--timeout-scale0.5']:
+            self.assertIn('收到', self.dry(arg, ok=False))
+
+    def test_stitch_and_sequence_options_validate_without_launching(self):
+        with tempfile.TemporaryDirectory(prefix='oil-shoot-stitch-cli-') as temp:
+            image = Path(temp) / 'before image.png'
+            image.write_bytes(b'checked by the browser only when rendering')
+            output = Path(temp) / 'not-created'
+
+            def run(*args, ok=False):
+                result = subprocess.run([NODE, str(SCRIPT), *args, '--dry-run', '--out', str(output)],
+                                        cwd=ROOT, capture_output=True, text=True, timeout=10, encoding='utf-8')
+                self.assertEqual(result.returncode, 0 if ok else 1, result.stdout + result.stderr)
+                self.assertFalse(output.exists())
+                return json.loads(result.stdout) if ok else result.stderr
+
+            plan = run('--stitch', str(image), '--label', '修改前', '--stitch=' + str(image),
+                       '--label=修改后', '--columns2', ok=True)
+            self.assertNotIn('target', plan)
+            self.assertEqual(plan['stitch'], [{'path': str(image), 'label': '修改前'}, {'path': str(image), 'label': '修改后'}])
+            self.assertEqual(plan['options']['columns'], '2')
+            for args, hint in [
+                (['--stitch'], '--stitch before.png'),
+                (['--label', '修改前'], '--stitch before.png --label "修改前"'),
+                (['--stitch', str(image), '--label', '前', '--label', '后'], '--label'),
+                (['--stitch', str(Path(temp) / 'missing.png')], '第 1 张图片'),
+                (['--stitch', temp], '不是文件'),
+                (['page.html', '--stitch', str(image)], '拼图不需要页面'),
+                (['--stitch', str(image), str(image), str(image)], '每张图片前都要写 --stitch'),
+                (['--stitch', str(image), '--record'], '拼图不需要页面'),
+                (['--stitch', str(image), '--frames', '8'], '拼图不需要页面'),
+                (['page.html', '--frames', '8'], '--record --frames 8'),
+                (['--frames', '8'], '缺少页面'),
+                (['page.html', '--record', '--frames'], '--record --frames 8'),
+                (['page.html', '--columns', '2'], '--record --frames 8 --columns 4'),
+                (['--stitch', str(image), '--columns', '0'], '--columns 2'),
+                (['--stitch', str(image), '--columns', '2.5'], '--columns 2'),
+            ]:
+                with self.subTest(args=args):
+                    message = run(*args)
+                    self.assertIn(hint, message)
+                    self.assertIn('收到', message)
+                    self.assertIn('例如', message)
+            for value in ['0', '1', '-1', '2.5', 'NaN', '121', '99999999999999999']:
+                self.assertIn('收到 ' + value, run('page.html', '--record', '--frames', value))
+            plan = run('page.html', '--record', '--frames8', '--columns4', ok=True)
+            self.assertEqual(plan['options']['frames'], '8')
+            self.assertEqual(plan['options']['columns'], '4')
+            self.assertEqual(self.dry('--evidence', '--frames', '6')['options']['frames'], '6')
+            self.assertIn('--frames 8', self.dry('--record', '--frams', ok=False))
+            self.assertIn('--stitch before.png', self.dry('--stitc', ok=False))
+
+    def test_sequence_sampling_is_uniform_and_holds_sparse_frames(self):
+        javascript = '''import {readFileSync} from 'node:fs';
+const source=readFileSync(process.argv[1],'utf8');
+const sample=eval('('+source.slice(source.indexOf('function sequenceFrames('),source.indexOf('function screencastList('))+')');
+console.log(JSON.stringify(sample([{name:'red.jpg',t:10},{name:'blue.jpg',t:10.8},{name:'green.jpg',t:11.7}],12,5)));'''
+        result = subprocess.run([NODE, '--input-type=module', '-e', javascript, str(SCRIPT)],
+                                cwd=ROOT, check=True, capture_output=True, text=True, timeout=10, encoding='utf-8')
+        samples = json.loads(result.stdout)
+        self.assertEqual([frame['timeMs'] for frame in samples], [0, 500, 1000, 1500, 2000])
+        self.assertEqual([frame['path'] for frame in samples], ['red.jpg', 'red.jpg', 'blue.jpg', 'blue.jpg', 'green.jpg'])
+        self.assertEqual([frame['sourceTimeMs'] for frame in samples], [0, 0, 800, 800, 1700])
 
 
 
@@ -382,6 +475,70 @@ document.querySelector('#go').onclick = () => show(document.body.dataset.state =
         self.assertNotEqual((output / "a.png").read_bytes(), (output / "b.png").read_bytes())
         self.assertNotEqual((output / "a.png").read_bytes(), (output / "a-masked.png").read_bytes())
         self.assertEqual(list(self.profile_root.glob("oil-shoot-*")), [], "Temporary browser profiles leaked")
+
+    def test_stitch_local_images_without_page_preserves_order_ratio_and_chinese_labels(self):
+        import struct
+        first, second, third = self.folder / "前 'one.png", self.folder / 'after.png', self.folder / 'square.png'
+        write_solid_png(first, 120, 60, (255, 0, 0))
+        write_solid_png(second, 60, 120, (0, 0, 255))
+        write_solid_png(third, 90, 90, (0, 255, 0))
+        output = self.folder / 'stitch'
+        result = subprocess.run([NODE, str(SCRIPT), '--stitch', str(first), '--label', '修改前',
+                                 '--stitch', str(second), '--label', '修改后', '--stitch', str(third),
+                                 '--columns', '2', '--out', str(output)], cwd=ROOT, env=self.env,
+                                capture_output=True, text=True, timeout=30, encoding='utf-8')
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        report = json.loads((output / 'report.json').read_text(encoding='utf-8'))[0]
+        self.assertEqual(report['file'], 'stitch.png')
+        self.assertEqual(report['columns'], 2)
+        self.assertEqual(report['issues'], [])
+        self.assertEqual([item['label'] for item in report['items']], ['修改前', '修改后', ''])
+        self.assertEqual([(item['width'], item['height']) for item in report['items']], [(120, 60), (60, 120), (90, 90)])
+        self.assertEqual(struct.unpack('>II', (output / 'stitch.png').read_bytes()[16:24]), (report['width'], report['height']))
+        self.assertEqual({p.name for p in output.iterdir()}, {'stitch.png', 'report.json'})
+        if shutil.which('ffmpeg'):
+            for item, color in zip(report['items'], [(255, 0, 0), (0, 0, 255), (0, 255, 0)]):
+                self.assertEqual(self.frame_pixel(output / 'stitch.png', item['x'] + item['width'] // 2,
+                                                 item['y'] + item['height'] // 2), color)
+            captions = []
+            for item in report['items'][:2]:
+                left = 24 + (0 if item is report['items'][0] else 176)
+                crop = subprocess.run(['ffmpeg', '-v', 'error', '-i', str(output / 'stitch.png'),
+                                       '-vf', f"crop=160:24:{left}:{item['labelY']}", '-frames:v', '1',
+                                       '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-'], check=True, capture_output=True, timeout=10).stdout
+                captions.append(crop)
+            self.assertNotEqual(captions[0], captions[1], 'Different Chinese glyphs must not render as identical missing-font boxes')
+        self.assert_no_browser_leftovers()
+
+    def test_stitch_wraps_labels_and_reports_decode_errors(self):
+        image = self.folder / 'sample.svg'
+        image.write_text('<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="500"><rect width="1000" height="500" fill="red"/></svg>', encoding='utf-8')
+        output = self.folder / 'wrapped'
+        result = subprocess.run([NODE, str(SCRIPT), '--stitch', str(image), '--label', '中文标注' * 30,
+                                 '--columns', '5', '--out', str(output)], cwd=ROOT, env=self.env,
+                                capture_output=True, text=True, timeout=30, encoding='utf-8')
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        report = json.loads((output / 'report.json').read_text(encoding='utf-8'))[0]
+        self.assertEqual(report['columns'], 1)
+        self.assertEqual((report['items'][0]['width'], report['items'][0]['height']), (640, 320))
+        self.assertGreater(report['items'][0]['labelHeight'], 32)
+        self.assertGreaterEqual(report['height'], report['items'][0]['y'] + 320 + report['items'][0]['labelHeight'])
+        image.write_text('<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="1"><rect width="1500" height="1" fill="red"/></svg>', encoding='utf-8')
+        thin = self.folder / 'thin'
+        result = subprocess.run([NODE, str(SCRIPT), '--stitch', str(image), '--out', str(thin)],
+                                cwd=ROOT, env=self.env, capture_output=True, text=True, timeout=30, encoding='utf-8')
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        tile = json.loads((thin / 'report.json').read_text(encoding='utf-8'))[0]['items'][0]
+        self.assertEqual((tile['width'], tile['height']), (640, 1))
+        corrupt = self.folder / 'corrupt.png'
+        corrupt.write_bytes(b'not an image')
+        result = subprocess.run([NODE, str(SCRIPT), '--stitch', str(image), '--stitch', str(corrupt),
+                                 '--out', str(self.folder / 'corrupt')], cwd=ROOT, env=self.env,
+                                capture_output=True, text=True, timeout=30, encoding='utf-8')
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertIn('第 2 张图片无法解码，收到 ' + str(corrupt), result.stderr)
+        self.assertIn('例如 --stitch before.png', result.stderr)
+        self.assert_no_browser_leftovers()
 
     def test_mark_draws_numbered_boxes_without_touching_plain_shot(self):
         output = self.folder / "marked"
@@ -482,6 +639,8 @@ document.querySelector('#go').onclick = () => show(document.body.dataset.state =
         self.assertNotEqual((output / "motion-start.jpg").read_bytes(), (output / "motion-end.jpg").read_bytes())
         report = json.loads((output / "report.json").read_text(encoding="utf-8"))
         self.assertEqual([entry["issues"] for entry in report], [[]])
+        self.assertNotIn('sequence', report[0])
+        self.assertEqual(list(output.glob('*sequence*')), [], 'Default recordings must not create a sequence image')
         self.assertEqual(list(self.profile_root.glob("oil-shoot-*")), [], "Temporary browser profiles leaked")
         if shutil.which("ffmpeg"):
             self.assertTrue((output / "record.mp4").is_file(), result.stdout + result.stderr)
@@ -495,6 +654,58 @@ document.querySelector('#go').onclick = () => show(document.body.dataset.state =
         self.assertEqual(result.returncode, 0, result.stderr.decode())
         self.assertEqual(len(result.stdout), 3)
         return tuple(result.stdout)
+
+    @unittest.skipUnless(shutil.which('ffmpeg'), 'ffmpeg is needed for recording and pixel checks')
+    def test_record_sequence_has_uniform_times_original_ratios_and_named_zoom_files(self):
+        output = self.folder / 'sequence'
+        self.shoot(output, '--record', '--steps', 'go: click #go', '--zoom', '1,2',
+                   '--hold', '250', '--frames', '5', '--columns', '2')
+        report = json.loads((output / 'report.json').read_text(encoding='utf-8'))
+        self.assertEqual(len(report), 2)
+        self.assertEqual([item['sequence']['file'] for item in report], ['motion-go-sequence.png', 'motion-go-@2x-sequence.png'])
+        for entry in report:
+            sequence = entry['sequence']
+            self.assertEqual(sequence['columns'], 2)
+            self.assertEqual(len(sequence['items']), 5)
+            times = [frame['timeMs'] for frame in sequence['frames']]
+            self.assertEqual(times[0], 0)
+            self.assertEqual(times[-1], entry['durationMs'])
+            intervals = [b - a for a, b in zip(times, times[1:])]
+            self.assertLessEqual(max(intervals) - min(intervals), 1)
+            for sample, tile in zip(sequence['frames'], sequence['items']):
+                self.assertLessEqual(sample['sourceTimeMs'], sample['timeMs'] + 1)
+                self.assertEqual(tile['label'], f"{sample['timeMs'] / 1000:.3f} s")
+                self.assertAlmostEqual(tile['width'] / tile['height'], 390 / 844, delta=.002)
+                self.assertGreater(tile['labelHeight'], 0)
+                self.assertLessEqual(tile['y'] + tile['height'] + tile['labelHeight'], sequence['height'])
+            self.assert_artifacts(output, (sequence['file'], entry['frames']['start']['file'], entry['frames']['mid']['file'], entry['frames']['end']['file']))
+            last = sequence['items'][-1]
+            pixel = self.frame_pixel(output / sequence['file'], last['x'] + last['width'] - 10, last['y'] + last['height'] - 10)
+            end = self.frame_pixel(output / entry['frames']['end']['file'], 300, 800)
+            self.assertTrue(all(abs(a - b) < 8 for a, b in zip(pixel, end)), (pixel, end))
+            first = sequence['items'][0]
+            self.assertNotEqual(pixel, self.frame_pixel(output / sequence['file'], first['x'] + first['width'] - 10, first['y'] + first['height'] - 10))
+        self.assertEqual(list(output.glob('frames*')), [])
+        self.assert_no_browser_leftovers()
+
+    def test_record_sequence_unnamed_filename_and_default_columns(self):
+        output = self.folder / 'unnamed-sequence'
+        self.shoot(output, '--record', '--hold', '100', '--frames', '5')
+        entry = json.loads((output / 'report.json').read_text(encoding='utf-8'))[0]
+        self.assertEqual(entry['sequence']['file'], 'motion-sequence.png')
+        self.assertEqual(entry['sequence']['columns'], 4)
+        self.assert_artifacts(output, ('motion-sequence.png', 'motion-start.jpg', 'motion-mid.jpg', 'motion-end.jpg'))
+        self.assertEqual(list(output.glob('frames*')), [])
+
+    @unittest.skipUnless(shutil.which('ffmpeg'), 'ffmpeg is needed for evidence recording')
+    def test_sequence_png_respects_evidence_filename_collisions(self):
+        output = self.folder / 'sequence-collision'
+        self.shoot(output, '--evidence', '--states', 'motion-entry-sequence', '--hold', '100', '--frames', '2')
+        report = json.loads((output / 'report.json').read_text(encoding='utf-8'))
+        sequence = next(item['sequence'] for item in report if 'sequence' in item)
+        self.assertEqual(sequence['file'], 'motion-entry-2-sequence.png')
+        self.assert_artifacts(output, ('motion-entry-sequence.png', sequence['file'], 'record-entry-2.mp4'))
+        self.assertNotEqual((output / 'motion-entry-sequence.png').read_bytes(), (output / sequence['file']).read_bytes())
 
     @unittest.skipUnless(shutil.which('ffmpeg'), 'ffmpeg is needed to inspect frame pixels')
     def test_record_frames_follow_last_action_and_capture_short_feedback(self):
@@ -1079,6 +1290,58 @@ if(count!==13 || document.querySelector('input').value!=='replacement' || docume
                     self.assertIn(text, result.stderr)
         self.run_failure(self.folder / "mark-invalid", "--mark", "button:unknown")
 
+    def test_playwright_selectors_find_the_intended_elements(self):
+        self.page.write_text('''<!doctype html><link rel="icon" href="data:,"><style>button{margin:8px}</style>
+<button onclick="hits.push('contains')">Save draft</button>
+<button onclick="hits.push('exact')">Save</button>
+<button onclick="hits.push('wrong')">Save more</button>
+<button data-select="0842" onclick="hits.push('numeric')">Numeric</button>
+<div><button class="item" onclick="hits.push('wrong')">First</button></div>
+<p>Different sibling</p><button class="item" onclick="hits.push('nth')">Second</button>
+<button onclick="hits.push('bare')">Unique nested <span>Target</span></button>
+<button onclick="hits.push('chain')">4 replies</button>
+<button data-label='literal :has-text("x") &gt;&gt; nth=1' onclick="hits.push('literal')">Literal</button>
+<button id="verify" onclick="if(hits.join(',')!=='contains,exact,numeric,nth,bare,chain,literal')console.error(hits)">Verify</button>
+<script>const hits=[];</script>''', encoding='utf-8')
+        output = self.folder / 'playwright'
+        self.shoot(output, '--size', 'desktop', '--steps',
+                   '''click button:has-text("Save draft"); click button:text-is('Save');
+click [data-select=0842]; click ".item >> nth=1"; click :has-text("Target");
+click button:has-text(4):has-text(replies); click [data-label='literal :has-text("x") >> nth=1']; click #verify''',
+                   '--mark', '1=button:text-is("Save"); 2=[data-select=0842]; 3=.item >> nth=1')
+        self.assertEqual(json.loads((output / 'report.json').read_text(encoding='utf-8'))[0]['issues'], [])
+        self.assert_artifacts(output, ('page.png', 'page-marked.png'))
+        # Corpus calls also omit text quotes and escape nested quotes around the whole selector.
+        self.shoot(self.folder / 'unquoted-text', '--steps', 'hover "button:text-is(Save)"; hover "button:has-text(\\"Save draft\\")"')
+
+    def test_playwright_exact_text_and_nth_do_not_fall_back(self):
+        self.page.write_text('''<!doctype html><link rel="icon" href="data:,">
+<button>Save more</button><button class="item" hidden>Hidden</button><button class="item">Visible</button>''', encoding='utf-8')
+        result = self.run_failure(self.folder / 'exact-missing', '--steps', 'wait 0; click button:text-is("Save")')
+        self.assertIn('第 2 步', result.stderr)
+        self.assertIn('找不到元素', result.stderr)
+        result = self.run_failure(self.folder / 'hidden-nth', '--steps', 'click .item >> nth=0')
+        self.assertIn('都不可见', result.stderr)
+        result = self.run_failure(self.folder / 'missing-nth', '--steps', 'click .item >> nth=2')
+        self.assertIn('找不到元素', result.stderr)
+        self.shoot(self.folder / 'last-nth', '--steps', 'hover .item >> nth=-1')
+
+    def test_unsupported_playwright_combinations_give_context_and_copyable_examples(self):
+        for selector, rewrite in [('button:has-text("Save") > span', 'text="Save"'),
+                                 ('.item >> nth=one', '.item >> nth=1'),
+                                 (':is(button:has-text("Save"))', 'text="Save"'),
+                                 ('button:has-text("Save") >> text=Draft', 'text="Save"')]:
+            with self.subTest(selector=selector):
+                result = self.run_failure(self.folder / 'unsupported', '--steps', 'wait 0; hover ' + selector)
+                self.assertIn('第 2 步', result.stderr)
+                self.assertIn('收到 ' + selector, result.stderr)
+                self.assertIn('例如 hover ' + rewrite, result.stderr)
+        result = self.run_failure(self.folder / 'unsupported-mark', '--mark', '.item >> nth=one')
+        self.assertIn('--mark', result.stderr)
+        self.assertIn('收到 .item >> nth=one', result.stderr)
+        result = self.run_failure(self.folder / 'unsupported-fill', '--steps', 'fill ".item >> nth=one" hello')
+        self.assertIn('例如 fill ".item >> nth=1" "hello"', result.stderr)
+
     def test_visible_element_does_not_scroll_and_offscreen_does(self):
         self.page.write_text('''<!doctype html><link rel="icon" href="data:,"><style>
 body{margin:0;height:2400px}#top{position:absolute;top:40px}#bottom{position:absolute;top:1800px}</style>
@@ -1179,22 +1442,26 @@ document.querySelector('#go').onclick=()=>document.body.style.background='#15151
             self.skipTest('POSIX launch wrapper')
         wrapper = self.folder / 'chrome-wrapper'
         marker = self.folder / 'launch-count'
-        # First launch really times out after 45 seconds; the retry uses the real browser.
+        # Accelerate the startup watchdog, but launch a real browser on the second run.
         import shlex
         wrapper.write_text('#!/bin/sh\nif [ ! -f ' + shlex.quote(str(marker)) + ' ]; then\n'
                            'touch ' + shlex.quote(str(marker)) + '\nexec sleep 60\nfi\nexec '
                            + shlex.quote(self.browser) + ' "$@"\n', encoding='utf-8')
         wrapper.chmod(0o755)
-        env = dict(self.env, CHROME_PATH=str(wrapper))
+        env, journal = self.transport_fault_env('launch')
+        env['CHROME_PATH'] = str(wrapper)
         output = self.folder / 'retried'
         result = subprocess.run([NODE, str(SCRIPT), str(self.page), '--out', str(output)],
                                 cwd=ROOT, env=env, capture_output=True, text=True, timeout=110, encoding='utf-8')
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertIn('45 秒内没有启动', result.stderr)
         self.assertIn('正在重试一次', result.stderr)
+        self.assertIn('--timeout-scale 2', result.stderr)
         self.assertIn('同时开了很多个任务时会变慢', result.stderr)
         self.assert_artifacts(output, ('page.png', 'report.json'))
         self.assertEqual(list(self.profile_root.glob('oil-shoot-*')), [])
+        events = [json.loads(line) for line in journal.read_text(encoding='utf-8').splitlines()]
+        self.assertEqual([row['timeout'] for row in events if row.get('stage') == 'launch'], [45000, 90000])
 
     def test_navigation_aborted_once_is_retried(self):
         import http.server
@@ -1395,10 +1662,11 @@ if(clicked!==1 || !hovered || !doubled || !dragged || document.querySelectorAll(
         # those watchdogs after recording the production timeout value, leaving all other timers intact.
         preload = self.folder / 'fault.mjs'
         journal = self.folder / 'fault.jsonl'
-        preload.write_text('''import {appendFileSync,readFileSync} from 'node:fs';
+        preload.write_text('''import {appendFileSync,readFileSync,existsSync} from 'node:fs';
 const originalTimer=globalThis.setTimeout;let watchdog;
 globalThis.setTimeout=(callback,delay,...args)=>{const timer=originalTimer(callback,delay,...args);if(delay>=90000)watchdog={callback,delay,timer};return timer};
-const Native=globalThis.WebSocket;let captures=0,connections=0;
+const previous=existsSync(process.env.SHOOT_TEST_JOURNAL)?readFileSync(process.env.SHOOT_TEST_JOURNAL,'utf8').trim().split('\\n').filter(Boolean).map(JSON.parse):[];
+const Native=globalThis.WebSocket;let captures=previous.filter(row=>'capture' in row).length,connections=0;
 const drops=new Set((process.env.SHOOT_TEST_DROPS||'').split(',').map(Number));
 const write=row=>appendFileSync(process.env.SHOOT_TEST_JOURNAL,JSON.stringify(row)+'\\n');
 globalThis.WebSocket=class extends Native {
@@ -1420,6 +1688,80 @@ globalThis.WebSocket=class extends Native {
         return dict(self.env, NODE_OPTIONS='--import=' + preload.as_uri(), SHOOT_TEST_DROPS=drops,
                     SHOOT_TEST_JOURNAL=str(journal), **({'SHOOT_TEST_STALE': str(stale)} if stale else {})), journal
 
+    def transport_fault_env(self, mode, always=False):
+        preload = self.folder / 'transport-fault.mjs'
+        journal = self.folder / 'transport-fault.jsonl'
+        preload.write_text('''import {appendFileSync,readFileSync,existsSync} from 'node:fs';
+const path=process.env.SHOOT_TEST_TRANSPORT_JOURNAL,mode=process.env.SHOOT_TEST_TRANSPORT;
+const rows=()=>existsSync(path)?readFileSync(path,'utf8').trim().split('\\n').filter(Boolean).map(JSON.parse):[];
+const write=row=>appendFileSync(path,JSON.stringify(row)+'\\n');
+const fault=()=>process.env.SHOOT_TEST_ALWAYS==='1'||!rows().some(row=>row.fault);
+const original=globalThis.setTimeout;let watchdog;
+globalThis.setTimeout=(callback,delay,...args)=>{
+ const stage=delay===45000||delay===90000?'launch':null;
+ if(mode==='launch'&&stage){write({stage,timeout:delay});if(fault()){write({fault:mode});return original(callback,1000,...args)}}
+ const timer=original(callback,delay,...args);
+ if(delay===30000||delay===60000||delay===120000)watchdog={callback,delay,timer};
+ if(mode==='connect'&&String(callback).includes('连接浏览器')&&delay>=30000){
+  write({stage:'connect',timeout:delay});
+  if(fault()){write({fault:mode});clearTimeout(timer);return original(callback,100,...args)}
+ }
+ return timer;
+};
+const Native=globalThis.WebSocket;
+globalThis.WebSocket=class extends Native {
+ set onopen(callback){super.onopen=mode==='connect'&&fault()?null:callback}
+ send(data){const msg=JSON.parse(data);
+  const selected=mode==='setup'?msg.method==='Target.createTarget':mode==='cdp'&&msg.method==='Runtime.evaluate'&&msg.params.expression.includes('"value":"#hang"');
+  if(selected){write({stage:mode,timeout:watchdog.delay});if(fault()){write({fault:mode});clearTimeout(watchdog.timer);original(watchdog.callback,100);return}}
+  return super.send(data);
+ }
+};''', encoding='utf-8')
+        return dict(self.env, NODE_OPTIONS='--import=' + preload.as_uri(), SHOOT_TEST_TRANSPORT=mode,
+                    SHOOT_TEST_ALWAYS='1' if always else '0', SHOOT_TEST_TRANSPORT_JOURNAL=str(journal)), journal
+
+    def test_connection_and_setup_timeouts_retry_the_whole_invocation(self):
+        for mode in ['connect', 'setup', 'cdp']:
+            with self.subTest(mode=mode):
+                env, journal = self.transport_fault_env(mode)
+                journal.unlink(missing_ok=True)
+                self.page.write_text('''<!doctype html><link rel="icon" href="data:,">
+<button id="hang">Ready</button><script>const query=new URLSearchParams(location.search);if(query.get('state')!=='done'||query.get('extra')!=='1')console.error(location.search);</script>''', encoding='utf-8')
+                output = self.folder / mode
+                result = subprocess.run([NODE, str(SCRIPT), str(self.page), '--out', str(output), '--size', '800x600',
+                                         '--states', 'done', '--query', 'extra=1', '--zoom', '2', '--timeout-scale', '2',
+                                         '--steps', 'hover: hover #hang; wait450'], cwd=ROOT, env=env,
+                                        capture_output=True, text=True, timeout=30, encoding='utf-8')
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                self.assertEqual(result.stderr.count('正在重试一次'), 1)
+                self.assertIn('--timeout-scale 4', result.stderr)
+                events = [json.loads(line) for line in journal.read_text(encoding='utf-8').splitlines()]
+                self.assertEqual([row['timeout'] for row in events if row.get('stage') == mode], [60000, 120000])
+                report = json.loads((output / 'report.json').read_text(encoding='utf-8'))
+                self.assertEqual([row['file'] for row in report], ['done-hover-@2x.png'])
+                self.assertEqual(report[0]['size'], '800x600')
+                self.assertEqual(report[0]['issues'], [])
+                self.assertEqual(list(self.profile_root.glob('oil-shoot-*')), [])
+
+    def test_persistent_startup_connection_and_setup_timeouts_stop_after_one_retry(self):
+        for mode in (['launch'] if sys.platform != 'win32' else []) + ['connect', 'setup']:
+            with self.subTest(mode=mode):
+                env, journal = self.transport_fault_env(mode, always=True)
+                journal.unlink(missing_ok=True)
+                if mode == 'launch':
+                    wrapper = self.folder / 'never-ready'
+                    wrapper.write_text('#!/bin/sh\nexec sleep 60\n', encoding='utf-8')
+                    wrapper.chmod(0o755)
+                    env['CHROME_PATH'] = str(wrapper)
+                result = subprocess.run([NODE, str(SCRIPT), str(self.page), '--out', str(self.folder / mode)],
+                                        cwd=ROOT, env=env, capture_output=True, text=True, timeout=20, encoding='utf-8')
+                self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+                self.assertEqual(result.stderr.count('正在重试一次'), 1)
+                events = [json.loads(line) for line in journal.read_text(encoding='utf-8').splitlines()]
+                self.assertEqual([row['timeout'] for row in events if row.get('stage') == mode],
+                                 [45000, 90000] if mode == 'launch' else [30000, 60000])
+                self.assertEqual(list(self.profile_root.glob('oil-shoot-*')), [])
+
     def test_screenshot_timeout_reopens_and_retries_once(self):
         env, journal = self.fault_env('1')
         output = self.folder / 'screenshot-retry'
@@ -1428,8 +1770,9 @@ globalThis.WebSocket=class extends Native {
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         events = [json.loads(line) for line in journal.read_text(encoding='utf-8').splitlines()]
         self.assertEqual(sum('connection' in row for row in events), 2)
-        self.assertEqual([row['timeout'] for row in events if 'capture' in row], [180000, 180000])
-        self.assertIn('正在重开浏览器重试 page.png 一次', result.stderr)
+        self.assertEqual([row['timeout'] for row in events if 'capture' in row], [180000, 360000])
+        self.assertIn('正在重试一次', result.stderr)
+        self.assertIn('--timeout-scale 4', result.stderr)
         self.assertEqual(len(json.loads((output / 'report.json').read_text(encoding='utf-8'))), 1)
         self.assert_artifacts(output, ('page.png', 'report.json'))
         self.assertEqual(list(self.profile_root.glob('oil-shoot-*')), [])
@@ -1450,6 +1793,8 @@ globalThis.WebSocket=class extends Native {
         self.assertNotEqual((output / 'a-masked.png').read_bytes(), (output / 'b-masked.png').read_bytes())
         events = [json.loads(line) for line in journal.read_text(encoding='utf-8').splitlines()]
         self.assertEqual(sum('connection' in row for row in events), 2)
+        # A full rerun captures the first plain image again, rather than only retrying the mask.
+        self.assertEqual([row['timeout'] for row in events if 'capture' in row], [90000, 90000, 180000, 180000, 180000, 180000])
         self.assertEqual(list(self.profile_root.glob('oil-shoot-*')), [])
 
     @unittest.skipUnless(shutil.which('ffmpeg'), 'ffmpeg is needed for evidence')
@@ -1462,7 +1807,7 @@ globalThis.WebSocket=class extends Native {
         self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
         report = json.loads((output / 'report.json').read_text(encoding='utf-8'))
         self.assertTrue(report[0]['failed'])
-        self.assertIn('Page.captureScreenshot 90 秒', report[0]['issues'][-1])
+        self.assertIn('Page.captureScreenshot 180 秒', report[0]['issues'][-1])
         self.assertFalse(any(row['file'] == 'browser' for row in report))
         self.assertTrue(any(row['file'] == 'motion-probe-toggle' for row in report))
         self.assert_artifacts(output, ('page-@2x.png', 'record-entry.mp4', 'record-toggle.mp4', 'report.json'))
@@ -1484,7 +1829,7 @@ globalThis.WebSocket=class extends Native {
         result = subprocess.run([NODE, str(SCRIPT), str(self.page), '--out', str(output), '--evidence'],
                                 cwd=ROOT, env=dict(env, CHROME_PATH=str(wrapper)), capture_output=True, text=True, timeout=90, encoding='utf-8')
         self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
-        self.assertIn('浏览器重开失败', result.stderr)
+        self.assertIn('浏览器启动失败', result.stderr)
         report = json.loads((output / 'report.json').read_text(encoding='utf-8'))
         self.assertEqual(report[-1]['file'], 'browser')
         self.assertEqual(list(output.glob('record*.mp4')), [])
@@ -1524,12 +1869,19 @@ globalThis.WebSocket=class extends Native {
 <script>document.querySelector('#prepare').onclick=()=>{document.querySelector('#hang').getBoundingClientRect=()=>{while(true){}}};</script>''', encoding='utf-8')
         output = self.folder / 'cdp-timeout'
         start = time.monotonic()
-        result = self.run_failure(output, '--size', 'desktop', '--steps', 'click #prepare; click #hang')
+        env, journal = self.transport_fault_env('cdp', always=True)
+        result = subprocess.run([NODE, str(SCRIPT), str(self.page), '--out', str(output), '--size', 'desktop',
+                                 '--steps', 'click #prepare; click #hang'], cwd=ROOT, env=env,
+                                capture_output=True, text=True, timeout=20, encoding='utf-8')
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
         elapsed = time.monotonic() - start
         self.assertIn('第 2 步「click #hang」', result.stderr)
         self.assertIn('CDP Runtime.evaluate 30 秒内没有响应', result.stderr)
-        self.assertGreaterEqual(elapsed, 30)
-        self.assertLess(elapsed, 42)
+        self.assertIn('CDP Runtime.evaluate 60 秒内没有响应', result.stderr)
+        self.assertEqual(result.stderr.count('正在重试一次'), 1)
+        events = [json.loads(line) for line in journal.read_text(encoding='utf-8').splitlines()]
+        self.assertEqual([row['timeout'] for row in events if row.get('stage') == 'cdp'], [30000, 60000])
+        self.assertLess(elapsed, 20)
         self.assertEqual(list(self.profile_root.glob('oil-shoot-*')), [])
         self.assertTrue(any(r.get('failed') for r in json.loads((output / 'report.json').read_text(encoding='utf-8'))))
 

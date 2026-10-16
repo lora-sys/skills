@@ -46,7 +46,7 @@ class CurateMediaTests(unittest.TestCase):
                 cls.requests.append(self.path)
                 if self.path.startswith('/video') and cls.video:
                     data, mime = cls.video, 'video/mp4'
-                elif self.path.startswith('/bad'):
+                elif self.path.startswith('/bad') or '/slideshow/' in self.path:
                     data, mime = b'<html>upstream error</html>', 'text/html'
                 elif self.path.startswith('/corrupt'):
                     data, mime = cls.image[:24], 'image/png'
@@ -96,8 +96,18 @@ class CurateMediaTests(unittest.TestCase):
                 {'id': 'http://www.loc.gov/item/photo-only/', 'title': 'Not a drawing', 'image_url': [self.base + '/photo.jpg']},
                 {'id': 'http://www.loc.gov/item/3/', 'title': 'Wood bridge', 'resources': [{'url': 'https://www.loc.gov/resource/hhh.3.sheet', 'image': self.base + '/sheet/00001_150px.jpg'}]}
             ]},
-            '/search': {'collection': {'items': [{'href': self.base + '/manifest', 'data': [{'nasa_id': 'earth', 'title': 'Wood in orbit', 'media_type': 'image', 'center': 'NASA', 'photographer': 'Photographer'}], 'links': [{'href': self.base + '/thumb', 'render': 'image', 'rel': 'preview'}]}]}},
+            '/search': {'collection': {'items': [{'href': self.base + '/manifest', 'data': [{'nasa_id': 'earth', 'title': 'Wood and Earth in orbit', 'media_type': 'image', 'center': 'NASA', 'photographer': 'Photographer'}], 'links': [{'href': self.base + '/thumb', 'render': 'image', 'rel': 'preview'}]}]}},
             '/manifest': [self.base + '/media~orig.jpg'],
+            '/w/api.php': {'query': {'pages': [{'pageid': 11, 'index': 1, 'title': 'File:Wood engraving map.jpg', 'imageinfo': [{'url': self.base + '/commons.png', 'descriptionurl': 'https://commons.wikimedia.org/wiki/File:Wood.jpg', 'width': 8, 'height': 6, 'mime': 'image/png', 'extmetadata': {'LicenseShortName': {'value': 'CC BY-SA 4.0'}, 'LicenseUrl': {'value': 'https://creativecommons.org/licenses/by-sa/4.0'}, 'Artist': {'value': '<a href="x">Someone</a>'}}}]}]}},
+            '/api/v1/artworks/search': {'config': {'iiif_url': self.base + '/aic'}, 'data': [{'id': 5, 'title': 'Wood box', 'image_id': 'img', 'is_public_domain': True, 'thumbnail': {'width': 8, 'height': 6}}]},
+            '/api/artworks/': {'data': [{'id': 7, 'title': 'Wood chest', 'url': 'https://clevelandart.org/art/7', 'images': {'web': {'url': self.base + '/k.png', 'width': '8', 'height': '6'}}}]},
+            '/public/collection/v1.1/search': {'objectIDs': [1]},
+            '/public/collection/v1/objects/1': {'objectID': 1, 'isPublicDomain': True, 'primaryImage': self.base + '/m.png', 'title': 'Wood chair'},
+            '/api/item/search/jps-cross': {'hit': 1, 'list': [{'id': 'cobas-1', 'common': {'id': 'cobas-1', 'title': '木の箱', 'titleEn': '&lt;i&gt;Wood&lt;/i&gt; box', 'contentsRightsType': 'ccby', 'contentsUrl': [self.base + '/media/tnm/1/image/slideshow_s/1.png'], 'thumbnailUrl': [self.base + '/media/tnm/1/image/slideshow_s/1.png'], 'database': 'cobas', 'contributor': ['Tokyo National Museum'], 'linkUrl': 'https://colbase.nich.go.jp/collection_items/tnm/1'}}]},
+            '/search/collection': {'orderedItems': [{'id': self.base + '/rk/1'}]},
+            '/rk/1': {'id': self.base + '/rk/1', 'identified_by': [{'type': 'Name', 'content': 'Houten stoel'}, {'type': 'Name', 'content': 'Wood chair', 'language': [{'id': 'http://vocab.getty.edu/aat/300388277'}]}, {'type': 'Identifier', 'content': 'BK-1'}], 'shows': [{'id': self.base + '/rk/v1'}], 'subject_of': [{'subject_to': [{'classified_as': [{'id': 'https://creativecommons.org/publicdomain/zero/1.0/'}]}]}]},
+            '/rk/v1': {'digitally_shown_by': [{'id': self.base + '/rk/d1'}]},
+            '/rk/d1': {'access_point': [{'id': self.base + '/iiifr/full/max/0/default.jpg'}]},
         }
         self.write_shim()
 
@@ -135,11 +145,11 @@ globalThis.fetch = async (input, init) => {
     def test_all_kinds_and_no_false_blueprints(self):
         for kind in ['texture', 'design', 'photo', 'blueprint', 'map', 'plate', 'science', 'video', 'all']:
             with self.subTest(kind=kind):
-                result = json.loads(self.run_cli('search', 'wood', '--kind', kind, '--limit', '9', fixture=True).stdout)
+                result = json.loads(self.run_cli('search', 'wood', '--kind', kind, '--limit', '15', fixture=True).stdout)
                 self.assertTrue(result['items'])
                 self.assertEqual(result['errors'], [])
                 if kind == 'all':
-                    self.assertEqual({i['provider'] for i in result['items']}, {'polyhaven', 'vam', 'loc', 'wellcome', 'nasa'})
+                    self.assertEqual({i['provider'] for i in result['items']}, {'polyhaven', 'vam', 'loc', 'wellcome', 'nasa', 'commons', 'met', 'aic', 'cleveland', 'japan', 'rijks'})
                 if kind == 'blueprint':
                     self.assertTrue(all('/sheet/' in i['imageUrl'] for i in result['items']))
                     self.assertTrue(all('_150px' not in i['previewUrl'] for i in result['items']))
@@ -205,16 +215,18 @@ globalThis.fetch = async (input, init) => {
         self.write_shim(failures=['/v2/objects/search'])
         result = json.loads(self.run_cli('search', 'wood', '--kind', 'all', fixture=True).stdout)
         self.assertEqual(result['errors'][0]['source'], 'vam')
-        self.write_shim(failures=['/catalogue/v2/images'])
+        self.write_shim(failures=['/catalogue/v2/images', '/w/api.php', '/api/item/search/jps-cross'])
         self.run_cli('search', 'wood', '--kind', 'plate', fixture=True, ok=False)
         self.fixtures['/catalogue/v2/images'] = {'results': []}
+        self.fixtures['/w/api.php'] = {'query': {'pages': []}}
+        self.fixtures['/api/item/search/jps-cross'] = {'hit': 0, 'list': []}
         self.write_shim()
         result = json.loads(self.run_cli('search', 'wood', '--kind', 'plate', fixture=True).stdout)
         self.assertEqual(result['count'], 0)
         self.assertEqual(result['errors'], [])
 
     def test_preview_escapes_text_and_reports_dimensions(self):
-        self.fixtures['/v2/objects/search']['records'][0]['_primaryTitle'] = '<script>boom</script>'
+        self.fixtures['/v2/objects/search']['records'][0]['_primaryTitle'] = 'Wood <script>boom</script>'
         self.write_shim()
         self.run_cli('search', 'wood', '--kind', 'design', fixture=True)
         self.run_cli('preview', 'V1', '--sheet', '--dir', 'previews')
@@ -264,7 +276,7 @@ globalThis.fetch = async (input, init) => {
             out, err = child.communicate(timeout=30)
             self.assertEqual(child.returncode, 0, out + err)
         items = json.loads((self.cwd / '.curate-cache.json').read_text())['items']
-        self.assertEqual(set(items), {'T1', 'T2', 'V1', 'L1', 'W1'})
+        self.assertEqual(set(items), {'T1', 'T2', 'V1', 'L1', 'W1', 'C1', 'M1', 'A1', 'K1', 'J1'})
         ids = [(i['provider'], i['sourceId']) for i in items.values()]
         self.assertEqual(len(ids), len(set(ids)))
 
@@ -283,6 +295,71 @@ assert.equal(interleave([[{provider:'a',sourceId:'1'},{provider:'a',sourceId:'2'
         self.write_shim()
         result = json.loads(self.run_cli('search', 'wood', '--kind', 'video', fixture=True).stdout)
         self.assertEqual([r['sourceId'] for r in result['items']], ['earth'])
+
+    def test_relevance_rights_and_pixel_facts(self):
+        javascript = '''import assert from 'node:assert/strict';
+import {matchCount, rightsUse, describePixels} from %s;
+assert.equal(matchCount('White Maple Veneer configuration figure', ['fig']), 0);
+assert.equal(matchCount('Figs and leaves', ['fig']), 1);
+assert.equal(matchCount('Plate 3, fig. 2: the heart', ['fig']), 0);
+assert.equal(matchCount('Old maps of Ghent', ['ghent', 'map']), 2);
+for (const [text, use] of [['CC BY-NC 4.0', 'reference'], ['V&A terms: permitted non-commercial uses only; commercial publication requires licensing', 'reference'], ['CC BY-ND 4.0', 'reference'], ['Public domain', 'page'], ['CC BY-SA 4.0', 'page'], ['CC0', 'page'], ['No known restrictions on publication.', 'page'], ['NASA media usage guidelines; generally not subject to US copyright; verify third-party credits', 'page'], ['Third-party rights mentioned; check item credits', 'check'], ['Rights not specified in search; check Rights & Access on item page', 'check'], ['GFDL', 'check']]) assert.equal(rightsUse(text), use, text);
+const n = 48, half = Buffer.alloc(n * n * 3, 250);
+for (let y = n / 2; y < n; y++) for (let x = 0; x < n; x++) half.fill((x + y) %% 2 ? 0 : 255, (y * n + x) * 3, (y * n + x) * 3 + 3);
+const split = describePixels(half);
+assert.ok(split.calm.includes('top') && !split.calm.includes('bottom'));
+assert.equal(split.edgeFlat, false);
+const paper = describePixels(Buffer.alloc(n * n * 3, 240));
+assert.deepEqual([paper.paper, paper.tone, paper.mono, paper.edge, paper.calm.length], [true, 'light', true, '#f0f0f0', 5]);
+''' % json.dumps(SCRIPT.as_uri())
+        subprocess.run([NODE, '--input-type=module', '-e', javascript], check=True, capture_output=True, timeout=10)
+
+    def test_off_subject_filtered_uses_sorted_and_queries_combined(self):
+        self.fixtures['/photos/']['results'].append({'id': 'http://www.loc.gov/item/9/', 'title': 'America at work', 'image_url': [self.base + '/b.jpg']})
+        self.write_shim()
+        result = json.loads(self.run_cli('search', 'wood', '--kind', 'photo', fixture=True).stdout)
+        self.assertEqual(result['filtered'], 1)
+        self.assertNotIn('America at work', [i['title'] for i in result['items']])
+        self.assertEqual([i['use'] for i in result['items']], sorted((i['use'] for i in result['items']), key=['page', 'check', 'reference'].index))
+        design = json.loads(self.run_cli('search', 'wood | chair', '--kind', 'design', fixture=True).stdout)
+        self.assertEqual(design['queries'], ['wood', 'chair'])
+        self.assertEqual(design['items'][-1]['use'], 'reference')
+        self.assertEqual(design['items'][-1]['provider'], 'vam')
+        page = json.loads(self.run_cli('search', 'wood', '--kind', 'design', '--use', 'page', fixture=True).stdout)
+        self.assertTrue(page['items'])
+        self.assertTrue(all(i['use'] == 'page' for i in page['items']))
+        self.run_cli('search', 'wood', '--use', 'free', ok=False)
+
+    @unittest.skipUnless(FFMPEG and FFPROBE, 'ffmpeg/ffprobe required for contact PNG')
+    def test_search_sheet_writes_readable_png_and_look(self):
+        result = json.loads(self.run_cli('search', 'wood', '--kind', 'design', '--sheet', '--dir', 'cand', fixture=True).stdout)
+        png_file = Path(result['sheetImage'])
+        self.assertEqual(png_file.read_bytes()[:8], b'\x89PNG\r\n\x1a\n')
+        self.assertTrue((self.cwd / 'cand/candidates.html').exists())
+        look = result['items'][0]['look']
+        self.assertEqual(set(look), {'tone', 'mono', 'edge', 'edgeFlat', 'paper', 'calm', 'ratio'})
+        self.assertAlmostEqual(look['ratio'], 1.33, places=2)
+        fetched = json.loads(self.run_cli('fetch', 'V1', '--dir', 'ref', '--sheet', fixture=True).stdout)
+        self.assertEqual(fetched['files'][0]['use'], 'reference')
+        self.assertTrue(any('生图参考' in w for w in fetched['files'][0]['warnings']))
+        self.assertTrue(Path(fetched['sheetImage']).exists())
+        self.assertIn('Use: reference only', (self.cwd / 'ref/SOURCES.md').read_text())
+
+    def test_japan_and_rijks_records_and_colbase_fallback(self):
+        design = json.loads(self.run_cli('search', 'wood', '--kind', 'design', '--limit', '10', fixture=True).stdout)['items']
+        japan = next(i for i in design if i['provider'] == 'japan')
+        self.assertEqual((japan['use'], japan['detail'].split(' · ')[0]), ('page', 'Wood box'))
+        self.assertIn('/slideshow/', japan['imageUrl'])
+        self.assertIn('ColBase', japan['attribution'])
+        rijks = next(i for i in design if i['provider'] == 'rijks')
+        self.assertEqual((rijks['title'], rijks['license'], rijks['use']), ('Wood chair', 'CC0', 'page'))
+        self.assertTrue(rijks['imageUrl'].endswith('/iiifr/full/!2400,2400/0/default.jpg'))
+        got = json.loads(self.run_cli('fetch', japan['ref'], fixture=True).stdout)['files'][0]
+        self.assertIn('/slideshow_s/', got['url'])
+        self.assertTrue(any('回退' in w for w in got['warnings']))
+        cjk = json.loads(self.run_cli('search', '箱', '--kind', 'design', fixture=True).stdout)
+        self.assertEqual(cjk['items'][0]['provider'], 'japan')
+        self.assertGreater(cjk['count'], 1)
 
 
 if __name__ == '__main__':

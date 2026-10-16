@@ -36,6 +36,8 @@ const HELP = `常用命令：
   --wait <毫秒>         页面加载后等待时间，默认 400；截图另等有限动画，最多 2 秒
   --timeout-scale <倍数> 整体放宽协议、启动和编码超时，例如 --timeout-scale 2；默认 1
   --dry-run             只检查选项和动作写法，输出解析 JSON，不启动浏览器
+  --stitch <图片>       拼图，不需要页面：可写多次，每张后面可接 --label <标注>；输出 stitch.png，--columns <列数> 默认 2
+  --frames <帧数>       配合 --record，另出 motion[-组名]-sequence.png：均匀取 2–120 帧并标时间，默认最多 4 列，--columns 可改
 
 动作写法（用分号分隔；引号、方括号、圆括号里的分号不拆）：
   click <选择器> | hover <选择器> | dblclick <选择器> | waitfor <选择器>
@@ -54,13 +56,17 @@ const HELP = `常用命令：
   CSS：click .nav button:nth-child(3)，click [aria-label="Send money"]，无需外层引号
   文字：click text=More 或 click text="Send money"，先找相等文字，再找包含文字
   包含文字：click button:has-text("Undo")，单双引号都可；省略 CSS 时查全部元素
+  精确文字：click button:text-is("Save")；文字括号里也可不加引号
+  匹配序号：click ".item >> nth=1"，从 0 开始；数字属性值 [data-select=0842] 自动补引号
   选择器只在主文档里找，不进入 iframe 或 Shadow DOM；找不到时报告 iframe 和开放 shadow root 数量。
 
 选项都可写成 --名字=值 或 --名字 值；开关不带值。重复状态、尺寸和倍数会去重；文件名冲突会自动加编号。
+数值选项 --hold、--wait、--zoom、--timeout-scale 也可连写，例如 --hold1000。
 元素匹配多个时取第一个可见的；匹配到但隐藏时说明原因，并给可见元素的写法。
 点击、双击和悬停前检查中心点遮挡和禁用状态；提示写进输出和 report.json 的问题汇总，动作照常执行，返回码不变。
-截图单次最多等 90 秒，超时后重开浏览器重试这一项一次；仍失败则继续后面的项，返回码 1。
-其他 CDP 请求默认等 30 秒；超时或浏览器意外断开时退出，可用 --timeout-scale 2 放宽。
+截图单次最多等 90 秒，其他 CDP 请求默认等 30 秒。
+启动、连接浏览器或 CDP 请求超时，自动用双倍时限整次重跑一次，并打印重试说明。
+重跑后截图仍超时则继续后面的项，返回码 1；其他协议超时或浏览器意外断开时退出。
 多项命令每完成一项向标准错误打印进度，标准输出仍是最后的汇总。
 每张图检查控制台错误、横向溢出和加载失败的图片，明细写进 report.json；
 默认做法和可读性提示写进 lint 字段。录屏需要 ffmpeg，没有时只留帧。
@@ -156,7 +162,7 @@ function parseSelector(source) {
 function parseSteps(text) {
   let name = null;
   const named = text.match(/^([A-Za-z0-9_-]+):\s+([\s\S]*)$/);
-  if (named && ![...ACTIONS, ...Object.keys(ALIASES)].includes(named[1])) { name = named[1]; text = named[2]; }
+  if (named) { name = named[1]; text = named[2]; }
   const steps = splitOutside(text).map((raw, i) => {
     const m = raw.match(/^(\S+)(?:\s+([\s\S]*))?$/);
     let action = ALIASES[m[1]] || m[1], tail = m[2] || "";
@@ -197,17 +203,20 @@ const args = process.argv.slice(2);
 if (!args.length || args.includes("--help") || args.includes("-h")) { console.log(HELP); process.exit(args.length ? 0 : 1); }
 const opt = { out: "shots", size: "390x844", param: "state", zoom: "1", hold: "1200", wait: "400" };
 const options = [...HELP.matchAll(/^  (--\S+)/gm)].map((m) => m[1]);
+options.push("--label", "--columns", "--frames");
 const booleanOptions = new Set(["full", "mask", "sheet", "record", "motion", "entry", "evidence", "dry-run", "force"]);
-const flags = new Set(), stepsInputs = [], positional = [], suppliedOptions = new Set();
+const flags = new Set(), stepsInputs = [], positional = [], suppliedOptions = new Set(), stitchInputs = [];
 let lastFlag = null;
 for (let i = 0; i < args.length; i++) {
-  const a = args[i];
+  // Only numeric options accept a glued value; --out123 and switches keep their old errors.
+  const gluedNumber = args[i].match(/^(--(?:hold|wait|zoom|timeout-scale|columns|frames))((?:\d|\.\d)[\s\S]*)$/);
+  const a = gluedNumber ? `${gluedNumber[1]}=${gluedNumber[2]}` : args[i];
   if (a.startsWith("--")) {
     const equal = a.indexOf("="), option = equal < 0 ? a : a.slice(0, equal), key = option.slice(2);
     if (!options.includes(option) && key !== "force") {
       const glued = options.find((o) => a.startsWith(o) && /^\d/.test(a.slice(o.length)));
       const suggestion = glued ? `${glued} ${a.slice(glued.length)}` : closest(option, options);
-      const examples = { out: "shots", size: "desktop", states: "idle,done", param: "state", query: '"a=1&b=2"', zoom: "1,2", mark: '"1=.open"', steps: '"click .open"', hold: "1000", compare: "ref.png", wait: "400" };
+      const examples = { out: "shots", size: "desktop", states: "idle,done", param: "state", query: '"a=1&b=2"', zoom: "1,2", mark: '"1=.open"', steps: '"click .open"', hold: "1000", compare: "ref.png", wait: "400", stitch: "before.png", label: '"修改前"', columns: "2", frames: "8" };
       const example = glued ? suggestion : `${suggestion}${examples[suggestion.slice(2)] ? " " + examples[suggestion.slice(2)] : ""}`;
       fail(`不认识的选项 ${a}；是不是想写 ${example}？\n可用选项：${options.join(" ")}`);
     }
@@ -216,13 +225,22 @@ for (let i = 0; i < args.length; i++) {
       flags.add(key); lastFlag = option;
     } else {
       lastFlag = null;
-      if (equal < 0 && (i + 1 >= args.length || args[i + 1].startsWith("--"))) fail(`${option} 需要一个值`);
+      if (equal < 0 && (i + 1 >= args.length || args[i + 1].startsWith("--"))) {
+        const example = { stitch: "--stitch before.png --stitch after.png --out shots", label: '--stitch before.png --label "修改前"', columns: "--stitch before.png --columns 2", frames: "page.html --record --frames 8" }[key];
+        fail(`${option} 需要一个值${example ? `，收到 ${a}；例如 ${example}` : ""}`);
+      }
       const value = equal < 0 ? args[++i] : a.slice(equal + 1);
       if (!value) fail(`${option} 需要一个值，收到 ${a}；例如 ${option} 值`);
       suppliedOptions.add(key);
-      if (key === "steps") stepsInputs.push(value); else opt[key] = value;
+      if (key === "steps") stepsInputs.push(value);
+      else if (key === "stitch") stitchInputs.push({ path: value });
+      else if (key === "label") {
+        if (!stitchInputs.length || stitchInputs.at(-1).label !== undefined) fail(`--label 要跟在一张 --stitch 图片后，收到 ${a} ${value}；例如 --stitch before.png --label "修改前" --stitch after.png --label "修改后"`);
+        stitchInputs.at(-1).label = value;
+      } else opt[key] = value;
     }
   } else {
+    if (stitchInputs.length) fail(`拼图不需要页面，每张图片前都要写 --stitch，收到 ${a}；例如 --stitch before.png --label "修改前" --stitch after.png --label "修改后" --columns 2 --out shots`);
     if (lastFlag === "--motion" && /^(?:[.#\[]|text=)|:has-text\(/.test(a)) fail(`--motion 不带参数，收到 --motion 和 ${a}；要探测的动作写进 --steps，例如 --motion --steps "click ${a}"`);
     if (positional.length) fail(`页面地址或多余参数冲突，收到 ${positional[0]} 和 ${a}${lastFlag ? `；${lastFlag} 不带参数` : ""}；例如 page.html --steps "click .open"`);
     // A flag may precede the one valid target; selector-like extras are never targets.
@@ -231,7 +249,23 @@ for (let i = 0; i < args.length; i++) {
   }
 }
 const target = positional[0];
-if (!target) fail("缺少页面地址或文件。");
+const stitching = stitchInputs.length > 0;
+if (!target && !stitching) {
+  if (opt.frames !== undefined || opt.columns !== undefined) fail(`缺少页面或拼图输入，收到 ${args.join(" ")}；例如 page.html --record --frames 8 --columns 4，或 --stitch before.png --stitch after.png --columns 2`);
+  fail("缺少页面地址或文件。");
+}
+if (stitching) {
+  const incompatible = [...suppliedOptions].filter((key) => !["stitch", "label", "columns", "out", "timeout-scale"].includes(key));
+  if (target || incompatible.length || [...flags].some((key) => key !== "dry-run" && key !== "force")) fail(`拼图不需要页面或截图/录屏选项，收到 ${target || incompatible.map((key) => "--" + key).join("、") || [...flags].join("、")}；例如 --stitch before.png --label "修改前" --stitch after.png --label "修改后" --columns 2 --out shots`);
+  for (const [i, image] of stitchInputs.entries()) {
+    try { if (!statSync(image.path).isFile()) throw new Error("不是文件"); }
+    catch { fail(`拼图第 ${i + 1} 张图片不存在或不是文件，收到 ${image.path}；例如 --stitch before.png --label "修改前" --out shots`); }
+  }
+}
+if (opt.frames !== undefined && (!/^\d+$/.test(opt.frames) || !Number.isSafeInteger(+opt.frames) || +opt.frames < 2 || +opt.frames > 120)) fail(`--frames 需要 2–120 的整数，收到 ${opt.frames}；例如 page.html --record --frames 8`);
+if (opt.frames !== undefined && !flags.has("record") && !flags.has("evidence")) fail(`--frames 需要配合录屏，收到 --frames ${opt.frames}；例如 page.html --record --frames 8`);
+if (opt.columns !== undefined && (!/^\d+$/.test(opt.columns) || !Number.isSafeInteger(+opt.columns) || +opt.columns < 1)) fail(`--columns 需要正整数，收到 ${opt.columns}；例如 --stitch before.png --stitch after.png --columns 2`);
+if (opt.columns !== undefined && !stitching && opt.frames === undefined) fail(`--columns 需要配合 --stitch 或 --frames，收到 --columns ${opt.columns}；例如 page.html --record --frames 8 --columns 4`);
 const notices = [];
 function deduplicate(values, key, label) {
   const seen = new Set(), removed = [];
@@ -268,7 +302,7 @@ try {
 const timeoutScale = Number(opt["timeout-scale"] || 1);
 const timeoutMs = (ms) => Math.min(2147483647, ms * timeoutScale);
 const quoteArg = (value) => "'" + String(value).replaceAll("'", "'\\''") + "'";
-const retryCommand = `node ${quoteArg(resolve(process.argv[1]))} ${quoteArg(target)} --timeout-scale 2`;
+const retryCommand = `node ${quoteArg(resolve(process.argv[1]))} ${stitching ? args.map(quoteArg).join(" ") : quoteArg(target)} --timeout-scale 2`;
 let currentRetryCommand = retryCommand;
 const slowHint = () => `同时开了很多个任务时会变慢；可先单独重跑：${currentRetryCommand}`;
 const states = deduplicate(opt.states ? opt.states.split(",").map((s) => s.trim()).filter(Boolean) : [null], String, "状态");
@@ -279,8 +313,30 @@ if (refImage && !existsSync(refImage)) fail(`找不到参考图：${opt.compare}
 if (refImage && !/\.(png|jpe?g|webp)$/i.test(refImage)) fail("--compare 只接受 png、jpg 或 webp");
 if (refImage && (flags.has("record") || flags.has("evidence"))) fail("--compare 用在截图上，不和 --record 或 --evidence 一起用；例如 --compare ref.png");
 if (flags.has("dry-run")) {
-  console.log(JSON.stringify({ target, options: opt, flags: [...flags], sizes, zooms, states, groups, marks, notices }, null, 2));
+  console.log(JSON.stringify({ target, options: opt, flags: [...flags], sizes, zooms, states, groups, marks, notices, ...(stitching ? { stitch: stitchInputs } : {}) }, null, 2));
   process.exit(0);
+}
+// A small supervisor preserves the complete invocation and gives every run fresh state.
+// The worker reports only transport/startup timeouts with 75; ordinary failures stay 1.
+const attemptKey = "OIL_SHOOT_TIMEOUT_ATTEMPT";
+const workerAttempt = process.env[attemptKey];
+if (workerAttempt === undefined) {
+  let child;
+  process.on("SIGINT", () => child?.kill("SIGINT"));
+  process.on("SIGTERM", () => child?.kill("SIGTERM"));
+  const run = (attempt) => new Promise((ok) => {
+    child = spawn(process.execPath, [...process.execArgv, process.argv[1], ...args,
+      ...(attempt ? ["--timeout-scale", String(timeoutScale * 2)] : [])],
+    { stdio: "inherit", env: { ...process.env, [attemptKey]: String(attempt) } });
+    child.once("error", (error) => { console.error(`shoot：启动截图进程失败，收到 ${error.message}`); ok(1); });
+    child.once("exit", (code, signal) => ok(signal === "SIGINT" ? 130 : signal === "SIGTERM" ? 143 : code ?? 1));
+  });
+  let code = await run(0);
+  if (code === 75) {
+    console.error(`shoot：正在重试一次：时限放宽到原来的两倍（--timeout-scale ${timeoutScale * 2}），整次重跑，保留全部原始参数`);
+    code = await run(1);
+  }
+  process.exit(code);
 }
 if (typeof WebSocket !== "function") fail("需要 Node 22 或更新的版本。");
 const out = resolve(opt.out);
@@ -445,13 +501,11 @@ async function launchChrome() {
   });
 }
 let wsUrl;
-for (let attempt = 0; attempt < 2; attempt++) {
-  try { wsUrl = await launchChrome(); break; }
-  catch (error) {
-    await stopChrome();
-    if (attempt || error.message !== "timeout") fail(`浏览器启动失败：${error.message === "timeout" ? `${45 * timeoutScale} 秒内没有启动，重试一次仍失败` : error.message}；${slowHint()}`);
-    console.error(`shoot：浏览器 ${45 * timeoutScale} 秒内没有启动，正在重试一次；${slowHint()}`);
-  }
+try { wsUrl = await launchChrome(); }
+catch (error) {
+  await cleanup();
+  console.error(`shoot：浏览器启动失败，收到 ${error.message === "timeout" ? `${45 * timeoutScale} 秒内没有启动` : error.message}；${slowHint()}`);
+  process.exit(error.message === "timeout" && workerAttempt === "0" ? 75 : 1);
 }
 
 // ---------- Chrome DevTools 协议 ----------
@@ -466,19 +520,19 @@ const pending = new Map(), listeners = [];
 let saveFatalReport = () => {};
 function abortTransport(error) {
   if (transportFailure || finishing) return;
-  transportFailure = error; process.exitCode = 1;
+  transportFailure = error; process.exitCode = error.code === "TRANSPORT_TIMEOUT" && workerAttempt === "0" ? 75 : 1;
   for (const request of pending.values()) { clearTimeout(request.timer); request.no(error); }
   pending.clear();
   console.error(`shoot：${error.message}`);
   try { saveFatalReport(error); } catch {}
-  void cleanup().finally(() => process.exit(1));
+  void cleanup().finally(() => process.exit(process.exitCode));
 }
 async function connectTransport(url) {
   ws = new WebSocket(url);
   ws.onclose = () => abortTransport(new Error(`${currentContext}：浏览器连接意外断开，已停止执行；${slowHint()}`));
   ws.onerror = () => abortTransport(new Error(`${currentContext}：浏览器连接出错，已停止执行；${slowHint()}`));
   await new Promise((ok, no) => {
-    const timer = setTimeout(() => { const error = new Error(`连接浏览器：${30 * timeoutScale} 秒内没有响应；${slowHint()}`); no(error); abortTransport(error); }, timeoutMs(30000));
+    const timer = setTimeout(() => { const error = new Error(`连接浏览器：${30 * timeoutScale} 秒内没有响应；${slowHint()}`); error.code = "TRANSPORT_TIMEOUT"; no(error); abortTransport(error); }, timeoutMs(30000));
     ws.onopen = () => { clearTimeout(timer); ok(); };
     const failed = () => { clearTimeout(timer); no(transportFailure || new Error("连接浏览器失败")); };
     ws.addEventListener("close", failed, { once: true }); ws.addEventListener("error", failed, { once: true });
@@ -499,7 +553,8 @@ const send = (method, params = {}, targetSession) => new Promise((ok, no) => {
   const limit = timeoutMs(method === "Page.captureScreenshot" ? 90000 : 30000);
   const timer = setTimeout(() => {
     const error = new Error(`${context}：CDP ${method} ${limit / 1000} 秒内没有响应；${slowHint()}`);
-    if (method === "Page.captureScreenshot") {
+    error.code = "TRANSPORT_TIMEOUT";
+    if (method === "Page.captureScreenshot" && workerAttempt === "1") {
       pending.delete(id); browserNeedsRestart = true; error.code = "SCREENSHOT_TIMEOUT"; no(error);
     } else abortTransport(error);
   }, limit);
@@ -507,11 +562,11 @@ const send = (method, params = {}, targetSession) => new Promise((ok, no) => {
   try { ws.send(JSON.stringify({ id, method, params, ...(targetSession ? { sessionId: targetSession } : {}) })); }
   catch { abortTransport(new Error(`${context}：发送 CDP ${method} 时浏览器连接断开，已停止执行；${slowHint()}`)); }
 });
-try { await connectTransport(wsUrl); } catch { await cleanup(); process.exit(1); }
+try { await connectTransport(wsUrl); } catch { await cleanup(); process.exit(process.exitCode || 1); }
 
 async function setupSend(...args) {
   try { return await send(...args); }
-  catch (error) { if (transportFailure) { await cleanup(); process.exit(1); } throw error; }
+  catch (error) { if (transportFailure) { await cleanup(); process.exit(process.exitCode || 1); } throw error; }
 }
 const cdp = (method, params) => setupSend(method, params, sessionId);
 async function setupSession() {
@@ -1028,17 +1083,100 @@ function hiddenReason(el) {
   if (!el.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true })) return "被祖先或浏览器布局隐藏";
   return null;
 }
+// Normalize at lookup time so existing --dry-run selector objects remain byte-for-byte stable.
+// Read quoted strings/brackets before recognizing Playwright operators: their literals are CSS data.
+function compatibleSelector(selector) {
+  if (selector.kind === "text") return selector;
+  const source = selector.kind === "has-text" ? selector.css : selector.value;
+  const received = selector.kind === "has-text" ? `${selector.css}:has-text(${JSON.stringify(selector.value)})` : source;
+  const filters = [], legacyText = selector.kind === "has-text" ? selector.value : null;
+  let css = "", nth, depth = 0;
+  const unsupported = () => {
+    const value = filters[0]?.value ?? legacyText ?? "Send money";
+    const error = new Error(`无法转换选择器，收到 ${received}；请用文字定位或 CSS，序号从 0 开始`);
+    error.selectorExample = filters.length || legacyText !== null ? `text=${JSON.stringify(value)}` : `${!depth && css.trim() || ".item"} >> nth=1`;
+    throw error;
+  };
+  const quotedEnd = (start) => {
+    for (let i = start + 1; i < source.length; i++) {
+      if (source[i] === "\\") { i++; continue; }
+      if (source[i] === source[start]) return i;
+    }
+    unsupported();
+  };
+  for (let i = 0; i < source.length;) {
+    const c = source[i];
+    if (c === "\\") { css += source.slice(i, i + 2); i += 2; continue; }
+    if (c === '"' || c === "'") { const end = quotedEnd(i); css += source.slice(i, end + 1); i = end + 1; continue; }
+    if (c === "[") {
+      let end = i + 1;
+      for (; end < source.length && source[end] !== "]"; end++) {
+        if (source[end] === "\\") end++;
+        else if (source[end] === '"' || source[end] === "'") end = quotedEnd(end);
+      }
+      const attr = source.slice(i, end + 1);
+      css += attr.replace(/^(\[\s*[^\s~|^$*!=\]]+\s*[~|^$*]?=\s*)(\d[^\s"'\\\[\]]*)(\s*(?:[is]\s*)?\])$/, (_, prefix, value, suffix) => prefix + JSON.stringify(value) + suffix);
+      i = end + 1; continue;
+    }
+    if (source.startsWith(">>", i)) {
+      if (depth || legacyText !== null) unsupported();
+      const match = source.slice(i).match(/^>>\s*nth\s*=\s*(-?\d+)\s*$/);
+      if (!match || !Number.isSafeInteger(Number(match[1]))) unsupported();
+      nth = Number(match[1]); break;
+    }
+    const pseudo = source.slice(i).match(/^:(has-text|text-is)\(/);
+    if (pseudo) {
+      let end = i + pseudo[0].length, start = end;
+      for (; end < source.length && source[end] !== ")"; end++) {
+        if (source[end] === "\\") end++;
+        else if (source[end] === '"' || source[end] === "'") end = quotedEnd(end);
+        else if (source[end] === "(") unsupported();
+      }
+      if (end >= source.length) unsupported();
+      const argument = source.slice(start, end).trim();
+      const quoted = /^("|')[\s\S]*\1$/.test(argument);
+      if (!quoted && /["']/.test(argument)) unsupported();
+      const value = quoted ? argument.slice(1, -1).replace(/\\(["'\\])/g, "$1") : argument;
+      filters.push({ exact: pseudo[1] === "text-is", value });
+      if (depth) unsupported();
+      i = end + 1; continue;
+    }
+    // A descendant/combinator after a text filter changes the subject; do not silently drop it.
+    if (filters.length && depth === 0 && /[\s>+~,]/.test(c) && source.slice(i).trim() && !source.slice(i).trimStart().startsWith(">>")) unsupported();
+    if (c === "(") depth++;
+    if (c === ")") depth--;
+    css += c; i++;
+  }
+  if (legacyText !== null) filters.push({ exact: false, value: legacyText });
+  if (!filters.length) return { kind: "css", value: css.trim(), ...(nth === undefined ? {} : { nth }) };
+  return { kind: "filtered-text", css: css.trim() || "*", value: filters[0].value, filters, ...(nth === undefined ? {} : { nth }) };
+}
 function findElements(selector, includeHidden = false) {
+  selector = compatibleSelector(selector);
   const reason = hiddenReason;
   const text = (el) => (includeHidden && reason(el) ? el.textContent : typeof el.innerText === "string" ? el.innerText : el.textContent || "").trim().replace(/\s+/g, " ");
-  const all = [...document.querySelectorAll(selector.kind === "css" ? selector.value : selector.kind === "has-text" ? selector.css : "*")];
+  let all = [...document.querySelectorAll(selector.kind === "css" ? selector.value : selector.css || "*")];
+  if (selector.kind === "filtered-text") {
+    all = all.filter((el) => !el.closest("script,style,template,noscript,head") && selector.filters.every((f) => {
+      const wanted = f.value.trim().replace(/\s+/g, " ");
+      return f.exact ? text(el) === wanted : text(el).includes(wanted);
+    }));
+    // Unscoped text lookup uses the existing deepest-text-first behavior instead of clicking body.
+    if (selector.css === "*") all.sort((a, b) => {
+      const depth = (el) => { let n = 0; for (; el; el = el.parentElement) n++; return n; };
+      return depth(b) - depth(a);
+    });
+  }
+  if (selector.nth !== undefined) {
+    const index = selector.nth < 0 ? all.length + selector.nth : selector.nth;
+    all = index >= 0 && index < all.length ? [all[index]] : [];
+  }
   const visible = all.filter((el) => !reason(el));
-  if (selector.kind === "css") return includeHidden ? all : visible;
+  if (selector.kind === "css" || selector.kind === "filtered-text") return includeHidden ? all : visible;
   const wanted = selector.value.trim().replace(/\s+/g, " ");
   const match = (pool) => {
     // Script literals and metadata are not page text, including in hidden-match diagnostics.
     pool = pool.filter((el) => !el.closest("script,style,template,noscript,head"));
-    if (selector.kind === "has-text") return pool.filter((el) => text(el).includes(wanted));
     let found = pool.filter((el) => text(el) === wanted);
     if (!found.length) found = pool.filter((el) => text(el).includes(wanted));
     const depth = (el) => { let n = 0; for (; el; el = el.parentElement) n++; return n; };
@@ -1047,12 +1185,13 @@ function findElements(selector, includeHidden = false) {
   };
   return includeHidden ? match(all) : match(visible).slice(0, 1);
 }
-const findSource = findElements.toString().replace("const reason = hiddenReason;", "const reason = " + hiddenReason.toString() + ";");
+const findSource = findElements.toString().replace("selector = compatibleSelector(selector);", "selector = (" + compatibleSelector.toString() + ")(selector);")
+  .replace("const reason = hiddenReason;", "const reason = " + hiddenReason.toString() + ";");
 async function locate(selector, context, scroll = true, action = "click", params = {}) {
   const result = await evaluate(String.raw`((selector) => {
     const find = ${findSource}, reason = ${hiddenReason.toString()};
     let found, usable;
-    try { found = find(selector, true); usable = find(selector); } catch { return { invalid: true }; }
+    try { found = find(selector, true); usable = find(selector); } catch (error) { return { invalid: true, detail: error.message, selectorExample: error.selectorExample }; }
     const el = usable[0];
     if (el) {
       let r = el.getBoundingClientRect();
@@ -1133,7 +1272,12 @@ async function locate(selector, context, scroll = true, action = "click", params
   const source = selector.kind === "css" ? selector.value : selector.kind === "text" ? `text=${selector.value}` : `${selector.css}:has-text(${JSON.stringify(selector.value)})`;
   const suffix = action === "drag" ? ` ${params.dx ?? 0} ${params.dy ?? 0}` : ["type", "fill"].includes(action) ? ` ${JSON.stringify(params.text ?? "文字")}` : action === "select" ? ` ${JSON.stringify(params.value ?? "选项")}` : "";
   const example = result.opener && !result.suggestion ? `click ${result.opener}` : `${action} ${result.suggestion || (selector.kind === "css" ? ".open" : 'text="Send money"')}${suffix}`;
-  if (result.invalid) throw new Error(`${context}：${source} 不是合法的 CSS；支持文字写法 text="Send money" 和 button:has-text("Undo")，例如 ${action} text="Send money"${suffix}`);
+  if (result.invalid && result.detail?.startsWith("无法转换选择器")) {
+    const selectorExample = ["type", "fill", "select"].includes(action) ? JSON.stringify(result.selectorExample) : result.selectorExample;
+    const rewrite = context === "--mark" ? `--mark ${quoteArg(`1=${result.selectorExample}`)}` : `${action} ${selectorExample}${suffix}`;
+    throw new Error(`${context}：${result.detail}；例如 ${rewrite}`);
+  }
+  if (result.invalid) throw new Error(`${context}：收到 ${source}，不是合法的 CSS；支持文字写法 text="Send money" 和 button:has-text("Undo")，例如 ${action} text="Send money"${suffix}`);
   const scope = result.iframes || result.shadowRoots ? `；选择器只在主文档里找，页面里有 ${result.iframes} 个 iframe、${result.shadowRoots} 个开放的 shadow root` : "";
   if (result.missing) throw new Error(`${context}：找不到元素 ${source}；线索：${result.hints.join("；")}；例如 ${example}${scope}`);
   if (result.count) throw new Error(`${context}：匹配到 ${result.count} 个元素 ${source}，但都不可见，不能操作（${result.reasons.join("；")}）；先执行让它出现的那一步，或换成当前可见的元素；线索：${result.hints.join("；")}；例如 ${example}`);
@@ -1215,6 +1359,71 @@ async function runSteps(steps = [], observer = {}) {
       } else if (action === "scroll") { await evaluate(`scrollBy(0, ${params.dy}), true`); await sleep(200); }
     });
   }
+}
+
+// ---------- 本地拼图和录屏序列：共享同一份等比例排版 ----------
+async function composeImages(items, file, columns) {
+  const example = stitching ? '--stitch before.png --stitch after.png --columns 2 --out shots' : 'page.html --record --frames 8 --columns 4 --out shots';
+  const types = { ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp", ".gif": "image/gif", ".avif": "image/avif", ".bmp": "image/bmp", ".svg": "image/svg+xml" };
+  const inputs = items.map((item, i) => {
+    try { return { ...item, data: `data:${types[extname(item.path).toLowerCase()] || "application/octet-stream"};base64,${readFileSync(item.path).toString("base64")}` }; }
+    catch (error) { throw new Error(`拼图第 ${i + 1} 张图片读取失败，收到 ${item.path}（${error.code || error.message}）；例如 --stitch before.png --label "修改前" --out shots`); }
+  });
+  // Render off the recorded page so its scripts, styles and fonts cannot alter the composition.
+  await open("data:text/html,<meta charset=utf-8><meta http-equiv=Content-Security-Policy content=\"default-src 'none'; img-src data:; style-src 'unsafe-inline'\">", 0);
+  const result = await evaluate(`(async (items, columns) => {
+    const images = await Promise.all(items.map((item, i) => new Promise((ok, no) => {
+      const image = new Image(); image.onload = () => ok(image);
+      image.onerror = () => no(new Error('拼图第 ' + (i + 1) + ' 张图片无法解码，收到 ' + item.path + '；例如 --stitch before.png --label "修改前" --out shots'));
+      image.src = item.data;
+    })));
+    const margin = 24, gap = 16, lineHeight = 24;
+    const cell = Math.min(640, Math.max(items.some((item) => item.label) ? 160 : 1, ...images.map((image) => image.naturalWidth)));
+    columns = Math.min(columns, images.length);
+    const canvas = document.createElement('canvas'), ctx = canvas.getContext('2d');
+    const font = '18px "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif';
+    ctx.font = font;
+    const labels = items.map((item) => {
+      if (!item.label) return [];
+      return String(item.label).split(/\\r?\\n/).flatMap((paragraph) => {
+        const lines = []; let line = '';
+        for (const character of paragraph) {
+          if (line && ctx.measureText(line + character).width > cell) { lines.push(line); line = ''; }
+          line += character;
+        }
+        lines.push(line); return lines;
+      });
+    });
+    const dimensions = images.map((image, i) => {
+      const scale = Math.min(1, cell / image.naturalWidth);
+      return { naturalWidth: image.naturalWidth, naturalHeight: image.naturalHeight,
+        width: Math.max(1, Math.round(image.naturalWidth * scale)), height: Math.max(1, Math.round(image.naturalHeight * scale)),
+        labelHeight: labels[i].length ? 8 + labels[i].length * lineHeight : 0 };
+    });
+    const heights = [];
+    dimensions.forEach((item, i) => { const row = Math.floor(i / columns); heights[row] = Math.max(heights[row] || 0, item.height + item.labelHeight); });
+    canvas.width = columns * cell + (columns - 1) * gap + margin * 2;
+    canvas.height = heights.reduce((sum, height) => sum + height, 0) + (heights.length - 1) * gap + margin * 2;
+    if (canvas.width > 32767 || canvas.height > 32767 || canvas.width * canvas.height > 67108864) throw new Error('拼图画布过大，收到 ' + canvas.width + '×' + canvas.height + '；请减少图片/帧数或调整列数，例如 ' + ${JSON.stringify(example)});
+    ctx.fillStyle = '#ececea'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.font = font; ctx.textBaseline = 'top';
+    let top = margin;
+    const layout = dimensions.map((item, i) => {
+      const row = Math.floor(i / columns), column = i % columns;
+      if (i && !column) top += heights[row - 1] + gap;
+      const x = margin + column * (cell + gap) + Math.floor((cell - item.width) / 2);
+      ctx.drawImage(images[i], x, top, item.width, item.height);
+      ctx.fillStyle = '#333';
+      labels[i].forEach((line, index) => ctx.fillText(line, margin + column * (cell + gap), top + item.height + 8 + index * lineHeight));
+      return { ...item, x, y: top, label: items[i].label || '', labelY: top + item.height + 8 };
+    });
+    const data = canvas.toDataURL('image/png').split(',')[1];
+    if (!data) throw new Error('拼图无法导出 PNG；请减少图片/帧数，例如 ' + ${JSON.stringify(example)});
+    return { data, width: canvas.width, height: canvas.height, columns, items: layout };
+  })(${JSON.stringify(inputs)}, ${columns})`);
+  writeFileSync(file, Buffer.from(result.data, "base64"));
+  const { data, ...layout } = result;
+  return { file: basename(file), ...layout };
 }
 
 // ---------- 并排图：用同一个浏览器把截图排成一张 ----------
@@ -1360,6 +1569,16 @@ async function frameDifference(first, second) {
     return { different: changed >= 32 && (changed / (a.width * a.height) > .005 || maxTile >= 48), changedPixels: changed, maxTilePixels: maxTile, pixelRatio: changed / (a.width * a.height) };
   })()`);
 }
+function sequenceFrames(frames, finished, count) {
+  const start = frames[0].t, duration = Math.max(0, finished - start);
+  let index = 0;
+  return Array.from({ length: count }, (_, i) => {
+    const time = start + duration * i / (count - 1);
+    // A screencast emits only changed images: hold the preceding frame, never a future one.
+    while (index + 1 < frames.length && frames[index + 1].t <= time) index++;
+    return { path: frames[index].name, timeMs: Math.round((time - start) * 1000), sourceTimeMs: Math.max(0, Math.round((frames[index].t - start) * 1000)) };
+  });
+}
 function screencastList(frames, finished) {
   // JPEG's default 25fps time base rounds timestamps and can discard a short feedback frame.
   // Use the same millisecond precision as the durations before resampling the video to 30fps.
@@ -1475,17 +1694,24 @@ async function record(url, w, h, { steps = [], name = "", entry = flags.has("ent
       file: `${motion}-${k}.jpg`, source: f.source, timeMs: Math.max(0, Math.round((f.t - frames[0].t) * 1000)),
     }]));
     const details = { frames: frameReport, sampling, consistency, warnings, durationMs: Math.round((finished - frames[0].t) * 1000) };
+    let sequenceMessage = "";
+    if (opt.frames !== undefined) {
+      const samples = sequenceFrames(frames, finished, Number(opt.frames));
+      const sequence = await during(`${currentContext} / 录屏多帧序列`, () => composeImages(samples.map((frame) => ({ ...frame, label: `${(frame.timeMs / 1000).toFixed(3)} s` })), join(out, `${motion}-sequence.png`), Number(opt.columns || Math.min(4, samples.length))));
+      details.sequence = { ...sequence, frames: samples.map(({ path, ...time }) => time) };
+      sequenceMessage = ` 和 ${sequence.file}`;
+    }
     const ffmpeg = (await runFfmpeg(["-version"], 5000)).status === 0;
-    if (!ffmpeg) return { issues, ...details, failed: true, message: `录屏：没装 ffmpeg，只留了 ${motion}-start/mid/end.jpg 三帧` };
+    if (!ffmpeg) return { issues, ...details, failed: true, message: `录屏：没装 ffmpeg，只留了 ${motion}-start/mid/end.jpg 三帧${sequenceMessage}` };
     // Generated basenames are safe for concat's quoting, even when --out contains an apostrophe.
     // Keep the final still frame through the end of --hold; screencasts only emit changed frames.
     const list = screencastList(frames, finished);
     writeFileSync(join(dir, "list.txt"), list);
     const r = await runFfmpeg(["-y", "-v", "error", "-f", "concat", "-safe", "0", "-i", join(dir, "list.txt"),
       "-vf", "scale=trunc(iw/2)*2:trunc(ih/2)*2,fps=30", "-pix_fmt", "yuv420p", join(out, video)], 60000);
-    if (r.status !== 0) return { issues, ...details, failed: true, message: `录屏：ffmpeg 合成失败（${r.error?.code === "ETIMEDOUT" ? `${60 * timeoutScale} 秒内没有合成完成` : r.error?.message || r.stderr.trim().split("\n").pop()}），已保留 ${motion}-start/mid/end.jpg 三帧` };
+    if (r.status !== 0) return { issues, ...details, failed: true, message: `录屏：ffmpeg 合成失败（${r.error?.code === "ETIMEDOUT" ? `${60 * timeoutScale} 秒内没有合成完成` : r.error?.message || r.stderr.trim().split("\n").pop()}），已保留 ${motion}-start/mid/end.jpg 三帧${sequenceMessage}` };
     rmSync(dir, { recursive: true, force: true });
-    return { issues, ...details, message: `录屏：${video}（${(finished - frames[0].t).toFixed(1)} 秒）和 ${motion}-start/mid/end.jpg` };
+    return { issues, ...details, message: `录屏：${video}（${(finished - frames[0].t).toFixed(1)} 秒）和 ${motion}-start/mid/end.jpg${sequenceMessage}` };
   } finally {
     const index = listeners.indexOf(onFrame); if (index >= 0) listeners.splice(index, 1);
     try { if (!transportFailure && !browserNeedsRestart) await cdp("Page.stopScreencast"); }
@@ -1630,7 +1856,7 @@ async function probeMotion(url, w, h, steps = []) {
 }
 
 // ---------- 主流程 ----------
-const base = await resolveTarget(target);
+const base = stitching ? null : await resolveTarget(target);
 const withState = (s) => {
   const u = new URL(base);
   for (const [key, value] of new URLSearchParams(opt.query || "")) u.searchParams.set(key, value);
@@ -1675,24 +1901,15 @@ async function item(file, metadata, work, extra = "") {
   currentRetryCommand = retryItem(file, metadata, extra);
   let failed = false;
   const firstResult = report.length;
-  for (let attempt = 0; attempt < 2; attempt++) {
-    const previousLines = lines.length;
-    const reopened = browserNeedsRestart;
-    if (reopened) await restartBrowser();
-    try { await during(file, () => work(attempt > 0 || reopened)); break; }
-    catch (error) {
-      if (transportFailure) throw error;
-      if (error.code === "SCREENSHOT_TIMEOUT" && !attempt) {
-        lines.length = previousLines;
-        console.error(`shoot：${error.message}；正在重开浏览器重试 ${file} 一次`);
-        await restartBrowser(); continue;
-      }
-      report.push({ file, ...metadata, failed: true, issues: [...problems, error.message] });
-      lines.push(`${file}  ⚠ 失败：${error.message}`); process.exitCode = 1; failed = true;
-      // Ordinary one-item failures retain their old stderr diagnostic; batches can finish the rest.
-      console.error(`shoot：${error.message}`);
-      break;
-    }
+  const reopened = browserNeedsRestart;
+  if (reopened) await restartBrowser();
+  try { await during(file, () => work(reopened)); }
+  catch (error) {
+    if (transportFailure) throw error;
+    report.push({ file, ...metadata, failed: true, issues: [...problems, error.message] });
+    lines.push(`${file}  ⚠ 失败：${error.message}`); process.exitCode = 1; failed = true;
+    // Ordinary one-item failures retain their old stderr diagnostic; batches can finish the rest.
+    console.error(`shoot：${error.message}`);
   }
   progress(file, failed || report.slice(firstResult).some((r) => r.failed));
 }
@@ -1777,7 +1994,7 @@ async function motionBatch() {
 }
 async function recording(group, entry, zoom, multipleZooms = false) {
   const preferred = [group.id, multipleZooms && zoom !== 1 ? `@${zoom}x` : ""].filter(Boolean).join("-");
-  const name = reserveFamily(preferred, (stem) => [`record${stem ? "-" + stem : ""}.mp4`, ...["start", "mid", "end"].map((frame) => `motion${stem ? "-" + stem : ""}-${frame}.jpg`)]);
+  const name = reserveFamily(preferred, (stem) => [`record${stem ? "-" + stem : ""}.mp4`, ...["start", "mid", "end"].map((frame) => `motion${stem ? "-" + stem : ""}-${frame}.jpg`), ...(opt.frames !== undefined ? [`motion${stem ? "-" + stem : ""}-sequence.png`] : [])]);
   const file = `motion${name ? "-" + name : ""}-end.jpg`;
   const meta = { state: states[0], size: `${sizes[0].w}x${sizes[0].h}`, zoom, ...(group.id ? { group: group.id } : {}) };
   await item(file, meta, async () => {
@@ -1785,7 +2002,7 @@ async function recording(group, entry, zoom, multipleZooms = false) {
     const result = await record(withState(states[0]), sizes[0].w, sizes[0].h, { name, steps: group.steps, entry, zoom });
     lines.push(result.message);
     for (const warning of result.warnings || []) lines.push(`⚠ ${warning}`);
-    report.push({ file, ...meta, issues: result.issues, frames: result.frames, sampling: result.sampling, durationMs: result.durationMs, ...(result.consistency ? { consistency: result.consistency } : {}), ...(result.warnings?.length ? { warnings: result.warnings } : {}), ...(result.failed ? { failed: true } : {}) });
+    report.push({ file, ...meta, issues: result.issues, frames: result.frames, sampling: result.sampling, durationMs: result.durationMs, ...(result.sequence ? { sequence: result.sequence } : {}), ...(result.consistency ? { consistency: result.consistency } : {}), ...(result.warnings?.length ? { warnings: result.warnings } : {}), ...(result.failed ? { failed: true } : {}) });
     if (evidence && result.failed) { report.at(-1).issues.push(result.message); process.exitCode = 1; }
   }, ` --record${entry ? " --entry" : ""}`);
 }
@@ -1795,7 +2012,14 @@ progressTotal = evidence
   ? (suppliedOptions.has("zoom") ? shotCount(states.length, zooms.length, 1, batchMask, states.length > 1) : shotCount(states.length, 1, 1, batchMask, states.length > 1) + shotCount(1, 1, 1, flags.has("mask"), false)) + Math.max(1, groups.length) + 1 + groups.length
   : (flags.has("motion") ? Math.max(1, groups.length) : 0) + (flags.has("record") ? zooms.length * Math.max(1, groups.length) : shotCount(states.length, zooms.length, Math.max(1, groups.length), flags.has("mask"), flags.has("sheet")));
 try {
-  if (evidence) {
+  if (stitching) {
+    progressTotal = 1;
+    await item("stitch.png", {}, async () => {
+      const result = await composeImages(stitchInputs, join(out, "stitch.png"), Number(opt.columns || 2));
+      report.push({ ...result, issues: [] });
+      lines.push(`拼图：${result.file}（${result.width}×${result.height}，${result.columns} 列）`);
+    });
+  } else if (evidence) {
     const plain = [{ id: "", steps: [] }];
     if (suppliedOptions.has("zoom")) {
       await captureBatch(states.map((_, i) => i), zooms, plain, states.length > 1 || flags.has("mask"), states.length > 1);

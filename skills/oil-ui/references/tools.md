@@ -1,6 +1,6 @@
 # 工具
 
-本目录自带的程序不需要读源码。这里只写什么时候用和最常用的几条命令；全部选项、动作写法和输出文件见各自的 `--help`，写错时报错会给出照抄就能用的写法。
+本目录自带的程序不需要读源码，命令里的 `<skill>` 换成本 Skill 的安装目录。这里只写什么时候用和最常用的几条命令；全部选项、动作写法和输出文件见各自的 `--help`，写错时报错会给出照抄就能用的写法。
 
 宿主有自己的浏览器工具时，查看页面、走查流程照常用。要交证据时优先用这里的截图工具：它开一个独立的临时浏览器，不碰用户自己浏览器里的数据。本机缺 Node 22，或者没有 Chrome、Chromium、Edge 时，退回宿主工具，交出同样的证据。任务或项目已经指定了截图工具时，照用它。
 
@@ -29,29 +29,31 @@ node <skill>/scripts/shoot.mjs <页面地址或 HTML 文件> [选项]
 | 落地页录一段从头滚到底 | `--record --steps "scroll 600; scroll 600; scroll 600"`，按页面长度多写几步 |
 | 截图还原：和参考图比对 | `--compare 参考.png --size <参考的逻辑尺寸>` |
 | 给用户指出问题：在元素上画框、标编号 | `--mark "1=.page-head .btn; 2=.toggle-row" --full` |
+| 看清一段过渡 | 录屏时加 `--frames 8`，另出逐帧标时间的序列图 |
+| 把几张图拼成一张对比图，不需要页面 | `--stitch a.png --label 修改前 --stitch b.png --label 修改后` |
 
-状态靠地址参数进入，所以页面要能用 `?state=<名字>` 直接打开每个状态。其余选项、选择器和动作的写法、输出文件和 `report.json` 的结构：运行 `node <skill>/scripts/shoot.mjs --help`。拿不准写法时先加 `--dry-run` 检查，不会启动浏览器。同时开着很多任务、截图超时的时候，加 `--timeout-scale 2`。
+状态靠地址参数进入，所以页面要能用 `?state=<名字>` 直接打开每个状态。其余选项、选择器和动作的写法、输出文件和 `report.json` 的结构：运行 `node <skill>/scripts/shoot.mjs --help`。拿不准写法时先加 `--dry-run` 检查，不会启动浏览器。超时会自动放宽时限重跑一次，仍失败时照报错里的命令重跑。
 
 ### 检索和下载真实素材
 
-在项目工作目录运行，建议用英文关键词；`<skill>` 是 Skill 安装路径：
+在项目工作目录运行，后续命令也在同一目录，搜索结果的编号才接得上：
 
 ```text
 node <skill>/scripts/curate-media.mjs search "<关键词>" --kind texture --limit 6 --sheet --dir candidates
+node <skill>/scripts/curate-media.mjs search "<一组词> | <另一组词>" --sheet --dir candidates
 node <skill>/scripts/curate-media.mjs preview V1,T2 --sheet --dir candidates
-node <skill>/scripts/curate-media.mjs fetch V1,T2 --dir assets --sheet
+node <skill>/scripts/curate-media.mjs fetch C1,T2 --dir assets --sheet
+node <skill>/scripts/curate-media.mjs fetch V3 --dir <不上线的参考图目录>
 node <skill>/scripts/curate-media.mjs fetch T2 --maps all --resolution 1k --dir assets
 ```
 
-`--kind` 支持 `all|texture|design|photo|blueprint|map|plate|science|video`。Poly Haven 提供材质与模型预览，V&A 提供设计馆藏，LOC 提供历史摄影、测绘蓝图与古地图，Wellcome 提供版画与科学手稿，NASA 提供科技照片与视频。`all` 交错取各信源，`--limit` 是总结果数。
+`--kind` 支持 `all|texture|design|photo|blueprint|map|plate|science|video`。信源包括材质库、欧美与日本的博物馆和图书馆馆藏、NASA，各类别对应哪些信源见 `--help`。`all` 交错取各信源；用 `|` 可一次搜几组词。关键词多用英文，东亚题材可直接用中日文，简体搜不到时换繁体或日文写法。
 
-搜索返回 JSON，`T/V/L/W/N` 编号依次对应五个信源，存入当前目录 `.curate-cache.json`，跨次搜索保留。后续命令在同一目录运行，或传同一个 `--cache <路径>`。错误单独列出，正常零匹配与请求失败分开报告。
+结果存入 `.curate-cache.json`，编号跨次搜索保留。每项 `use` 说明用途：`page` 可放进页面（CC BY/BY-SA 要署名），`check` 先看来源页，`reference` 不能放进页面；`--use page` 只留第一种。
 
-`search --sheet` 和 `preview` 出 HTML 候选联系表，打开后显示预览尺寸；`fetch --sheet` 出本地联系表并检查真实宽高、完整解码。视频自动截首帧 poster；检查和 poster 需要 ffmpeg/ffprobe，缺少时保留下载并报告未完成项。视频尺寸、版本回退及超时选项见 `--help`。
+`search --sheet` 和 `preview` 出带编号、用途和原图尺寸的联系表 PNG，直接读这张图挑选，不要只看标题；同时给每项算 `look`（四边色、是否浅色纸底、哪些区域干净可压字等），并出 HTML 联系表。`fetch --sheet` 出本地联系表并检查真实宽高、完整解码；视频自动截首帧 poster。
 
-贴图默认下载 1k Diffuse，`--maps all` 拉取 Diffuse、Roughness、OpenGL Normal JPG，并校验大小与 MD5。模型默认下载渲染预览，搜索另给 glTF 依赖清单。贴图使用与素材许可见 [配图](media.md#真实贴图与科学工程素材)。
-
-仍兼容 `fetch "<媒体 URL>" --out assets/<文件名> --note "来源说明"`。成功下载及 poster 自动写入同目录 `SOURCES.md`，已有文件不会覆盖；URL 权利资料缺失时记为未核实。全部选项、输出和修正示例：`node <skill>/scripts/curate-media.mjs --help`。
+贴图默认下载 1k Diffuse，`--maps all` 拉取 Diffuse、Roughness、OpenGL Normal JPG 并校验大小与 MD5；使用与许可见 [配图](media.md#真实贴图与科学工程素材)。下载及 poster 自动写入同目录 `SOURCES.md`，兼容 `fetch "<URL>" --out assets/<文件名> --note "来源说明"`。全部选项见 `node <skill>/scripts/curate-media.mjs --help`。
 
 ### 看结果
 

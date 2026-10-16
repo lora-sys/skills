@@ -28,7 +28,7 @@ For more usable interfaces, existing project redesigns, or effects such as light
 Send this to an agent that can install skills:
 
 ```text
-Install this skill for me: https://github.com/oil-oil/oil-ui
+Install this skill for me: run npx skills add oil-oil/oil-ui
 ```
 
 Or run this in your terminal:

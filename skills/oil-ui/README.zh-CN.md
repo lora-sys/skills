@@ -28,7 +28,7 @@ Oil UI 是给 AI Agent 用的界面设计 Skill：先拉开几种真正不同的
 把这句话交给支持安装 Skill 的 Agent：
 
 ```text
-请帮我安装这个 Skill：https://github.com/oil-oil/oil-ui
+请帮我安装这个 Skill：运行 npx skills add oil-oil/oil-ui
 ```
 
 或者在终端运行：

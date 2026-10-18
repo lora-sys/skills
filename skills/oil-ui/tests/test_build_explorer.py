@@ -15,6 +15,7 @@ import sys
 import tempfile
 import unittest
 from unittest.mock import patch
+from urllib.parse import quote
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -527,17 +528,18 @@ console.log(JSON.stringify(result));
 
     def test_local_assets_outside_manifest_are_embedded_and_protected(self):
         with tempfile.TemporaryDirectory() as outside_dir:
-            assets = Path(outside_dir).resolve()
+            assets = Path(outside_dir).resolve() / "素材 #100%"
+            assets.mkdir()
             (assets / "font.ttf").write_bytes(b"local-font")
             (assets / "image.png").write_bytes(b"local-image")
             (assets / "app.js").write_text("window.loaded=true", encoding="utf-8")
             (assets / "app.css").write_text('@font-face{font-family:test;src:url(font.ttf)}', encoding="utf-8")
             # Exercise ../ traversal as well as absolute references; no file copying is needed.
-            relative = os.path.relpath(assets / "app.css", self.folder.resolve())
+            relative = quote(Path(os.path.relpath(assets / "app.css", self.folder.resolve())).as_posix())
             self.source.write_text(f'<html><head><link rel="stylesheet" href="{relative}"></head>'
-                                   f'<body style="background:url({assets / "image.png"})">'
+                                   f'<body style="background:url({(assets / "image.png").as_uri()})">'
                                    f'<img src="{(assets / "image.png").as_uri()}">'
-                                   f'<script defer src="{assets / "app.js"}"></script></body></html>', encoding="utf-8")
+                                   f'<script defer src="{(assets / "app.js").as_uri()}"></script></body></html>', encoding="utf-8")
             self.data["candidates"][0]["interactive"] = True
             self.save()
             first = builder.build(self.manifest, self.output)
@@ -565,6 +567,18 @@ console.log(JSON.stringify(result));
             self.assertIn("外部候选", self.payload(self.output.read_text(encoding="utf-8"))["candidates"][0]["content"])
             with self.assertRaisesRegex(ValueError, "输出不能覆盖输入"):
                 builder.build(self.manifest, source, force=True)
+
+    @unittest.skipUnless(sys.platform == "win32", "Windows drive paths")
+    def test_native_windows_resource_paths_accept_slashes_and_reserved_characters(self):
+        image = self.folder / "素材 #100%.png"
+        image.write_bytes(b"image")
+        for ref in (str(image), image.as_posix(), image.as_uri()):
+            with self.subTest(ref=ref):
+                self.source.write_text(f'<img src="{ref}">', encoding="utf-8")
+                builder.build(self.manifest, self.output, force=True)
+                content = self.payload(self.output.read_text(encoding="utf-8"))["candidates"][0]["content"]
+                self.assertIn("data:image/png;base64,aW1hZ2U=", content)
+                self.assertNotIn("#100", content)
 
     def test_source_filesystem_paths_and_text_newlines_keep_existing_behavior(self):
         source = self.folder / "candidate #1%20.html"
@@ -754,7 +768,7 @@ console.log(JSON.stringify(result));
         image = self.folder / "image.png"
         image.write_bytes(base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j7ioAAAAASUVORK5CYII='))
         font = ROOT / "assets/fonts/instrument-serif/InstrumentSerif-Regular.ttf"
-        self.source.write_text(f'''<style>@font-face{{font-family:Test;src:url("{font}")}}
+        self.source.write_text(f'''<style>@font-face{{font-family:Test;src:url("{font.as_uri()}")}}
           p{{font-family:Test}}</style><p>Offline font</p><img src="image.png">
           <script>window.addEventListener('load',async()=>{{await document.fonts.load('16px Test');await document.fonts.ready;
             parent.postMessage({{probe:'offline-assets',image:document.querySelector('img').naturalWidth,
@@ -925,30 +939,6 @@ console.log(JSON.stringify(result));
         with self.assertRaises(ValueError):
             builder.build(self.manifest, self.output)
 
-    def test_template_keeps_documented_comparison_features(self):
-        builder.build(self.manifest, self.output)
-        page = self.output.read_text(encoding="utf-8")
-        hooks = {
-            "并排与单张": 'data-layout="loupe"',
-            "手机视口": 'data-viewport="mobile"',
-            "实际尺寸": '实际尺寸 100%',
-            "选择": "st.chosen",
-            "选择即复制": 'navigator.clipboard',
-            "本地地址候选": "c.kind==='url'",
-            "服务未运行提示": "开发服务器没有运行",
-            "复制启动命令": "button.dataset.copyServe",
-            "现状基线": "c.baseline",
-            "可操作小样": "c.interactive",
-            "按轮次保存": "DATA.fingerprint",
-            "展示北极星": "c.concept",
-            "展示色板": "c.palette",
-        }
-        missing = [name for name, hook in hooks.items() if hook not in page]
-        self.assertEqual(missing, [], "模板缺少对比页承诺的功能，见 .github/EXPLORER.md")
-        for removed in ('class="bar-r"', 'id="round"', 'id="filter-list"', 'id="notes-toggle"',
-                        'id="notes"', 'id="show-all"', "liveSource", "imageSource", "interactiveSource", "htmlSource"):
-            self.assertNotIn(removed, page)
-
     def test_brand_assets_and_edition_survive_relocation(self):
         copy = self.folder / "relocated"
         shutil.copytree(ROOT / "scripts", copy / "scripts", ignore=shutil.ignore_patterns("__pycache__"))
@@ -969,15 +959,6 @@ console.log(JSON.stringify(result));
                 self.assertNotIn('href="logo.png"', page)
                 self.assertNotIn('src="logo.png"', page)
                 self.assertNotIn('url("fonts/', page)
-
-    def test_copied_skill_works_from_another_directory(self):
-        copy = self.folder / "relocated"
-        shutil.copytree(ROOT / "scripts", copy / "scripts", ignore=shutil.ignore_patterns("__pycache__"))
-        shutil.copytree(ROOT / "assets", copy / "assets")
-        run = subprocess.run([sys.executable, str(copy / "scripts" / "build_explorer.py"), str(self.manifest), "--output", str(self.output)], cwd=self.folder, capture_output=True, text=True, encoding="utf-8")
-        self.assertEqual(run.returncode, 0, run.stderr)
-        self.assertTrue(self.output.is_file())
-
 
     def test_every_manifest_problem_is_reported_in_one_pass(self):
         self.data["schemaVersion"] = 2

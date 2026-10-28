@@ -13,7 +13,7 @@ lora-mode 是任务入口：判定任务类型与规模 → 路由 → 按档位
 2. **按步骤加载 skill**：步骤指名的 skill 必须真正加载后再动工，不凭印象替代其方法。当前任务的 playbook 定义流程和输出；辅助 skill 提供方法。一个任务链里已加载且未变化的 skill/reference 直接复用，不重复读取；恢复会话或内容变化时再读。二者冲突时按 playbook 执行，并记录不兼容处；"硬边界"和用户本次明确要求始终优先。
 3. **粘性与假设**：同范围新消息继续按当前 playbook 走，不需用户重复点名；没有完全匹配就选最近的，todo 首条声明"按 X 近似处理"。
 4. **按移交走**：playbook 声明"下一步移交"时（ui-design 选定 → web-feature；web-feature、static-site-release → publish；teaching-page → publish；deck、video 收尾 → notion 归档可选），只带产物与验收状态，不重开计划。
-5. **使用 CodeGraph**：目标仓库根目录有 `.codegraph/` 且宿主提供 MCP 或 CLI 时，先用 CodeGraph 定位相关符号和调用路径，再核对源文件与实际改动。记录索引覆盖的提交；索引缺失、过期或不覆盖某个版本时，说明范围并用源码/配置补证。不要自行创建索引或安装 CodeGraph。
+5. **使用 CodeGraph（代码任务）**：实现、排障和 PR/Issue 影响分析需要理解代码结构时，若目标仓库已有 `.codegraph/` 且宿主提供 MCP/CLI，先用 CodeGraph 导航，再核对源码与实际改动。没有索引时遵从仓库说明和用户选择；默认跳过，不自行初始化。用户选择启用后，CodeGraph agent 集成按所选范围配置一次（全局配置可覆盖多个项目），每个仓库运行 `codegraph init` 一次。MCP 服务运行时由文件 watcher 增量同步，重连时补齐离线变化；watcher 不可用或在 MCP 外查询时，查询前运行一次 `codegraph sync`。不设定时任务或周期性全量重建；配置变化或恢复需要时才重新索引。若 CLI/MCP 缺失，说明依赖并用源码/配置补证，不在任务中自动改机器级 agent 配置。记录索引覆盖的提交，Base/Head 未覆盖版本从对应源码补证；索引未显示某条边不代表依赖不存在。非代码任务跳过。
 6. **全自动任务链**：收到 `full-stop` / `full-send` 时，先运行目标 Issue/功能对应的 playbook，再串联 `pr-open` → `pr-babysit`；不额外套 `autonomous-run`，它留给没有 PR 事件等待流程的后台长任务。权限边界与终止条件见"PR 自动执行档位"。这两种模式不要求每一步向用户确认。
 
 ## 任务路由表

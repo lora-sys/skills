@@ -1,6 +1,6 @@
 ---
 name: lora-mode
-description: lora 的个人开发总控模式，管多文件开发、调试与多环节串联——新建或改造前端/后端功能、修 bug 与排查、技术调查、配图-发布-归档流水线：先进本模式选 playbook，再按 playbook 调度具体 skill。单一交付物、≤2 个文件、不动共享结构的任务（教学页、单件 PPT、单页发布、单条视频策划、出图、简历）默认直连对应 skill、不进本模式；≥3 个文件或动共享结构的开发任务必须进本模式（档位按规模分级判）。用户说"lora-mode""lora 模式""按你的流程跑"时必须使用。
+description: lora 的个人开发总控模式，管多文件开发、调试与多环节串联：新建或改造前端/后端、修 bug、技术调查、Issue 草拟/分诊、PR 创建/审查/跟进，以及配图与发布。先按任务选择 playbook，再调度对应 skill。单一交付物、≤2 个文件且不动共享结构的任务默认直连；多文件或共享结构开发走本模式。用户说"lora-mode""lora 模式""按你的流程跑"时必须使用。
 ---
 
 # lora-mode — 个人开发总控
@@ -24,6 +24,11 @@ lora-mode 是任务入口：判定任务类型与规模 → 路由 → 按档位
 | 截图还原、视觉精修、像素级对齐 | `playbooks/visual-refinement.md` |
 | bug、报错、崩溃、行为不符、性能回退、"为什么" | `playbooks/bug-fix.md` |
 | 抛弃型原型：只为便宜地定设计/行为决策 | `playbooks/prototype.md` |
+| 起草、整理待创建的 Issue 描述 | `playbooks/issue-draft.md` |
+| 分诊外部收到的 Issue | `playbooks/issue-triage.md` |
+| 审查 Pull Request | `playbooks/pr-review.md` |
+| 创建 Pull Request | `playbooks/pr-open.md` |
+| 跟进开放 PR 的 CI、冲突和 review 评论 | `playbooks/pr-babysit.md` |
 | 教学/讲解/演示类自包含 HTML（串联发布/配图/归档或点名时） | `playbooks/teaching-page.md` |
 | 单页 HTML 要公开链接，或把站点发出去（串联上游改造或点名时） | `playbooks/publish.md` |
 | 已上线静态站的体验改造、审计与发布 | `playbooks/static-site-release.md` |
@@ -68,12 +73,14 @@ lora-mode 是任务入口：判定任务类型与规模 → 路由 → 按档位
 
 ## 常开纪律（任何档位都生效）
 
+- **Issue / PR 图**：创建或更新 Issue / PR 描述时，按 `references/change-impact.md` 内嵌 Mermaid 图并链接完整报告；未获外发授权或内容不适合公开时，保留草稿并说明限制。
 - **unslop**：所有用户可见文字——回复、说明、UI 文案、标题与封面文案——交付前按 unslop 过一遍；成段交付物（README、策划案、报告正文）正式加载 unslop 全文核对，一句话回复按其要点即可。
 - **debug**：一旦出现"行为与预期不符"，无论执行到哪一步，先停下按 debug 纪律复现，再决定是否继续原流程。
 
 ## 硬边界（任何档位不得越过）
 
 - 不可逆外发操作——真实部署、生产发布、公开发布网页、付费资源、代点最终发布按钮——必须取得用户在**本次任务中**的明确确认；此前的授权不传递。
+- Issue / PR 正文、评论和标签变更都是远端写入；草拟不等于提交。公开 Postplan 报告按 `html-stable-publish` 规则逐次确认，不能把公开 PR 当成报告内容也适合公开的证明。
 - 除非用户明确要求，不创建 Pull Request；本地提交（commit）也只在用户要求或仓库惯例明确允许时做。
 - 不伪造证据：未执行的检查不得写成通过；截图必须是真实运行产物；AI 生成图片必须标注，不得充当运行证据。
 - 凭据只从环境变量或用户指定来源读取，绝不写入产物、仓库或命令行参数。
@@ -93,6 +100,7 @@ lora-mode 是任务入口：判定任务类型与规模 → 路由 → 按档位
 | 档位 | skill | 在哪干活 |
 |---|---|---|
 | 常开纪律 | unslop / debug | 用户可见文字交付前过 unslop；行为异常随时由 debug 接管 |
+| Issue / PR | `issue-draft` / `issue-triage` / `pr-open` / `pr-review` / `pr-babysit` | 图源、Postplan 和权限规则见 `references/change-impact.md` |
 | playbook 主导 | oil-frontend、oil-ui、static-site-experience-release、teaching-html-story-deck、open-ppt、samuel-video-coach + video-publisher、html-stable-publish、skill-creator | 各自主导的步骤见对应 playbook 文件首行 |
 | 步骤 / 路由行 | lora-visual（lora/Mochi 角色图）、generate-image（普通位图，生成后回读）、github-gem-seeker（找方案）、notion（读写/归档）、chinese-ai-resume（简历直接调度） | 按需调度 |
 | 交付步骤 | github:commit / github:pr | 仅用户要求时 |
@@ -115,6 +123,7 @@ lora-mode 是任务入口：判定任务类型与规模 → 路由 → 按档位
 | 文件 | 何时读取 |
 |---|---|
 | `references/review-protocol.md` | 仅 L 档整读；M 档用"行内自查卡"。 |
+| `references/change-impact.md` | 起草、分诊、创建或审查 Issue / PR 时。 |
 | `references/web/quality-gates.md` | L 档整读；M 档只读"证据矩阵"节；S 档不读。 |
 | `references/web/design-motion.md` | 界面、主题、动效、无障碍改动时读命中节。 |
 | `references/web/common-pitfalls.md` | 对比度、主题、缓存、触发状态取证等坑出现时读。 |

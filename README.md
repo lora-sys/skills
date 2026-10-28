@@ -40,7 +40,7 @@ npx skills list --global --agent codex
 
 | Skill | 用途 | 适用场景 |
 |---|---|---|
-| [`lora-mode`](skills/lora-mode/) | 个人开发总控：playbook 路由 + 七步骨架 + 隔离对抗审查，调度本仓库全部 skill | 前后端开发、调试、调查、发布等开发流程任务（多步交付） |
+| [`lora-mode`](skills/lora-mode/) | 个人开发总控：playbook 路由 + 七步骨架 + 隔离对抗审查；覆盖 Issue 分诊、PR 审查、影响图与 Postplan 报告 | 前后端开发、Issue / PR 生命周期、调试、调查、发布等多步任务 |
 | [`open-ppt`](skills/open-ppt/) | PPTD 格式的演示文稿创建、编辑与 PPTX/图片导出 | 幻灯片、PPT/PPTX、海报、infographic、教学演示 |
 | [`samuel-video-coach`](skills/samuel-video-coach/) | Samuel 风格的短视频导演 Skill：分镜、台词、拍摄指导、AI 过渡与共鸣设计 | 抖音、TikTok、Reels、Shorts、Bilibili、YouTube 前期策划 |
 | [`generate-image`](skills/generate-image/) | 使用七牛云 Modelink（GPT Image 2 / Gemini）生成或编辑图片 | 文生图、图编辑、多图合成、风格迁移、海报封面插画、透明底素材 |

@@ -40,7 +40,7 @@ npx skills list --global --agent codex
 
 | Skill | 用途 | 适用场景 |
 |---|---|---|
-| [`lora-mode`](skills/lora-mode/) | 个人开发总控：playbook 路由 + 七步骨架 + 隔离对抗审查；覆盖 Issue 分诊、PR 审查、影响图与 Postplan 报告 | 前后端开发、Issue / PR 生命周期、调试、调查、发布等多步任务 |
+| [`lora-mode`](skills/lora-mode/) | 个人开发总控：playbook 路由 + 七步骨架 + 隔离对抗审查；覆盖 Issue / PR、接手既有工作、风险分层与影响图 | 前后端开发、Issue / PR 生命周期、接手 PR / 分支 / Agent 线程、调试、调查、发布等多步任务 |
 | [`engineering-writing`](skills/engineering-writing/) | PR、Issue、技术文档和工程评论的证据化写作标准；英文技术文本含 STE 启发式检查 | 起草或修改 PR / Issue 正文、工程文档、代码审查评论和回复 |
 | [`open-ppt`](skills/open-ppt/) | PPTD 格式的演示文稿创建、编辑与 PPTX/图片导出 | 幻灯片、PPT/PPTX、海报、infographic、教学演示 |
 | [`samuel-video-coach`](skills/samuel-video-coach/) | Samuel 风格的短视频导演 Skill：分镜、台词、拍摄指导、AI 过渡与共鸣设计 | 抖音、TikTok、Reels、Shorts、Bilibili、YouTube 前期策划 |
@@ -100,6 +100,7 @@ Skills CLI 会发现 `skills/<skill-name>/SKILL.md`。每个 `SKILL.md` 的目�
 | `teaching-html-story-deck` | lora-sys 创建，MIT；原始许可文件保留于技能目录。 |
 | `lora-visual` | 改编自 [oil-oil/oil-visual](https://github.com/oil-oil/oil-visual)，MIT；上游版权与许可见技能目录内的 `THIRD_PARTY_NOTICES.md`。 |
 | `unslop` | 源自 [Cursor Plugins pstack/unslop](https://github.com/cursor/plugins/tree/main/pstack/skills/unslop)，作者 Lauren Tan，MIT；上游许可文件保留于技能目录。 |
+| `lora-mode` | lora-sys 维护；接手既有工作的流程参考 [t3dotgg/tstack takeover](https://github.com/t3dotgg/tstack/blob/main/skills/takeover/SKILL.md)，按本仓库授权边界改写。 |
 | 其余技能 | 由 lora-sys 策展并作为本个人工作流集合的一部分维护。 |
 | `notion` | 包装官方 [Notion CLI (`ntn`)](https://github.com/makenotion/notion-cli)，MIT；上游版权与许可见技能目录内的 `THIRD_PARTY_NOTICES.md`。 |
 | `generate-image` | lora-sys 创建，MIT；改编自 [K-Dense-AI/claude-scientific-writer](https://github.com/K-Dense-AI/claude-scientific-writer) 的 `generate-image` skill（MIT），后端由 OpenRouter 换为七牛云 Modelink。 |

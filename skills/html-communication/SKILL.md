@@ -11,8 +11,8 @@ description: Use only to publish a standalone HTML file or static site through P
 
 ## 凭据与安全
 
-- CLI 凭据由 `npx postplan auth set <api-key>` 保存到用户目录的 `.postplan/credentials.json`，权限应保持为仅用户可读写。
-- 也可临时使用环境变量 `POSTPLAN_API_KEY`；API 地址可用 `POSTPLAN_API_URL` 覆盖，默认是 `https://postplan.dev`。
+- 使用已有的 `.postplan/credentials.json`，或由密钥管理器注入 `POSTPLAN_API_KEY`。API 地址可用 `POSTPLAN_API_URL` 覆盖，默认是 `https://postplan.dev`。
+- 如果没有凭据，请让用户通过安全配置方式提供。不要把 API key 放进命令行参数、shell 历史或日志。
 - 绝不把 API key 写入 HTML、项目文件、日志、对话回复或版本库；不要上传 `.env`、密码、真实用户数据、内网 URL 或私密资源。
 - 实际上传属于外部发布。执行 `npx postplan upload` 前，必须向用户确认将公开发布；仅做本地检查或 dry-run 不需要确认。
 
@@ -27,16 +27,13 @@ description: Use only to publish a standalone HTML file or static site through P
    ```
 
    可选参数：`--description "简短说明"`、`--new`（强制创建新 draft）、`--api-url <url>`。
-4. 记录 CLI 输出的 `URL`、`Raw HTML`、draft ID 和版本号。打开 URL 验证标题和页面内容；如交给另一个 agent 读取，优先提供 `Raw HTML` URL。
-5. 交付时说明平台为 Postplan、这是公开 draft、是否使用了已有 draft 的更新，以及对应的版本号。不要称为永久生产托管；长期域名、生产发布或细粒度访问控制需要另行选择正式托管方案。
+4. 记录 CLI 输出的 `URL`、`Raw HTML`、draft ID 和版本号。打开公开 URL 检查页面内容；请求成功后检查 Raw HTML URL 返回的内容。
+5. 返回公开 URL 和 Raw HTML URL，并说明平台为 Postplan、这是公开 draft、是否更新已有 draft，以及版本号。不要称为永久生产托管；长期域名、生产发布或细粒度访问控制需要另行选择正式托管方案。
 
 ## 常用命令
 
 ```sh
-# 配置或更新本机凭据（不要把真实 key 写进脚本）
-npx postplan auth set <api-key>
-
-# 检查凭据是否有效；不会打印 key 本身
+# 检查已配置的凭据
 npx postplan whoami
 
 # 发布或更新页面

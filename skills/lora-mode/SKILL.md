@@ -1,6 +1,6 @@
 ---
 name: lora-mode
-description: lora 的个人开发总控模式，管多文件开发、调试与多环节串联：新建或改造前端/后端、修 bug、技术调查、Issue 草拟/分诊、PR 创建/审查/跟进，以及配图与发布。PR/Issue 操作无论代码改动大小都使用本模式；其他单一交付物、≤2 个文件且不动共享结构的任务默认直连。用户说"lora-mode"、"lora 模式"、"按你的流程跑"、"全自动"、"full-stop"或"full-send"时必须使用。
+description: lora 的个人开发总控模式，管多文件开发、调试与多环节串联：新建或改造前端/后端、修 bug、技术调查、Issue 草拟/分诊、PR 创建/审查/跟进，以及接手已有 PR、分支或 Agent 线程。PR/Issue 操作无论代码改动大小都使用本模式；其他单一交付物、≤2 个文件且不动共享结构的任务默认直连。用户说"lora-mode"、"lora 模式"、"接手这个 PR / 分支 / agent 线程"、"按你的流程跑"、"全自动"、"full-stop"或"full-send"时必须使用。
 ---
 
 # lora-mode — 个人开发总控
@@ -29,6 +29,7 @@ lora-mode 是任务入口：判定任务类型与规模 → 路由 → 按档位
 | 起草、整理待创建的 Issue 描述 | `playbooks/issue-draft.md` |
 | 分诊外部收到的 Issue | `playbooks/issue-triage.md` |
 | 审查 Pull Request | `playbooks/pr-review.md` |
+| 接手他人的 PR、分支或 Agent 线程 | `playbooks/takeover.md` |
 | 创建 Pull Request | `playbooks/pr-open.md` |
 | 跟进、监视或挂起等待开放 PR 的 CI、冲突和 review 评论 | `playbooks/pr-babysit.md` |
 | 教学/讲解/演示类自包含 HTML（串联发布/配图/归档或点名时） | `playbooks/teaching-page.md` |
@@ -134,6 +135,7 @@ lora-mode 是任务入口：判定任务类型与规模 → 路由 → 按档位
 |---|---|
 | `references/review-protocol.md` | 仅 L 档整读；M 档用"行内自查卡"。 |
 | `references/change-impact.md` | 起草、分诊、创建或审查 Issue / PR 时。 |
+| `references/pr-review-policy.md` | 创建、审查、跟进或接手 PR 时。 |
 | `references/web/quality-gates.md` | L 档整读；M 档只读"默认验收"及本次相关门禁；S 档不读。 |
 | `references/web/design-motion.md` | 界面、主题、动效、无障碍改动时读命中节。 |
 | `references/web/common-pitfalls.md` | 对比度、主题、缓存、触发状态取证等坑出现时读。 |

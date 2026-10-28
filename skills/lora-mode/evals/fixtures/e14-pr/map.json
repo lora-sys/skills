@@ -1,10 +1,9 @@
 {
   "kind": "pr",
   "title": "Authentication dependency change",
-  "description": "Base and Head module dependencies for this PR.",
+  "description": "Base/Head relationships are reported in the prompt, not verified from source; runtime consumers and migration behavior are unknown.",
   "scope": "Supplied module summary only; source dependencies were not inspected.",
   "base": {
-    "ref": "main",
     "sha": "1111111",
     "nodes": [
       {"id": "web", "label": "web", "confidence": "reported", "evidence": "provided summary"},
@@ -17,7 +16,6 @@
     ]
   },
   "head": {
-    "ref": "feature/auth-refresh",
     "sha": "2222222",
     "nodes": [
       {"id": "web", "label": "web", "confidence": "reported", "evidence": "provided summary"},

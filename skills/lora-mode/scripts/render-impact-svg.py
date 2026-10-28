@@ -395,8 +395,12 @@ def render(data: dict[str, Any]) -> str:
         body.append(f'<text x="24" y="34" class="chart-title">{title}</text>')
         body.append(f'<rect x="12" y="{base_top}" width="{panel_w - 24}" height="{base_h + 68}" rx="10" fill="#ffffff" stroke="#d0d7de"/>')
         body.append(f'<rect x="12" y="{head_top}" width="{panel_w - 24}" height="{panel_h}" rx="10" fill="#ffffff" stroke="#d0d7de"/>')
-        body.append(f'<text x="28" y="{base_top + 27}" class="panel-title">Base · {escape(data["base"].get("ref", "Base"))} · {escape(data["base"]["sha"])}</text>')
-        body.append(f'<text x="28" y="{head_top + 27}" class="panel-title">Head · {escape(data["head"].get("ref", "Head"))} · {escape(data["head"]["sha"])}</text>')
+        base_ref = data["base"]["ref"]
+        head_ref = data["head"]["ref"]
+        base_name = f' · {escape(base_ref)}' if base_ref.casefold() != "base" else ""
+        head_name = f' · {escape(head_ref)}' if head_ref.casefold() != "head" else ""
+        body.append(f'<text x="28" y="{base_top + 27}" class="panel-title">Base{base_name} · {escape(data["base"]["sha"])}</text>')
+        body.append(f'<text x="28" y="{head_top + 27}" class="panel-title">Head{head_name} · {escape(data["head"]["sha"])}</text>')
         body.extend(base_parts)
         body.extend(head_parts)
         body.append(legend_pr(width, legend_y))

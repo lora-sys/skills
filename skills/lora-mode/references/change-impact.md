@@ -28,7 +28,7 @@ SVG 要求：
 
 ## PR 依赖图
 
-- 从目标分支 merge-base 和当前 head 取证，记录两个 SHA。仓库已有 `.codegraph/` 且 CLI/MCP 可用时，用 CodeGraph 导航；没有索引时遵从仓库说明和用户选择，默认不初始化。用户选择启用后，每仓库只运行一次 `codegraph init`。MCP 服务运行时 watcher 增量同步，重连时补齐离线变化；watcher 不可用或在 MCP 外查询时，分析前运行一次 `codegraph sync`。不设定时任务或周期性全量重建。若 CLI/MCP 未安装，不静默修改机器级 agent 配置，改用 diff、源码和项目配置取证，并在 Coverage 中说明。记录索引对应的提交；索引只覆盖一个版本时，只把它作为该版本的导航证据，另一版本须从对应源码、配置或可用索引补证。
+- 从目标分支 merge-base 和当前 head 取证，记录两个 SHA。已有索引且 CLI/MCP 可用时用 CodeGraph 导航；没有索引时遵从仓库说明和用户选择，默认不初始化。创建仓库索引、安装 CLI/MCP、配置 Agent/MCP 是三项独立操作，各自都需要用户对具体范围的明确授权，一项授权不包含另两项。仅在仓库索引已获授权且 CLI 已就绪时运行一次 `codegraph init`；CLI/MCP 缺失或未获安装授权时，不安装，改用 diff、源码和配置取证并在 Coverage 中说明。MCP watcher 和重连负责增量追赶；watcher 不可用或在 MCP 外查询时，分析前按需运行 `codegraph sync`，不设定时任务或周期性全量重建。记录索引对应的提交；索引只覆盖一个版本时，只把它作为该版本的导航证据，另一版本须从对应源码、配置或可用索引补证。
 - 只有检查到足以支持关系的具体源码、配置或运行证据，才将边标为 `confirmed` 并填写 evidence；用户/Issue 提供的关系标 `reported`，静态推断标 `inferred`，没有证据标 `unknown`。非 `unknown` 节点和边都必须填写 evidence。缺失 confidence 默认 `unknown`，不默认当作事实。
 - Base 与 Head 上下排列，以便缩放到 PR 正文宽度后仍能读清节点。依赖拓扑未变化时也画前后状态图，并明确写“依赖拓扑未变化”。
 - 画出新增、删除、修改的模块与依赖边变化，以及直接受影响的未改消费者。对照 diff 核对节点和边。

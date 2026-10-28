@@ -13,7 +13,7 @@ lora-mode 是任务入口：判定任务类型与规模 → 路由 → 按档位
 2. **按步骤加载 skill**：步骤指名的 skill 必须真正加载后再动工，不凭印象替代其方法。当前任务的 playbook 定义流程和输出；辅助 skill 提供方法。一个任务链里已加载且未变化的 skill/reference 直接复用，不重复读取；恢复会话或内容变化时再读。二者冲突时按 playbook 执行，并记录不兼容处；"硬边界"和用户本次明确要求始终优先。
 3. **粘性与假设**：同范围新消息继续按当前 playbook 走，不需用户重复点名；没有完全匹配就选最近的，todo 首条声明"按 X 近似处理"。
 4. **按移交走**：playbook 声明"下一步移交"时（ui-design 选定 → web-feature；web-feature、static-site-release → publish；teaching-page → publish；deck、video 收尾 → notion 归档可选），只带产物与验收状态，不重开计划。
-5. **使用 CodeGraph（代码任务）**：实现、排障和 PR/Issue 影响分析需要理解代码结构时，若目标仓库已有 `.codegraph/` 且宿主提供 MCP/CLI，先用 CodeGraph 导航，再核对源码与实际改动。没有索引时遵从仓库说明和用户选择；默认跳过，不自行初始化。用户选择启用后，CodeGraph agent 集成按所选范围配置一次（全局配置可覆盖多个项目），每个仓库运行 `codegraph init` 一次。MCP 服务运行时由文件 watcher 增量同步，重连时补齐离线变化；watcher 不可用或在 MCP 外查询时，查询前运行一次 `codegraph sync`。不设定时任务或周期性全量重建；配置变化或恢复需要时才重新索引。若 CLI/MCP 缺失，说明依赖并用源码/配置补证，不在任务中自动改机器级 agent 配置。记录索引覆盖的提交，Base/Head 未覆盖版本从对应源码补证；索引未显示某条边不代表依赖不存在。非代码任务跳过。
+5. **使用 CodeGraph（代码任务）**：理解结构且目标仓库已有 `.codegraph/` 和可用 CLI/MCP 时，用它导航并核对源码。无索引默认跳过；创建仓库索引、安装 CLI/MCP、配置 Agent/MCP 是三项独立操作，各自都需要针对具体范围的明确授权。生命周期与 PR Base/Head 证据规则见 `references/change-impact.md`。非代码任务跳过。
 6. **全自动任务链**：收到 `full-stop` / `full-send` 时，先运行目标 Issue/功能对应的 playbook，再串联 `pr-open` → `pr-babysit`；不额外套 `autonomous-run`，它留给没有 PR 事件等待流程的后台长任务。权限边界与终止条件见"PR 自动执行档位"。这两种模式不要求每一步向用户确认。
 
 ## 任务路由表
@@ -78,7 +78,6 @@ lora-mode 是任务入口：判定任务类型与规模 → 路由 → 按档位
 
 ## 常开纪律（任何档位都生效）
 
-- **Issue / PR 图**：创建或更新 Issue / PR 描述时，按 `references/change-impact.md` 生成一张 SVG 影响图并附在正文中；完整报告按需生成，不作为默认步骤。
 - **unslop**：所有用户可见文字——回复、说明、UI 文案、标题与封面文案——交付前按 unslop 过一遍；成段交付物（README、策划案、报告正文）正式加载 unslop 全文核对，一句话回复按其要点即可。
 - **debug**：一旦出现"行为与预期不符"，无论执行到哪一步，先停下按 debug 纪律复现，再决定是否继续原流程。
 
@@ -135,14 +134,14 @@ lora-mode 是任务入口：判定任务类型与规模 → 路由 → 按档位
 |---|---|
 | `references/review-protocol.md` | 仅 L 档整读；M 档用"行内自查卡"。 |
 | `references/change-impact.md` | 起草、分诊、创建或审查 Issue / PR 时。 |
-| `references/web/quality-gates.md` | L 档整读；M 档只读"证据矩阵"节；S 档不读。 |
+| `references/web/quality-gates.md` | L 档整读；M 档只读"默认验收"及本次相关门禁；S 档不读。 |
 | `references/web/design-motion.md` | 界面、主题、动效、无障碍改动时读命中节。 |
 | `references/web/common-pitfalls.md` | 对比度、主题、缓存、触发状态取证等坑出现时读。 |
 | `references/web/stack-selection.md` | Web 新项目选型时。 |
 
 ## 示例
 
-"给我的博客首页加个目录" → web-feature（M 档）：读仓库 → 核实文档 → 小计划 → oil-frontend 实现 → 真实浏览器截图 → 行内自查卡 → 证据交付。
+"给博客所有文章页加自动目录，复用共享文章模板并能跳转标题" → web-feature（M 档）：读仓库 → 核实文档 → 小计划 → oil-frontend 实现 → 验证目录与锚点 → 行内自查卡 → 证据交付。
 "写个把 CSV 转 JSON 的小工具" → backend-feature（S 档）：不读 playbook，明确验收 → 实现 → 自测主路径+边界 → 3 行证据交付。
 
 > lora-mode 把"完成"定义为：真实运行、经过验证、没有假状态；把"快"定义为决策便宜，而不是验证打折。

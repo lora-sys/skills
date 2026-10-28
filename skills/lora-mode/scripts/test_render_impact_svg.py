@@ -44,8 +44,16 @@ class RenderImpactSvgTests(unittest.TestCase):
 
     def test_pr_svg_records_module_and_edge_changes(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
-            data = self.render_fixture(FIXTURES / "e14-pr" / "map.json", Path(directory) / "map.svg")
+            output = Path(directory) / "map.svg"
+            data = self.render_fixture(FIXTURES / "e14-pr" / "map.json", output)
+            root = ET.parse(output).getroot()
         self.assertEqual((data["base"]["sha"], data["head"]["sha"]), ("1111111", "2222222"))
+        headings = " ".join(element.text or "" for element in root.findall(".//svg:text", SVG_NS))
+        self.assertIn("Base · 1111111", headings)
+        self.assertIn("Head · 2222222", headings)
+        self.assertNotIn("Base · Base", headings)
+        self.assertNotIn("Head · Head", headings)
+        self.assertIn("reported in the prompt", root.find("svg:desc", SVG_NS).text)
         statuses = {node["id"]: node["status"] for node in data["nodes"]}
         self.assertEqual(statuses["api-auth"], "added")
         self.assertEqual(statuses["credential-store"], "added")
@@ -60,6 +68,26 @@ class RenderImpactSvgTests(unittest.TestCase):
         changes = {(edge["phase"], edge["from"], edge["to"]): edge["change"] for edge in data["edges"]}
         self.assertEqual(changes[("base", "session", "token-helper")], "removed")
         self.assertEqual(changes[("head", "session", "credential-store")], "added")
+
+    def test_pr_panel_title_includes_only_explicit_branch_refs(self) -> None:
+        data = json.loads((FIXTURES / "e14-pr" / "map.json").read_text(encoding="utf-8"))
+        data["base"]["ref"] = "main"
+        data["head"]["ref"] = "feature/auth-refresh"
+        with tempfile.TemporaryDirectory() as directory:
+            input_path = Path(directory) / "map.json"
+            output_path = Path(directory) / "map.svg"
+            input_path.write_text(json.dumps(data), encoding="utf-8")
+            result = subprocess.run(
+                [sys.executable, str(SCRIPT), str(input_path), "--output", str(output_path)],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            root = ET.parse(output_path).getroot()
+        headings = " ".join(element.text or "" for element in root.findall(".//svg:text", SVG_NS))
+        self.assertIn("Base · main · 1111111", headings)
+        self.assertIn("Head · feature/auth-refresh · 2222222", headings)
 
     def test_issue_svg_keeps_reported_and_unknown_relationships_separate(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

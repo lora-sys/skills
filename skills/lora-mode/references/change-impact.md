@@ -1,115 +1,77 @@
-# Issue / PR 影响图与 Postplan 报告
+# Issue / PR SVG 变更图
 
-Issue 和 PR 的描述应让人先看见问题或改动，再按链接展开证据。描述内放一张 Mermaid 图和简短结论；Postplan 页面承载完整 HTML 报告。
+Issue 和 PR 正文默认附一张自包含 SVG。它是给人审查的图，也带有 Agent 可解析的结构化记录。日常流程不另写 HTML 报告；复杂图或用户要求独立页面时才准备 Postplan 报告。
 
-## Issue 图
+GitHub 支持 SVG 附件，`gh pr create/edit` 和 `gh issue create/edit` 可用 `--attach <file.svg>` 上传并将正文里的本地图片引用替换成附件 URL。其他 tracker 使用其支持的图片附件方式。草稿交付时同时给 Markdown 正文和本地 SVG 文件，不把本机路径当成远端 URL。
 
-- 用状态图或流程图表达报告者动作、可复现的实际结果、期望结果和已确认的代码路径。
-- 证据不足时把未知写成未知。可以画出“信息缺失 → 等待补充”的 triage 路径，不推测运行时路径。
-- 功能提案用当前行为与目标行为两条路径，并把尚未决定的行为留在问题列表。
-- 只有需要验证并发、协议或跨状态不变量时才建 TLA+/TLC 模型。普通 Issue 不要求形式化建模。
+用 `scripts/render-impact-svg.py <graph.json> --output <map.svg>` 从短 JSON 图数据生成 SVG。不要手写大段 SVG。JSON 字段、PR/Issue 示例和错误检查见 `evals/fixtures/e14-pr/map.json`、`evals/fixtures/e16-issue/map.json` 和渲染脚本。
+
+## SVG 内容
+
+每张图包含可见图形和机器可读的 SVG 元数据：
+
+```xml
+<title>简短图标题</title>
+<desc>一句话说明图表达的变化、范围和主要未知。</desc>
+<metadata id="lora-change-map-v1">{"schema":"lora-change-map/v1","kind":"pr|issue|state","scope":"分析范围","base":{"sha":"..."},"head":{"sha":"..."},"nodes":[{"id":"...","label":"...","status":"added|modified|deleted|affected|observed|expected|unknown","evidence":"...","confidence":"confirmed|inferred|unknown"}],"edges":[{"from":"...","to":"...","relationship":"depends-on|calls|event|expected","change":"unchanged|added|removed","evidence":"...","confidence":"confirmed|inferred|unknown"}],"unknowns":["..."]}</metadata>
+```
+
+SVG 要求：
+
+- 文件自包含，不含脚本、外链字体、远程图片或动画。
+- 图中节点名称使用人能识别的模块或状态名。节点直接写 `新增`、`修改`、`删除`、`受影响`、`观察到`、`期望` 或 `待确认`；颜色只作辅助，不能单独承载含义。
+- `<desc>` 说明图的读法。`<metadata>` 内嵌符合 `lora-change-map/v1` 的 JSON，记录节点状态、依赖/事件边、边类型、证据来源、确认状态、分析范围和未覆盖项；PR 同时记录 base/head SHA 和影响距离。把 JSON 作为 XML 文本安全转义，保证附件可被脚本或 Agent 解析。
+- 边使用箭头表达方向；图例说明箭头的语义。实线表示有证据的关系，虚线表示推断或待确认关系。
+- 控制图的范围，只显示本次改动或问题涉及的模块和必要上下游，不尝试画全仓库。节点过多时先按包或子系统聚合，不能隐藏跨边界影响。
 
 ## PR 依赖图
 
-- 对比目标分支的 merge-base 和当前 head，记录两个 SHA。优先使用仓库已有的代码索引或依赖工具；仓库有 `.codegraph/` 时先用 CodeGraph。
-- 依赖拓扑有变化时并排画 base/head；拓扑没变时可以画一张状态图，并明确写“依赖拓扑未变化”。
-- 节点以包、模块或清晰的子系统为主。只在定位不清时展开到文件或符号。
-- 颜色固定：绿色新增，橙色修改，红色删除，灰色未改但直接受影响。
-- 箭头 `A --> B` 固定表示“A 依赖 B”。图例说明依赖来自 import、调用、配置还是人工推断。
-- 展示改动节点、依赖边的增删，以及直接受影响的未改节点。复杂图先聚合到模块层；不要为了塞进一张图而省略跨边界的影响。
-- 文档专属改动仍给出简图，并写明“源代码依赖图未变化”。
-- 标注分析覆盖范围和静态分析看不到的关系，如反射、插件发现、配置路由或运行时数据流。不能把局部图称作完整调用图。
+- 从目标分支 merge-base 和当前 head 取证，记录两个 SHA；有 `.codegraph/` 时先使用 CodeGraph。
+- Base 与 Head 上下排列，以便缩放到 PR 正文宽度后仍能读清节点。依赖拓扑未变化时也画前后状态图，并明确写“依赖拓扑未变化”。
+- 画出新增、删除、修改的模块与依赖边变化，以及直接受影响的未改消费者。对照 diff 核对节点和边。
+- 元数据记录依赖关系来自 import、调用、配置、静态索引或人工推断。标出反射、插件发现、配置路由、运行时数据流等静态分析未覆盖关系。
+- 文档专属改动照样给图，并写明“源代码依赖图未变化”。局部图不能称作完整调用图。
 
-## 描述与完整报告
+## Issue 路径图
 
-PR 描述使用 `Change map` 小节，包含 base/head、分析范围、Mermaid 图、影响结论、验证证据和完整报告链接。Issue 描述使用 `Issue map` 或 `Reproduction map`，包含实际/期望状态、未知项和完整报告链接。
+- Bug 图表达报告者动作、观察到的结果和期望结果。Feature 图表达当前路径与目标路径。
+- 证据不足时只画已知信息和等待补充路径。模块线索若未经源码或日志确认，标作候选节点并用虚线连接。
+- SVG 中同时提供 `<desc>` 和文本标签，避免图成为唯一的信息载体。元数据列出未知项和来源。
+- 只有需要验证并发、协议或跨状态不变量时，才使用 pstack `statechart` / TLA+ / TLC。先确认要验证的状态规则；普通 Issue 不做形式化建模。
 
-只准备本地草稿时，生成的 HTML 可留在本地；描述中的报告地址保留为醒目的代码占位符 `POSTPLAN_URL_PENDING_APPROVAL`，并注明 Postplan 发布待本次授权。不要把本机文件路径当作报告链接。创建或更新远端描述前，先完成报告发布授权并换成实际 URL。未获授权时不编造 URL，也不提交带占位地址的远端描述。
+## 描述正文
 
-交付 Issue / PR 正文时直接给可粘贴的 Markdown。正文含 Mermaid 代码块时，不要再用三反引号包住整篇正文；若需要外围示例代码块，使用四个反引号。
+PR 正文保留 Why、改动范围、风险和真实验证结果，并嵌入附件：
 
-````markdown
-## Why
-<reason>
+```markdown
+### Change map
+Base: `<base SHA>` · Head: `<head SHA>` · Coverage: <工具与限制>
 
-## What changed
-<scope>
-
-## Non-goals
-<out of scope>
-
-## Blast radius
-<affected modules and boundary changes>
-
-## Change map
-Base: `<base SHA>` · Head: `<head SHA>` · Coverage: `<tool and limits>`
-
-```mermaid
-flowchart LR
-  subgraph Base
-    C0[affected consumer] --> A0[changed module] --> B0[old dependency]
-  end
-  subgraph Head
-    C1[affected consumer] --> A1[changed module] --> D1[new dependency]
-  end
-  classDef added fill:#ddf4e8,stroke:#2e7d32
-  classDef modified fill:#fff1cc,stroke:#9b6218
-  classDef deleted fill:#fde2e2,stroke:#a1433c
-  classDef affected fill:#eaf1f7,stroke:#315f83
-  class A0,A1 modified
-  class B0 deleted
-  class C0,C1 affected
-  class D1 added
+![Base 到 Head 的模块依赖变化图，图例解释新增、修改、删除、受影响节点及依赖箭头](./change-map.svg)
 ```
 
-**Impact:** <why the changed boundary matches the request>
-**Verification:** <command and observed result>
-**Merge danger:** <reversible or one-way action and why>
-**Full report:** `POSTPLAN_URL_PENDING_APPROVAL`
-````
+Issue 正文保留问题/目标、实际与期望行为、验收条件和未知项，并嵌入附件：
 
-Issue 描述可以用以下骨架；复现信息未知时保留 `Unknowns`，不编造代码路径：
-
-````markdown
-## Problem / goal
-<one sentence>
-
-## Current and expected behavior
-<observed behavior and desired behavior>
-
-## Acceptance criteria
-- [ ] <observable result>
-
-## Issue map
-```mermaid
-flowchart LR
-  A[known action] --> B[observed result]
-  A -. expected .-> C[expected result]
+```markdown
+### Issue map
+![已观察路径、期望路径与待确认模块关系图](./issue-map.svg)
 ```
 
-**Unknowns:** <questions or none>
-**Full report:** `POSTPLAN_URL_PENDING_APPROVAL`
-````
-
-完整报告记录需求或 Issue 编号、base/head SHA、图的来源、节点与边、影响解释、验证证据和未覆盖关系。页面更新时使用同一份本地 HTML 更新同一个 Postplan draft，保留稳定 URL，并检查报告中的 head SHA 已刷新。
-
-每个 Issue / PR 使用各自的 Postplan draft，不跨事项共用链接。后续更新同一事项时更新对应报告并保留其 URL。
+给 GitHub CLI 时用 `--attach change-map.svg` 或 `--attach issue-map.svg`。CLI 会上传附件并替换正文中的本地图片引用。没有创建/更新授权时只交本地草稿；不执行 tracker 写入。
 
 ## Agent 自查
 
-在交付描述前逐项核对：
+交付前逐项核对 SVG 和图内 JSON：
 
-- 图中的改动节点是否与实际 diff 一致，有没有遗漏新增、删除或移动的模块？
-- 新增/删除的依赖边和受影响调用方是否符合源码证据？
-- 跨模块改动是否有明确的理由和验证？
-- Issue 的实际路径与预期路径是否来自报告者信息或真实复现？
-- 图无法覆盖的动态关系是否明确列出，结论是否超出证据？
+- 图中新增、删除、修改节点是否与实际 diff 一致？
+- 依赖边是否能从源码、索引或配置找到证据？边的方向和类型是否正确？
+- 是否遗漏直接受影响的模块或消费者？跨模块改动是否说明原因和验证？
+- base/head SHA、图例、覆盖范围和未知项是否准确？
+- Issue 的观察路径是否来自报告者信息或真实复现？期望是否清楚标为目标而非当前行为？
+- 视图中每个状态是否有文字标签，元数据是否可解析，SVG 是否自包含？
 
-图用于定位审查范围，不能替代复现、测试或代码审查。关键安全假设至少用一次真实运行、测试或受控复现核实。
+图用于快速定位审查范围，不能替代复现、测试或代码审查。关键行为仍须用真实运行、测试或受控复现核验。
 
-## Postplan 发布边界
+## Postplan 例外
 
-- 需要生成完整 HTML 报告时加载 `html-stable-publish`，遵循它的 preflight、公开发布确认和 URL 核验步骤。
-- Postplan URL 是公开页面。每次上传前取得本次明确确认；清理私有文件名、代码片段、Issue 原文、分支名、凭据和内网链接。
-- 私有仓库或不适合公开的内容只保留描述内的 Mermaid 图，或使用用户指定的私有报告位置。不得把公开 Postplan 链接当作私有链接。
-- 没有上传确认时，不伪造 Postplan URL。说明报告已准备好、等待发布确认，再决定是否创建含该链接的外部描述。
+只有当 SVG 无法承载必要上下文、用户要求独立网页，或项目规则要求完整报告时才生成 HTML。加载 `html-stable-publish`，运行 preflight；上传前按本次任务取得公开发布确认，并检查页面不包含私密代码、Issue 原文、分支名、凭据或内网 URL。私有内容使用 tracker 附件或用户指定的私有报告位置。

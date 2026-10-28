@@ -73,7 +73,7 @@ lora-mode 是任务入口：判定任务类型与规模 → 路由 → 按档位
 
 ## 常开纪律（任何档位都生效）
 
-- **Issue / PR 图**：创建或更新 Issue / PR 描述时，按 `references/change-impact.md` 内嵌 Mermaid 图并链接完整报告；未获外发授权或内容不适合公开时，保留草稿并说明限制。
+- **Issue / PR 图**：创建或更新 Issue / PR 描述时，按 `references/change-impact.md` 生成一张 SVG 影响图并附在正文中；完整报告按需生成，不作为默认步骤。
 - **unslop**：所有用户可见文字——回复、说明、UI 文案、标题与封面文案——交付前按 unslop 过一遍；成段交付物（README、策划案、报告正文）正式加载 unslop 全文核对，一句话回复按其要点即可。
 - **debug**：一旦出现"行为与预期不符"，无论执行到哪一步，先停下按 debug 纪律复现，再决定是否继续原流程。
 
@@ -100,7 +100,7 @@ lora-mode 是任务入口：判定任务类型与规模 → 路由 → 按档位
 | 档位 | skill | 在哪干活 |
 |---|---|---|
 | 常开纪律 | unslop / debug | 用户可见文字交付前过 unslop；行为异常随时由 debug 接管 |
-| Issue / PR | `issue-draft` / `issue-triage` / `pr-open` / `pr-review` / `pr-babysit` | 图源、Postplan 和权限规则见 `references/change-impact.md` |
+| Issue / PR | `issue-draft` / `issue-triage` / `pr-open` / `pr-review` / `pr-babysit` | SVG 图规范、附件和自查规则见 `references/change-impact.md` |
 | playbook 主导 | oil-frontend、oil-ui、static-site-experience-release、teaching-html-story-deck、open-ppt、samuel-video-coach + video-publisher、html-stable-publish、skill-creator | 各自主导的步骤见对应 playbook 文件首行 |
 | 步骤 / 路由行 | lora-visual（lora/Mochi 角色图）、generate-image（普通位图，生成后回读）、github-gem-seeker（找方案）、notion（读写/归档）、chinese-ai-resume（简历直接调度） | 按需调度 |
 | 交付步骤 | github:commit / github:pr | 仅用户要求时 |

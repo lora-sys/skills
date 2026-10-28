@@ -8,16 +8,15 @@
 1. **加载 `references/change-impact.md`。** 区分 bug、功能和技术债；范围未定时先列出待决问题。
 2. **核实现状。** bug 引用可复现的实际结果；功能写清当前行为和要改变的行为。没证据的代码路径标为未知。
 3. **写行为契约。** 包含背景、实际/期望、验收条件、非目标和外部约束；不要把文件行号当长期契约。
-4. **画 Issue map。** 用 Mermaid 显示实际/期望路径或未决状态；人和 agent 都能从图中分辨已知与未知。
-5. **准备 Postplan 报告。** 报告包含完整上下文、图、证据和未决项。页面发布前执行 `html-stable-publish` preflight，并取得本次公开发布确认。
-6. **准备描述。** 正文包含 Issue map 和 Postplan draft 链接。按 unslop 检查描述与报告。
-7. **按授权提交。** 用户只要求草稿时交付草稿；用户明确要求创建 Issue 后才调用 tracker。核实标题、正文和链接。
+4. **画 Issue map。** 准备短 JSON 图数据并运行 `scripts/render-impact-svg.py`，输出一张显示实际路径、期望路径、候选模块和未知项的 SVG；用实线/虚线区分已确认和待确认关系。SVG 附简短描述和机器可读的节点/边元数据。
+5. **准备描述。** 正文包含 Issue map SVG 和行为契约。按 unslop 检查描述。
+6. **按授权提交。** 用户只要求草稿时交付草稿；用户明确要求创建 Issue 后才调用 tracker。核实标题、正文和 SVG 附件。
 
-描述骨架见 `references/change-impact.md`。信息未知时保留 `Unknowns`，没有 Postplan 发布确认时不编造链接。
+图规范和描述骨架见 `references/change-impact.md`。信息未知时明确标注，不把推测画成事实。Postplan 报告只在图无法承载必要解释、用户要求独立页面或项目约定要求时准备。
 
 ## 证据形态
 
-Issue 草稿、图源、Postplan URL、实际 tracker 返回的 Issue URL。未创建时明确交付草稿状态。
+Issue 草稿、SVG 图、实际 tracker 返回的 Issue URL。未创建时明确交付草稿状态。
 
 ## 移交
 

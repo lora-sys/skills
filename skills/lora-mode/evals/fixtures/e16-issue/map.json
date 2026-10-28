@@ -1,0 +1,30 @@
+{
+  "kind": "issue",
+  "title": "Parallel refresh can return 401",
+  "description": "Reported browser behavior and candidate module links; candidate links are not verified.",
+  "scope": "Reporter says failures happen several times a day; no logs, reproduction, or source inspection. Candidate module paths are unverified.",
+  "nodes": [
+    {"id": "expiry", "label": "Refresh token reaches expiry boundary", "status": "observed", "evidence": "reporter statement", "confidence": "reported"},
+    {"id": "tabs", "label": "Several browser tabs refresh together", "status": "observed", "evidence": "reporter statement", "confidence": "reported"},
+    {"id": "unauthorized", "label": "One request returns 401", "status": "observed", "evidence": "reporter statement", "confidence": "reported"},
+    {"id": "relogin", "label": "User has to sign in again", "status": "observed", "evidence": "reporter statement", "confidence": "reported"},
+    {"id": "expected", "label": "Renewable session stays signed in", "status": "expected", "evidence": "expectation inferred from report", "confidence": "unknown"},
+    {"id": "web", "label": "web login and session UI", "status": "unknown", "evidence": "candidate module named in report", "confidence": "unknown"},
+    {"id": "auth", "label": "api/auth refresh endpoint", "status": "unknown", "evidence": "candidate module named in report", "confidence": "unknown"},
+    {"id": "session", "label": "packages/session token refresh", "status": "unknown", "evidence": "candidate module named in report", "confidence": "unknown"}
+  ],
+  "edges": [
+    {"from": "expiry", "to": "tabs", "confidence": "reported", "evidence": "reporter statement"},
+    {"from": "tabs", "to": "unauthorized", "relationship": "returns 401", "confidence": "reported", "evidence": "reporter statement"},
+    {"from": "unauthorized", "to": "relogin", "confidence": "reported", "evidence": "reporter statement"},
+    {"from": "tabs", "to": "expected", "relationship": "desired outcome", "confidence": "unknown", "evidence": "expectation requires confirmation"},
+    {"from": "web", "to": "auth", "relationship": "calls?", "confidence": "unknown", "evidence": "candidate modules only"},
+    {"from": "auth", "to": "session", "relationship": "depends on?", "confidence": "unknown", "evidence": "candidate modules only"}
+  ],
+  "unknowns": [
+    "Token type and expiry/rotation semantics are unknown.",
+    "The 401 response source is unknown.",
+    "Actual module call relationships are unverified.",
+    "No stable reproduction steps or request logs were provided."
+  ]
+}

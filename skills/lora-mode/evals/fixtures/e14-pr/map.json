@@ -1,0 +1,36 @@
+{
+  "kind": "pr",
+  "title": "Authentication dependency change",
+  "description": "Base and Head module dependencies for this PR.",
+  "scope": "Supplied module summary only; source dependencies were not inspected.",
+  "base": {
+    "ref": "main",
+    "sha": "1111111",
+    "nodes": [
+      {"id": "web", "label": "web", "confidence": "reported"},
+      {"id": "session", "label": "packages/session", "confidence": "reported"},
+      {"id": "token-helper", "label": "token-helper", "confidence": "reported"}
+    ],
+    "edges": [
+      {"from": "web", "to": "session", "relationship": "depends on", "evidence": "provided summary"},
+      {"from": "session", "to": "token-helper", "relationship": "depends on", "evidence": "provided summary"}
+    ]
+  },
+  "head": {
+    "ref": "feature/auth-refresh",
+    "sha": "2222222",
+    "nodes": [
+      {"id": "web", "label": "web", "confidence": "reported"},
+      {"id": "api-auth", "label": "api/auth", "confidence": "reported"},
+      {"id": "session", "label": "packages/session", "confidence": "reported"},
+      {"id": "credential-store", "label": "credential-store", "confidence": "reported"}
+    ],
+    "edges": [
+      {"from": "web", "to": "api-auth", "relationship": "depends on", "evidence": "provided summary"},
+      {"from": "api-auth", "to": "session", "relationship": "depends on", "evidence": "provided summary"},
+      {"from": "session", "to": "credential-store", "relationship": "depends on", "evidence": "provided summary"}
+    ]
+  },
+  "modified": ["session"],
+  "unknowns": ["Runtime consumers and migration behavior were not supplied."]
+}

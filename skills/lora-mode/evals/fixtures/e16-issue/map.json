@@ -14,9 +14,9 @@
     {"id": "session", "label": "packages/session token refresh", "status": "unknown", "evidence": "candidate module named in report", "confidence": "unknown"}
   ],
   "edges": [
-    {"from": "expiry", "to": "tabs", "confidence": "reported", "evidence": "reporter statement"},
+    {"from": "expiry", "to": "tabs", "relationship": "happens during concurrent refresh", "confidence": "reported", "evidence": "reporter statement"},
     {"from": "tabs", "to": "unauthorized", "relationship": "returns 401", "confidence": "reported", "evidence": "reporter statement"},
-    {"from": "unauthorized", "to": "relogin", "confidence": "reported", "evidence": "reporter statement"},
+    {"from": "unauthorized", "to": "relogin", "relationship": "leads to re-login", "confidence": "reported", "evidence": "reporter statement"},
     {"from": "tabs", "to": "expected", "relationship": "desired outcome", "confidence": "unknown", "evidence": "expectation requires confirmation"},
     {"from": "web", "to": "auth", "relationship": "calls?", "confidence": "unknown", "evidence": "candidate modules only"},
     {"from": "auth", "to": "session", "relationship": "depends on?", "confidence": "unknown", "evidence": "candidate modules only"}

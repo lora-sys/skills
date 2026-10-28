@@ -52,6 +52,11 @@ class RenderImpactSvgTests(unittest.TestCase):
         self.assertEqual(statuses["session"], "modified")
         self.assertEqual(statuses["token-helper"], "deleted")
         self.assertEqual(statuses["web"], "affected")
+        nodes = {node["id"]: node for node in data["nodes"]}
+        self.assertEqual(nodes["session"]["phases"], ["base", "head"])
+        self.assertNotIn("presence", nodes["session"])
+        self.assertTrue(all("presence" not in edge for edge in data["edges"]))
+        self.assertTrue(all(edge["confidence"] == "reported" for edge in data["edges"]))
         changes = {(edge["phase"], edge["from"], edge["to"]): edge["change"] for edge in data["edges"]}
         self.assertEqual(changes[("base", "session", "token-helper")], "removed")
         self.assertEqual(changes[("head", "session", "credential-store")], "added")
@@ -64,7 +69,87 @@ class RenderImpactSvgTests(unittest.TestCase):
         self.assertEqual(statuses["expected"], "expected")
         self.assertEqual(statuses["auth"], "unknown")
         self.assertTrue(all(edge["confidence"] == "unknown" for edge in data["edges"][-2:]))
+        self.assertTrue(all("presence" not in edge for edge in data["edges"]))
         self.assertEqual(len(data["unknowns"]), 4)
+
+    def test_legends_explain_dashes_and_arrow_direction(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            pr_path = Path(directory) / "pr.svg"
+            issue_path = Path(directory) / "issue.svg"
+            self.render_fixture(FIXTURES / "e14-pr" / "map.json", pr_path)
+            self.render_fixture(FIXTURES / "e16-issue" / "map.json", issue_path)
+            pr_root = ET.parse(pr_path).getroot()
+            issue_root = ET.parse(issue_path).getroot()
+        pr_text = " ".join(element.text or "" for element in pr_root.findall(".//svg:text", SVG_NS))
+        issue_text = " ".join(element.text or "" for element in issue_root.findall(".//svg:text", SVG_NS))
+        self.assertIn("虚线：报告/推测/待确认或已删除", pr_text)
+        self.assertIn("箭头由 A 指向 B；关系看边标签", pr_text)
+        self.assertIn("箭头由起点指向终点，关系看边标签", issue_text)
+
+    def test_long_edge_label_keeps_confidence_and_unknown_node_badge(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            input_path = Path(directory) / "map.json"
+            output_path = Path(directory) / "map.svg"
+            input_path.write_text(
+                json.dumps(
+                    {
+                        "kind": "issue",
+                        "title": "long relationship",
+                        "scope": "edge confidence remains visible",
+                        "nodes": [
+                            {"id": "a", "label": "A", "status": "observed", "confidence": "reported", "evidence": "issue report"},
+                            {"id": "b", "label": "B", "status": "unknown", "confidence": "reported", "evidence": "issue report"},
+                        ],
+                        "edges": [
+                            {
+                                "from": "a",
+                                "to": "b",
+                                "relationship": "happens during concurrent refresh",
+                                "confidence": "reported",
+                                "evidence": "issue report",
+                            }
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            result = subprocess.run(
+                [sys.executable, str(SCRIPT), str(input_path), "--output", str(output_path)],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            root = ET.parse(output_path).getroot()
+        visible_text = " ".join(element.text or "" for element in root.findall(".//svg:text", SVG_NS))
+        self.assertIn("… · 报告", visible_text)
+        self.assertIn("报告·待确认", visible_text)
+
+    def test_issue_status_rejects_pr_only_labels(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            input_path = Path(directory) / "bad.json"
+            output_path = Path(directory) / "bad.svg"
+            input_path.write_text(
+                json.dumps(
+                    {
+                        "kind": "issue",
+                        "title": "bad issue status",
+                        "scope": "test",
+                        "nodes": [{"id": "a", "label": "A", "status": "modified"}],
+                        "edges": [],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            result = subprocess.run(
+                [sys.executable, str(SCRIPT), str(input_path), "--output", str(output_path)],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("status is not supported", result.stderr)
+        self.assertFalse(output_path.exists())
 
     def test_invalid_edge_reference_fails_before_writing_svg(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -90,6 +175,109 @@ class RenderImpactSvgTests(unittest.TestCase):
             )
         self.assertEqual(result.returncode, 2)
         self.assertIn("references missing node", result.stderr)
+        self.assertFalse(output_path.exists())
+
+    def test_missing_edge_confidence_defaults_to_unknown_and_draws_dashed(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            input_path = Path(directory) / "map.json"
+            output_path = Path(directory) / "map.svg"
+            input_path.write_text(
+                json.dumps(
+                    {
+                        "kind": "issue",
+                        "title": "unverified relation",
+                        "scope": "source not inspected",
+                        "nodes": [
+                            {"id": "a", "label": "A"},
+                            {"id": "b", "label": "B"},
+                            {"id": "c", "label": "C"},
+                        ],
+                        "edges": [
+                            {"from": "a", "to": "b", "relationship": "depends on"},
+                            {
+                                "from": "b",
+                                "to": "c",
+                                "relationship": "calls",
+                                "confidence": "reported",
+                                "evidence": "issue report",
+                            },
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            result = subprocess.run(
+                [sys.executable, str(SCRIPT), str(input_path), "--output", str(output_path)],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            root = ET.parse(output_path).getroot()
+        data = json.loads(root.find("svg:metadata", SVG_NS).text)
+        self.assertEqual([edge["confidence"] for edge in data["edges"]], ["unknown", "reported"])
+        visible_text = " ".join(element.text or "" for element in root.findall(".//svg:text", SVG_NS))
+        self.assertIn("待确认", visible_text)
+        self.assertIn("报告", visible_text)
+        self.assertTrue(
+            all(
+                path.get("stroke-dasharray") == "6 5"
+                for path in root.findall(".//svg:path[@marker-end]", SVG_NS)
+            )
+        )
+
+    def test_non_unknown_edge_requires_evidence(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            input_path = Path(directory) / "bad.json"
+            output_path = Path(directory) / "bad.svg"
+            input_path.write_text(
+                json.dumps(
+                    {
+                        "kind": "issue",
+                        "title": "unsupported claim",
+                        "scope": "test",
+                        "nodes": [{"id": "a", "label": "A"}, {"id": "b", "label": "B"}],
+                        "edges": [
+                            {"from": "a", "to": "b", "relationship": "depends on", "confidence": "confirmed"}
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            result = subprocess.run(
+                [sys.executable, str(SCRIPT), str(input_path), "--output", str(output_path)],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("evidence is required", result.stderr)
+        self.assertFalse(output_path.exists())
+
+    def test_edge_requires_relationship_label(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            input_path = Path(directory) / "bad.json"
+            output_path = Path(directory) / "bad.svg"
+            input_path.write_text(
+                json.dumps(
+                    {
+                        "kind": "issue",
+                        "title": "unlabeled edge",
+                        "scope": "test",
+                        "nodes": [{"id": "a", "label": "A"}, {"id": "b", "label": "B"}],
+                        "edges": [{"from": "a", "to": "b"}],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            result = subprocess.run(
+                [sys.executable, str(SCRIPT), str(input_path), "--output", str(output_path)],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("relationship must be a non-empty string", result.stderr)
         self.assertFalse(output_path.exists())
 
 

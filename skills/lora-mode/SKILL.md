@@ -1,6 +1,6 @@
 ---
 name: lora-mode
-description: lora 的个人开发总控模式，管多文件开发、调试与多环节串联：新建或改造前端/后端、修 bug、技术调查、Issue 草拟/分诊、PR 创建/审查/跟进，以及配图与发布。先按任务选择 playbook，再调度对应 skill。单一交付物、≤2 个文件且不动共享结构的任务默认直连；多文件或共享结构开发走本模式。用户说"lora-mode""lora 模式""按你的流程跑"时必须使用。
+description: lora 的个人开发总控模式，管多文件开发、调试与多环节串联：新建或改造前端/后端、修 bug、技术调查、Issue 草拟/分诊、PR 创建/审查/跟进，以及配图与发布。PR/Issue 操作无论代码改动大小都使用本模式；其他单一交付物、≤2 个文件且不动共享结构的任务默认直连。用户说"lora-mode"、"lora 模式"、"按你的流程跑"、"全自动"、"full-stop"或"full-send"时必须使用。
 ---
 
 # lora-mode — 个人开发总控
@@ -9,10 +9,12 @@ lora-mode 是任务入口：判定任务类型与规模 → 路由 → 按档位
 
 ## 使用规则
 
-1. **先路由**：按任务路由表选最贴合的 playbook。M/L 档整篇读取 playbook，把步骤原样建成 todo 逐条执行，不合并不改名；S 档只调度对应 skill 或直接干活，不读 playbook。两个 playbook 都沾边时选更接近最终交付物的，todo 首行注明理由。
-2. **按步骤加载 skill**：步骤指名的 skill 必须真正加载后再动工，不凭印象替代其行为。skill 与 playbook 冲突以 skill 为准；skill、playbook 与"硬边界"冲突以硬边界为准。
+1. **先路由**：按任务路由表选最贴合的 playbook。M/L 档只读实际执行链上的 playbook（包括明确下游），按序执行；仅多阶段依赖或异步等待时建简短 todo，不复制整段步骤。S 档不读 playbook。两个候选都沾边时选更接近最终交付物的，必要时说明原因。
+2. **按步骤加载 skill**：步骤指名的 skill 必须真正加载后再动工，不凭印象替代其方法。当前任务的 playbook 定义流程和输出；辅助 skill 提供方法。一个任务链里已加载且未变化的 skill/reference 直接复用，不重复读取；恢复会话或内容变化时再读。二者冲突时按 playbook 执行，并记录不兼容处；"硬边界"和用户本次明确要求始终优先。
 3. **粘性与假设**：同范围新消息继续按当前 playbook 走，不需用户重复点名；没有完全匹配就选最近的，todo 首条声明"按 X 近似处理"。
 4. **按移交走**：playbook 声明"下一步移交"时（ui-design 选定 → web-feature；web-feature、static-site-release → publish；teaching-page → publish；deck、video 收尾 → notion 归档可选），只带产物与验收状态，不重开计划。
+5. **使用 CodeGraph**：目标仓库根目录有 `.codegraph/` 且宿主提供 MCP 或 CLI 时，先用 CodeGraph 定位相关符号和调用路径，再核对源文件与实际改动。记录索引覆盖的提交；索引缺失、过期或不覆盖某个版本时，说明范围并用源码/配置补证。不要自行创建索引或安装 CodeGraph。
+6. **全自动任务链**：收到 `full-stop` / `full-send` 时，先运行目标 Issue/功能对应的 playbook，再串联 `pr-open` → `pr-babysit`；不额外套 `autonomous-run`，它留给没有 PR 事件等待流程的后台长任务。权限边界与终止条件见"PR 自动执行档位"。这两种模式不要求每一步向用户确认。
 
 ## 任务路由表
 
@@ -28,7 +30,7 @@ lora-mode 是任务入口：判定任务类型与规模 → 路由 → 按档位
 | 分诊外部收到的 Issue | `playbooks/issue-triage.md` |
 | 审查 Pull Request | `playbooks/pr-review.md` |
 | 创建 Pull Request | `playbooks/pr-open.md` |
-| 跟进开放 PR 的 CI、冲突和 review 评论 | `playbooks/pr-babysit.md` |
+| 跟进、监视或挂起等待开放 PR 的 CI、冲突和 review 评论 | `playbooks/pr-babysit.md` |
 | 教学/讲解/演示类自包含 HTML（串联发布/配图/归档或点名时） | `playbooks/teaching-page.md` |
 | 单页 HTML 要公开链接，或把站点发出去（串联上游改造或点名时） | `playbooks/publish.md` |
 | 已上线静态站的体验改造、审计与发布 | `playbooks/static-site-release.md` |
@@ -37,10 +39,12 @@ lora-mode 是任务入口：判定任务类型与规模 → 路由 → 按档位
 | 写新 SKILL.md 或改进现有 skill（用户点名时） | `playbooks/skill-authoring.md` |
 | 只读调查、技术选型、"这是怎么做到的" | `playbooks/investigation.md` |
 | 接手、恢复、继续之前的工作 | `playbooks/session-pickup.md` |
-| 长任务需要无人值守跑完 | `playbooks/autonomous-run.md` |
+| 长任务需要后台执行或无人值守跑完，且不属于 PR 生命周期 | `playbooks/autonomous-run.md` |
 | 复盘、迭代技能体系、把重复工作沉淀成 skill（说"复盘/沉淀/迭代技能"时） | `playbooks/reflect.md` |
 
-**单 skill 直连规则（v0.5.1 裁决，v0.5.2 修边界，v0.5.5 补调查下限）**：单 skill 能直接完成的交付默认直连、不进本模式——教学页→teaching-html-story-deck、单页发布→html-stable-publish、单件 PPT→open-ppt、单条视频策划→samuel-video-coach、简历→chinese-ai-resume、出图→lora-visual/generate-image。**直连的判据是任务涉及面，不是有没有 skill 沾边**：单一交付物、≤2 个文件、不动共享结构 → 直连；≥3 个文件或动公共组件/共享样式 → 必须进本模式（哪怕最终只有一个 skill 干活）。需要串联下游（配图、发布、归档）或调试排查时也走 playbook。调查/选型类不按文件数判直连（不产文件）：一两问的结论型小问答直接答；需仓库侦察、外部核实或产出对比建议的成规模调查走 investigation。
+**单 skill 直连规则**：单 skill 能直接完成的交付默认直连、不进本模式——教学页→teaching-html-story-deck、单页发布→html-stable-publish、单件 PPT→open-ppt、单条视频策划→samuel-video-coach、简历→chinese-ai-resume、出图→lora-visual/generate-image。**直连的判据是任务涉及面，不是有没有 skill 沾边**：单一交付物、≤2 个文件、不动共享结构 → 直连；≥3 个文件或动公共组件/共享样式 → 必须进本模式（哪怕最终只有一个 skill 干活）。需要串联下游（配图、发布、归档）或调试排查时也走 playbook。调查/选型类不按文件数判直连（不产文件）：一两问的结论型小问答直接答；需仓库侦察、外部核实或产出对比建议的成规模调查走 investigation。
+
+**PR / Issue 例外**：创建、编辑、审查或跟进 PR / Issue 都走对应 playbook，并读取 `references/change-impact.md`。创建或更新正文时生成、核验并附 SVG；审查时核对现有图与 diff；跟进时在代码变化后刷新图。小改仍可按 S 档实现。远端写入仍须本次明确授权。
 
 **路由行（不设 playbook，直接调度对应 skill）**：Notion 读写 → notion；找现成开源方案 → github-gem-seeker。
 
@@ -54,15 +58,15 @@ lora-mode 是任务入口：判定任务类型与规模 → 路由 → 按档位
 
 | 档 | 触发 | 怎么走 |
 |---|---|---|
-| **S** | 单文件、≤约 100 行改动、无新依赖、不公开发布；含小 bug 修 | 不读 playbook 与 lora-mode 的 references（常开 skill 自己的内部流程与参考仍按其纪律走）。四步：明确验收 → 实现（bug 先最小复现、红→绿）→ 自测（主路径 + 1 个边界）→ 交付。红→绿用内联断言命令即可，不落测试文件（用户要测试资产才写）；S 档不建 todo，判级写在交付首行。证据最少 3 行：改了什么 + 1 条真实运行输出 + 明确未做项。对抗审查降为行内三维点查：外部输入、错误路径、状态诚实。 |
-| **M** | 多文件小改（含微共享改动，如共享 nav 加链接）、本地界面或页面、常规功能 | 整读 playbook 走七步骨架；对抗审查用下方"行内自查卡"，不整读协议；references 只读命中小节。 |
-| **L** | 公开发布、生产部署、多模块或新依赖、动共享结构且对共享结构本身的改动 >约 20 行、改变多页的现有行为（新增页面、新增链接不算）、无人值守长任务 | 完整七步：整读 playbook + 整读 review-protocol 做隔离审查（可派子代理时）+ quality-gates 全矩阵。轮次预算：截图/QA 类循环最多两轮（发现 → 修复 → 复截即止），不为打磨无限循环；审查子代理只喂协议的"隔离边界"与"强制审查维度"两节。 |
+| **S** | 单文件、≤约 100 行改动、无新依赖、不公开发布；含小 bug 修 | 默认不读 playbook 与 lora-mode references（常开 skill 自己的流程仍按其纪律走）；PR/Issue 例外按下方规则读取对应 playbook 和 change-impact。四步：明确验收 → 实现（bug 先最小复现、红→绿）→ 自测（主路径 + 1 个边界）→ 交付。红→绿用内联断言命令即可，不落测试文件（用户要测试资产才写）；S 档不建 todo，判级写在交付首行。证据最少 3 行：改了什么 + 1 条真实运行输出 + 明确未做项。对抗审查降为行内三维点查：外部输入、错误路径、状态诚实。 |
+| **M** | 多文件小改（含微共享改动，如共享 nav 加链接）、本地界面或页面、常规功能 | 按 playbook 验收；普通交付用下方行内自查卡。若最终交付会进入 PR 流程，把同一自查维度并入 `pr-open` 的一次独立审查，不重复自审；references 只读相关小节。 |
+| **L** | 公开发布、生产部署、多模块或新依赖、动共享结构且对共享结构本身的改动 >约 20 行、改变多页的现有行为（新增页面、新增链接不算）、无人值守长任务 | 按交付类型跑 quality-gates 中相关的门；公开发布/生产部署或用户要求时才跑全矩阵。普通 L 任务按 review-protocol 隔离自审；若最终交付会进入 PR 流程，由 `pr-open` 的一次独立 Spec / Standards 审查替代通用隔离审查。完整 EVAL 仅在用户要求或正式发布前运行；`pr-review` 仍走自己的双轴流程。 |
 
 **升级锚点**：执行中发现超出当前档位的情况（文件数超预期、要新依赖、共享结构大改、涉及公开）——升一档并在 todo 注明；初次判级按分级表本身。publish、公开发布类永不进 S 档。
 
 **锚点口径**：">20 行"只数对共享文件/公共组件本身的增删改；新建页面、往共享结构加一个链接不算共享结构大改，也不算"改变多页行为"。纯新增能力代码（不修改既有共享行为）同样不计入该行数，按常规档位判。反例：两页 nav 各加一个链接（共享结构改动 2 行）＝ M 档。
 
-**M 档行内自查卡**（替代整读 review-protocol）：隔离纪律——不读需求/计划/Git 历史/既有测试，只看当前代码与运行产物。点查六维：外部输入与边界态、错误路径、状态诚实（无假成功）、回归面（共享状态/公共组件）、安全与凭据、产物完整。发现问题记 R-xx（证据、影响、置信度）；真实问题修根因后复验。
+**M 档行内自查卡**（替代整读 review-protocol，仅用于自审自己的交付）：隔离纪律——不读需求/计划/Git 历史/既有测试，只看当前代码与运行产物。点查六维：外部输入与边界态、错误路径、状态诚实（无假成功）、回归面（共享状态/公共组件）、安全与凭据、产物完整。发现问题记 R-xx（证据、影响、置信度）；真实问题修根因后复验。PR review 按 `playbooks/pr-review.md` 读取 Spec 和 Standards。
 
 ## 七步通用骨架（M/L 档执行）
 
@@ -70,6 +74,7 @@ lora-mode 是任务入口：判定任务类型与规模 → 路由 → 按档位
 
 - 各 playbook 把每步填具体；**"验收"和"按证据交付"任何档位不得跳过**。
 - L 档对抗审查见 `references/review-protocol.md`；派不了子代理时按其"降级规则"行内自查。
+- PR 生命周期中，`pr-open` 的独立 Spec / Standards 审查替代本骨架的通用隔离审查；不为同一 diff 再跑一次 `review-protocol`。
 
 ## 常开纪律（任何档位都生效）
 
@@ -80,11 +85,17 @@ lora-mode 是任务入口：判定任务类型与规模 → 路由 → 按档位
 ## 硬边界（任何档位不得越过）
 
 - 不可逆外发操作——真实部署、生产发布、公开发布网页、付费资源、代点最终发布按钮——必须取得用户在**本次任务中**的明确确认；此前的授权不传递。
-- Issue / PR 正文、评论和标签变更都是远端写入；草拟不等于提交。公开 Postplan 报告按 `html-stable-publish` 规则逐次确认，不能把公开 PR 当成报告内容也适合公开的证明。
-- 除非用户明确要求，不创建 Pull Request；本地提交（commit）也只在用户要求或仓库惯例明确允许时做。
+- Issue / PR 正文、评论和标签变更都是远端写入；草拟不等于提交。`full-stop` / `full-send` 只授权操作本任务 PR：创建/更新正文与附件、推送本任务分支，以及针对 findings 发布有证据的回复；不授权改 Issue、其他 PR 或标签。公开 Postplan 报告按 `html-stable-publish` 规则逐次确认。
+- 除非用户明确要求，不创建 Pull Request；本地提交（commit）也只在用户要求或仓库惯例明确允许时做。`full-stop` / `full-send` 是仅对本次任务生效的明确 PR 授权，范围见下节。
 - 不伪造证据：未执行的检查不得写成通过；截图必须是真实运行产物；AI 生成图片必须标注，不得充当运行证据。
 - 凭据只从环境变量或用户指定来源读取，绝不写入产物、仓库或命令行参数。
-- 对抗审查者保持零上下文：不读用户需求、计划、Git 历史、既有测试。
+- `review-protocol` 的盲审保持零上下文；`pr-open` 开 PR 前的独立审查和 `pr-review` 按 Spec 与 Standards 审查，可读取 Issue / 验收条件、diff 与变更图。
+
+## PR 自动执行档位
+
+- 用户说“全自动”“full-stop”或“做到 PR 就绪”时，串联当前任务、`pr-open` 和 `pr-babysit`，无需逐步确认，停在 merge-ready；只操作本任务分支及其 PR，并关闭其 auto-merge / 退出 merge queue。Full-send 在同一授权范围内可于 merge gate 通过后合并。具体轮次、等待方式和停止条件见两个 playbook。
+- 只有用户说“full-send”“自动合并”或明确要求合并时，才可在 `pr-babysit.md` 的 merge gate 全通过后合并。其他情况下不合并。
+- 不推默认分支、不改写共享分支、不绕过保护规则、不用 `--admin`。部署、生产发布、删除数据、公开 Postplan 报告和关闭 Issue 仍需各自明确授权。
 
 ## 原则索引
 
@@ -100,7 +111,7 @@ lora-mode 是任务入口：判定任务类型与规模 → 路由 → 按档位
 | 档位 | skill | 在哪干活 |
 |---|---|---|
 | 常开纪律 | unslop / debug | 用户可见文字交付前过 unslop；行为异常随时由 debug 接管 |
-| Issue / PR | `issue-draft` / `issue-triage` / `pr-open` / `pr-review` / `pr-babysit` | SVG 图规范、附件和自查规则见 `references/change-impact.md` |
+| Issue / PR | `issue-draft` / `issue-triage` / `pr-open`（一次独立审查 + `gh`）/ `pr-review`（加载 `code-review`）/ `pr-babysit`（`gh`） | SVG 图规范、CodeGraph 条件用法、附件和自查规则见 `references/change-impact.md` |
 | playbook 主导 | oil-frontend、oil-ui、static-site-experience-release、teaching-html-story-deck、open-ppt、samuel-video-coach + video-publisher、html-stable-publish、skill-creator | 各自主导的步骤见对应 playbook 文件首行 |
 | 步骤 / 路由行 | lora-visual（lora/Mochi 角色图）、generate-image（普通位图，生成后回读）、github-gem-seeker（找方案）、notion（读写/归档）、chinese-ai-resume（简历直接调度） | 按需调度 |
 | 交付步骤 | github:commit / github:pr | 仅用户要求时 |

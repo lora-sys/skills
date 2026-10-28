@@ -7,28 +7,28 @@
     "ref": "main",
     "sha": "1111111",
     "nodes": [
-      {"id": "web", "label": "web", "confidence": "reported"},
-      {"id": "session", "label": "packages/session", "confidence": "reported"},
-      {"id": "token-helper", "label": "token-helper", "confidence": "reported"}
+      {"id": "web", "label": "web", "confidence": "reported", "evidence": "provided summary"},
+      {"id": "session", "label": "packages/session", "confidence": "reported", "evidence": "provided summary"},
+      {"id": "token-helper", "label": "token-helper", "confidence": "reported", "evidence": "provided summary"}
     ],
     "edges": [
-      {"from": "web", "to": "session", "relationship": "depends on", "evidence": "provided summary"},
-      {"from": "session", "to": "token-helper", "relationship": "depends on", "evidence": "provided summary"}
+      {"from": "web", "to": "session", "relationship": "depends on", "confidence": "reported", "evidence": "provided summary"},
+      {"from": "session", "to": "token-helper", "relationship": "depends on", "confidence": "reported", "evidence": "provided summary"}
     ]
   },
   "head": {
     "ref": "feature/auth-refresh",
     "sha": "2222222",
     "nodes": [
-      {"id": "web", "label": "web", "confidence": "reported"},
-      {"id": "api-auth", "label": "api/auth", "confidence": "reported"},
-      {"id": "session", "label": "packages/session", "confidence": "reported"},
-      {"id": "credential-store", "label": "credential-store", "confidence": "reported"}
+      {"id": "web", "label": "web", "confidence": "reported", "evidence": "provided summary"},
+      {"id": "api-auth", "label": "api/auth", "confidence": "reported", "evidence": "provided summary"},
+      {"id": "session", "label": "packages/session", "confidence": "reported", "evidence": "provided summary"},
+      {"id": "credential-store", "label": "credential-store", "confidence": "reported", "evidence": "provided summary"}
     ],
     "edges": [
-      {"from": "web", "to": "api-auth", "relationship": "depends on", "evidence": "provided summary"},
-      {"from": "api-auth", "to": "session", "relationship": "depends on", "evidence": "provided summary"},
-      {"from": "session", "to": "credential-store", "relationship": "depends on", "evidence": "provided summary"}
+      {"from": "web", "to": "api-auth", "relationship": "depends on", "confidence": "reported", "evidence": "provided summary"},
+      {"from": "api-auth", "to": "session", "relationship": "depends on", "confidence": "reported", "evidence": "provided summary"},
+      {"from": "session", "to": "credential-store", "relationship": "depends on", "confidence": "reported", "evidence": "provided summary"}
     ]
   },
   "modified": ["session"],

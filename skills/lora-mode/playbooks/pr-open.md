@@ -1,18 +1,33 @@
 # pr-open — 准备并创建 Pull Request
 
 > 继承 SKILL.md 的七步骨架与硬边界。本 playbook 负责把已验收的改动整理成可审 PR。
-> **适用**：用户明确要求开 PR 或提交审阅。**主导 skill**：`code-review` + `gh`。
+> **适用**：用户要求开 PR；或 `full-stop` / `full-send` 串联到 PR 生命周期。**主导工具**：一个独立 reviewer + `gh`。
 
 ## 步骤
 
-1. **加载 `references/change-impact.md`。** 查看目标分支、merge-base、head 和未提交改动；保持用户已有工作。
-2. **核对范围。** 一个 PR 聚焦一个逻辑变更。概述 Why、变更范围、非目标、风险和验证结果。
+1. **准备上下文。** 当前任务链尚未加载或会话恢复时读取 `references/change-impact.md`；否则复用。查看目标分支、merge-base、head、未提交改动和该分支是否已有 PR；保持用户已有工作。Full mode 若当前在默认分支，为本任务创建 topic branch，不推默认分支。只接续 head 与当前任务分支匹配的已有 PR；分支不匹配就停止，不修改该 PR。Full-stop 授权仅对这条任务 PR 关闭 auto-merge / 退出 merge queue；改动前和每次 push 前核实已关闭，不能确认时暂停。
+2. **核对范围。** 一个 PR 聚焦一个逻辑变更。按仓库惯例取标题范例，标题简洁说明问题或收益。描述先说问题和解决方式，再给影响图与验证；只在确有影响时写风险或非目标，不列文件清单复述 diff。
 3. **生成 Change map。** 比较 base/head 的代码依赖图，准备短 JSON 图数据并运行 `scripts/render-impact-svg.py`。图中标出新增、修改、删除、受影响模块、依赖边变化和分析限制；对照 diff 核验图中内容。SVG 内含简短描述和机器可读的节点/边元数据。
 4. **写 PR 描述。** 正文说明 Why、范围、风险和验证摘要，并附 SVG。GitHub CLI 可用 `--attach <svg>` 上传附件并替换正文中的本地图片引用；仅准备草稿时一并交付 SVG 文件。
-5. **自审。** 调用 `code-review`，核对 spec、diff、依赖影响和验证；修复真实问题后重跑相关检查并更新 SVG。
-6. **创建并核验。** 只有用户明确要求时创建 PR。默认创建 ready PR，不自动开始 babysit；用 `gh pr view` 核实标题、正文、SVG 附件和状态。
+5. **独立审查。** 有 reviewer 工具时只启动一个 reviewer，同时读取 Issue / 验收条件、base 到 head 的 diff、验证结果和 Change map；分别报告 Spec 与 Standards findings。没有 Spec 时注明并继续 Standards，不要运行缺失的 setup 命令。只修 blocker 与 should-fix。若没有独立 reviewer，自己做一轮相同检查并说明未独立复核。显式 PR review 请求继续使用 `pr-review.md` 的双轴审查；只有用户要求或存在高风险问题时才增加 reviewer。
+6. **创建并核验。** 普通“开 PR”请求创建并核验后结束；`full-stop` / `full-send` 继续交给 `pr-babysit.md`，使用一个宿主事件 watcher 等到 ready 或阻塞。用 `gh pr view` 核实标题、正文、SVG 附件、最新 SHA 和状态；缺图、图过期或附件上传失败时修好再交付。`gh` 支持 `--attach` 时直接附图；旧版本不支持时先报告阻塞，不创建缺图 PR。
 
-图结构、视觉语义和自查规则见 `references/change-impact.md`。Postplan 只在图无法承载必要解释、用户要求独立页面，或项目约定要求报告时使用。
+**轮次预算**：普通 PR 一轮初始 review，最多两轮有实质问题的 fix → push → recheck；`pr-babysit` 与本步骤共用该预算。安全、认证、数据丢失或并发风险仍有 blocker / should-fix 时最多五轮。后续轮次只复查行为改动和未解决 findings；纯文档、正文、附件或格式变化不重跑代码测试，也不触发新一轮 review。达到上限就交付当前已验证状态和阻塞项。
+
+## 描述最小格式
+
+```markdown
+<问题与解决方式，1–3 句>
+
+### Change map
+Base: `<sha>` · Head: `<sha>` · Coverage: <索引与分析限制>
+![模块依赖变化图](./change-map.svg)
+
+Proof: <实际运行的关键检查和结果>
+Risk: <仅在有实质风险时填写>
+```
+
+不要另写长报告或重复列出文件；图无法承载的必要背景、用户要求独立页面或仓库约定要求时，才用 Postplan。
 
 ## 移交
 

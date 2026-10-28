@@ -4,7 +4,7 @@ Issue 和 PR 正文默认附一张自包含 SVG。它是给人审查的图，也
 
 GitHub 支持 SVG 附件，`gh pr create/edit` 和 `gh issue create/edit` 可用 `--attach <file.svg>` 上传并将正文里的本地图片引用替换成附件 URL。其他 tracker 使用其支持的图片附件方式。草稿交付时同时给 Markdown 正文和本地 SVG 文件，不把本机路径当成远端 URL。
 
-用 `scripts/render-impact-svg.py <graph.json> --output <map.svg>` 从短 JSON 图数据生成 SVG。不要手写大段 SVG。JSON 字段、PR/Issue 示例和错误检查见 `evals/fixtures/e14-pr/map.json`、`evals/fixtures/e16-issue/map.json` 和渲染脚本。
+用 `scripts/render-impact-svg.py <graph.json> --output <map.svg>` 从短 JSON 图数据生成 SVG。渲染脚本只绘图，不读取源码或推导依赖；Agent 必须先准备有证据的 JSON，不要把“图已生成”当成依赖分析已验证。不要手写大段 SVG。JSON 字段、PR/Issue 示例和错误检查见 `evals/fixtures/e14-pr/map.json`、`evals/fixtures/e16-issue/map.json` 和渲染脚本。
 
 ## SVG 内容
 
@@ -13,23 +13,26 @@ GitHub 支持 SVG 附件，`gh pr create/edit` 和 `gh issue create/edit` 可用
 ```xml
 <title>简短图标题</title>
 <desc>一句话说明图表达的变化、范围和主要未知。</desc>
-<metadata id="lora-change-map-v1">{"schema":"lora-change-map/v1","kind":"pr|issue|state","scope":"分析范围","base":{"sha":"..."},"head":{"sha":"..."},"nodes":[{"id":"...","label":"...","status":"added|modified|deleted|affected|observed|expected|unknown","evidence":"...","confidence":"confirmed|inferred|unknown"}],"edges":[{"from":"...","to":"...","relationship":"depends-on|calls|event|expected","change":"unchanged|added|removed","evidence":"...","confidence":"confirmed|inferred|unknown"}],"unknowns":["..."]}</metadata>
+<metadata id="lora-change-map-v1">{"schema":"lora-change-map/v1","kind":"pr","scope":"分析范围","base":{"sha":"..."},"head":{"sha":"..."},"nodes":[{"id":"...","label":"...","status":"added|modified|deleted|affected|unchanged","phases":["base","head"],"evidence":"...","confidence":"confirmed|reported|inferred|unknown"}],"edges":[{"from":"...","to":"...","relationship":"depends-on|calls|event","phase":"base|head","change":"unchanged|added|removed","evidence":"...","confidence":"confirmed|reported|inferred|unknown"}],"unknowns":["..."]}</metadata>
 ```
+
+PR metadata includes `base`, `head`, per-edge `phase` and `change`; each node's `phases` lists where it exists. Issue/state metadata omits those fields; node status is limited to `observed`, `expected`, `unknown` or `inferred`. Every edge must name its relationship, and the legend explains that arrows run from the `from` node to the `to` node; it must not imply every edge is a dependency.
 
 SVG 要求：
 
 - 文件自包含，不含脚本、外链字体、远程图片或动画。
 - 图中节点名称使用人能识别的模块或状态名。节点直接写 `新增`、`修改`、`删除`、`受影响`、`观察到`、`期望` 或 `待确认`；颜色只作辅助，不能单独承载含义。
 - `<desc>` 说明图的读法。`<metadata>` 内嵌符合 `lora-change-map/v1` 的 JSON，记录节点状态、依赖/事件边、边类型、证据来源、确认状态、分析范围和未覆盖项；PR 同时记录 base/head SHA 和影响距离。把 JSON 作为 XML 文本安全转义，保证附件可被脚本或 Agent 解析。
-- 边使用箭头表达方向；图例说明箭头的语义。实线表示有证据的关系，虚线表示推断或待确认关系。
+- 边使用箭头表达方向；`A → B` 表示从 A 指向 B，具体关系看边标签。依赖边可读作“A 依赖 B”；事件边可读作“A 流向 B”。实线只表示已由源码、配置或运行证据核实的 `confirmed` 关系；`reported`、`inferred`、`unknown` 都用虚线，并在边上标“报告”“推测”或“待确认”。删除边也用虚线。节点也用短文字区分报告、推断和待确认状态。
 - 控制图的范围，只显示本次改动或问题涉及的模块和必要上下游，不尝试画全仓库。节点过多时先按包或子系统聚合，不能隐藏跨边界影响。
 
 ## PR 依赖图
 
-- 从目标分支 merge-base 和当前 head 取证，记录两个 SHA；有 `.codegraph/` 时先使用 CodeGraph。
+- 从目标分支 merge-base 和当前 head 取证，记录两个 SHA。若目标仓库根目录有 `.codegraph/` 且 MCP/CLI 可用，先用 CodeGraph 定位改动符号、调用点和相关消费者，并记录索引对应的提交。索引只覆盖一个版本时，只把它作为该版本的导航证据；另一版本须从对应源码、配置或可用索引补证。缺索引、不可用或过期时不创建、不安装，改用 diff、源码和项目配置取证，并在 Coverage 中写明。
+- 只有检查到足以支持关系的具体源码、配置或运行证据，才将边标为 `confirmed` 并填写 evidence；用户/Issue 提供的关系标 `reported`，静态推断标 `inferred`，没有证据标 `unknown`。非 `unknown` 节点和边都必须填写 evidence。缺失 confidence 默认 `unknown`，不默认当作事实。
 - Base 与 Head 上下排列，以便缩放到 PR 正文宽度后仍能读清节点。依赖拓扑未变化时也画前后状态图，并明确写“依赖拓扑未变化”。
 - 画出新增、删除、修改的模块与依赖边变化，以及直接受影响的未改消费者。对照 diff 核对节点和边。
-- 元数据记录依赖关系来自 import、调用、配置、静态索引或人工推断。标出反射、插件发现、配置路由、运行时数据流等静态分析未覆盖关系。
+- 元数据记录关系证据来自 import、调用、配置、CodeGraph、运行时复现或报告者陈述。标出反射、插件发现、配置路由、运行时数据流等静态分析未覆盖关系；不要把 CodeGraph 未显示的边说成不存在。
 - 文档专属改动照样给图，并写明“源代码依赖图未变化”。局部图不能称作完整调用图。
 
 ## Issue 路径图
@@ -58,6 +61,8 @@ Issue 正文保留问题/目标、实际与期望行为、验收条件和未知�
 ```
 
 给 GitHub CLI 时用 `--attach change-map.svg` 或 `--attach issue-map.svg`。CLI 会上传附件并替换正文中的本地图片引用。没有创建/更新授权时只交本地草稿；不执行 tracker 写入。
+
+若本任务已经生成并获准公开 Postplan 报告，在 PR / Issue 正文加一条补充链接；SVG 仍是内嵌主图，不要复制成长报告。不要为满足这个链接而自动公开发布。
 
 ## Agent 自查
 

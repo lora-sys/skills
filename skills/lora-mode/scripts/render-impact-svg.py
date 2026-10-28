@@ -25,6 +25,7 @@ NODE_STATUS = {
     "inferred": ("#9a6700", "推测"),
 }
 VALID_CONFIDENCE = {"confirmed", "reported", "inferred", "unknown"}
+ISSUE_NODE_STATUSES = {"observed", "expected", "unknown", "inferred"}
 
 
 class GraphError(ValueError):
@@ -68,14 +69,13 @@ def validate(data: Any) -> dict[str, Any]:
         head_ids = {n["id"] for n in out["head"]["nodes"]}
         if not set(out["modified"]) <= base_ids & head_ids:
             raise GraphError("modified node ids must exist in both base and head")
-        out["edge_semantics"] = out.get("edge_semantics", "A 依赖 B")
     else:
-        out["nodes"] = validate_nodes(out.get("nodes"), "root")
+        out["nodes"] = validate_nodes(out.get("nodes"), "root", ISSUE_NODE_STATUSES)
         out["edges"] = validate_edges(out.get("edges"), out["nodes"], "root")
     return out
 
 
-def validate_nodes(value: Any, where: str) -> list[dict[str, Any]]:
+def validate_nodes(value: Any, where: str, allowed_statuses: set[str] | None = None) -> list[dict[str, Any]]:
     if not isinstance(value, list) or not value:
         raise GraphError(f"{where}.nodes must be a non-empty list")
     result: list[dict[str, Any]] = []
@@ -95,15 +95,17 @@ def validate_nodes(value: Any, where: str) -> list[dict[str, Any]]:
             if presence not in {"base", "head", "both"}:
                 raise GraphError(f"{at}.presence must be base, head, or both")
             node["presence"] = presence
-        else:
+        elif allowed_statuses is not None:
             status = node.get("status", "unknown")
-            if status not in NODE_STATUS:
+            if status not in allowed_statuses:
                 raise GraphError(f"{at}.status is not supported")
             node["status"] = status
         node["evidence"] = str(node.get("evidence", ""))
         node["confidence"] = node.get("confidence", "unknown")
         if node["confidence"] not in VALID_CONFIDENCE:
             raise GraphError(f"{at}.confidence is not supported")
+        if node["confidence"] != "unknown" and not node["evidence"].strip():
+            raise GraphError(f"{at}.evidence is required when confidence is not unknown")
         result.append(node)
     return result
 
@@ -125,11 +127,13 @@ def validate_edges(value: Any, nodes: list[dict[str, Any]], where: str) -> list[
             edge[key] = need_text(edge, key, at)
             if edge[key] not in ids:
                 raise GraphError(f"{at}.{key} references missing node {edge[key]}")
-        edge["relationship"] = str(edge.get("relationship", ""))
-        edge["confidence"] = edge.get("confidence", "confirmed")
+        edge["relationship"] = need_text(edge, "relationship", at)
+        edge["confidence"] = edge.get("confidence", "unknown")
         if edge["confidence"] not in VALID_CONFIDENCE:
             raise GraphError(f"{at}.confidence is not supported")
         edge["evidence"] = str(edge.get("evidence", ""))
+        if edge["confidence"] != "unknown" and not edge["evidence"].strip():
+            raise GraphError(f"{at}.evidence is required when confidence is not unknown")
         edge["presence"] = edge.get("presence", "both")
         if edge["presence"] not in {"base", "head", "both"}:
             raise GraphError(f"{at}.presence must be base, head, or both")
@@ -295,18 +299,23 @@ def draw_graph(nodes: list[dict[str, Any]], edges: list[dict[str, Any]], x0: int
             start_x, end_x = sx + box_w // 2, tx - box_w // 2
             bend = max(start_x, end_x) + 28
             d = f"M {start_x} {sy} C {bend} {sy}, {bend} {ty}, {end_x} {ty}"
-        confidence = edge.get("confidence", "confirmed")
+        confidence = edge.get("confidence", "unknown")
         change = (edge_changes or {}).get((source, target, edge.get("relationship", "")), "unchanged")
         stroke = "#1a7f37" if change == "added" else "#cf222e" if change == "removed" else "#57606a"
-        dash = ' stroke-dasharray="6 5"' if confidence in {"inferred", "unknown"} or change == "removed" else ""
+        dash = ' stroke-dasharray="6 5"' if confidence in {"reported", "inferred", "unknown"} or change == "removed" else ""
         marker = "arrow-green" if change == "added" else "arrow-red" if change == "removed" else "arrow"
         parts.append(f'<path d="{d}" fill="none" stroke="{stroke}" stroke-width="2"{dash} marker-end="url(#{marker})"/>')
-        label = edge.get("relationship", "")
+        confidence_label = {"reported": "报告", "inferred": "推测", "unknown": "待确认"}.get(confidence, "")
+        relationship = edge.get("relationship", "")
+        details = [label for label in (confidence_label,) if label]
         if change != "unchanged":
-            label = (label + " · " if label else "") + ("新增" if change == "added" else "删除")
+            details.append("新增" if change == "added" else "删除")
+        suffix = " · ".join(details)
+        max_relationship = max(6, 20 - len(suffix) - (3 if suffix else 0))
+        if len(relationship) > max_relationship:
+            relationship = relationship[: max_relationship - 1] + "…"
+        label = f"{relationship} · {suffix}" if suffix else relationship
         if label:
-            if len(label) > 20:
-                label = label[:19] + "…"
             lx, ly = (sx + tx) // 2, (sy + ty) // 2
             index = outgoing_edge_indexes[source]
             outgoing_edge_indexes[source] += 1
@@ -318,16 +327,17 @@ def draw_graph(nodes: list[dict[str, Any]], edges: list[dict[str, Any]], x0: int
         x, cy = centers[node["id"]]
         y = cy - box_h // 2
         color, status_label = NODE_STATUS[node.get("status", "unknown")]
-        border_dash = ' stroke-dasharray="5 4"' if node.get("confidence") in {"inferred", "unknown"} else ""
+        confidence = node.get("confidence", "unknown")
+        border_dash = ' stroke-dasharray="5 4"' if confidence in {"reported", "inferred", "unknown"} else ""
         parts.append(f'<rect x="{x - box_w // 2}" y="{y}" width="{box_w}" height="{box_h}" rx="9" fill="#ffffff" stroke="{color}" stroke-width="2"{border_dash}/>')
         parts.append(f'<rect x="{x - box_w // 2}" y="{y}" width="5" height="{box_h}" rx="2" fill="{color}"/>')
         label_lines = line_wrap(node["label"])
         label_y = y + (box_h - len(label_lines) * 18) // 2 + 13
         for i, line in enumerate(label_lines):
             parts.append(f'<text x="{x - box_w // 2 + 15}" y="{label_y + i * 18}" class="node-title">{escape(line)}</text>')
-        badge = status_label
-        if node.get("impact_distance", 1) > 1 and node.get("status") == "affected":
-            badge = "间接受影响"
+        confidence_label = {"reported": "报告", "inferred": "推测", "unknown": "待确认"}.get(confidence, "")
+        impact_label = "间接受影响" if node.get("impact_distance", 1) > 1 and node.get("status") == "affected" else status_label
+        badge = f"{confidence_label}·{impact_label}" if confidence_label and confidence_label != impact_label else impact_label
         parts.append(f'<text x="{x + box_w // 2 - 10}" y="{y + box_h - 10}" text-anchor="end" class="node-status" fill="{color}">{escape(badge)}</text>')
     if not acyclic:
         parts.append(f'<text x="{x0 + 8}" y="{y0 + box_h + 28}" class="warning">依赖包含环；节点按名称排列，检查边方向</text>')
@@ -360,7 +370,7 @@ def render(data: dict[str, Any]) -> str:
         metadata_nodes = []
         for node_id, node in all_nodes.items():
             status = "deleted" if node_id not in head_ids else "added" if node_id not in base_ids else "modified" if node_id in data["modified"] else "affected" if node_id in impacted else "unchanged"
-            metadata_nodes.append({**node, "status": status, "impact_distance": impacted.get(node_id), "impact_by_phase": {"base": base_impacted.get(node_id), "head": head_impacted.get(node_id)}, "presence": [p for p, ids in (("base", base_ids), ("head", head_ids)) if node_id in ids]})
+            metadata_nodes.append({**node, "status": status, "impact_distance": impacted.get(node_id), "impact_by_phase": {"base": base_impacted.get(node_id), "head": head_impacted.get(node_id)}, "phases": [p for p, ids in (("base", base_ids), ("head", head_ids)) if node_id in ids]})
         metadata_edges = []
         for phase, edges in (("base", data["base"]["edges"]), ("head", data["head"]["edges"])):
             for edge in edges:
@@ -392,7 +402,7 @@ def render(data: dict[str, Any]) -> str:
         body.append(legend_pr(width, legend_y))
         body.append(footer_svg)
     else:
-        metadata = {"schema": SCHEMA, "kind": data["kind"], "title": data["title"], "scope": data["scope"], "nodes": data["nodes"], "edges": data["edges"], "unknowns": unknowns}
+        metadata = {"schema": SCHEMA, "kind": data["kind"], "title": data["title"], "scope": data["scope"], "nodes": data["nodes"], "edges": [{k: v for k, v in edge.items() if k != "presence"} for edge in data["edges"]], "unknowns": unknowns}
         width = max(700, required_width(data["nodes"], data["edges"]))
         graph_parts, graph_h = draw_graph(data["nodes"], data["edges"], 18, 76, width - 36)
         legend_y = 76 + graph_h + 20
@@ -419,13 +429,13 @@ def render(data: dict[str, Any]) -> str:
 
 
 def legend_pr(width: int, y: int) -> str:
-    items = [("#1a7f37", "新增节点 / 依赖边"), ("#9a6700", "修改节点"), ("#cf222e", "删除节点 / 依赖边"), ("#0969da", "受影响消费者"), ("#57606a", "未改"), ("#6e7781", "虚线：删除或未确认")]
-    return legend_items(items, width, y, "箭头表示：A 依赖 B")
+    items = [("#1a7f37", "新增节点 / 依赖边"), ("#9a6700", "修改节点"), ("#cf222e", "删除节点 / 依赖边"), ("#0969da", "受影响消费者"), ("#57606a", "未改"), ("#6e7781", "虚线：报告/推测/待确认或已删除")]
+    return legend_items(items, width, y, "箭头由 A 指向 B；关系看边标签。实线仅表示已核实关系")
 
 
 def legend_issue(width: int, y: int) -> str:
     items = [("#0969da", "观察到"), ("#8250df", "期望"), ("#6e7781", "待确认"), ("#9a6700", "推测")]
-    return legend_items(items, width, y, "实线有报告或代码证据；虚线表示未确认关系")
+    return legend_items(items, width, y, "箭头由起点指向终点，关系看边标签；实线已核实，虚线为报告/推测/待确认")
 
 
 def wrap_footer(text: str, limit: int) -> list[str]:

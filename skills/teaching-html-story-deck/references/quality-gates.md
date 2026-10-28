@@ -60,6 +60,6 @@
 
 ## Neighbors (handoff boundary)
 
-- **html-stable-publish** is the default handoff target. After the deck passes `python scripts/validate_deck.py <deck>.html`, hand it to `html-stable-publish` (Postplan); the receiving skill runs its own preflight and requires the user's explicit confirmation before the public upload. Once published, the public link is part of the deliverable.
+- **html-communication** is the default handoff target. After the deck passes `python scripts/validate_deck.py <deck>.html`, hand it to `html-communication` (Postplan); the receiving skill runs its own preflight and requires the user's explicit confirmation before the public upload. Once published, the public draft link is part of the deliverable.
 - **Local-only output** is always valid: when the user explicitly says "不要部署" / "本地就行" / "给我文件就行", skip the handoff and deliver the file path only.
-- This skill produces the deck. Hosting defaults to html-stable-publish; opt-outs must be explicit.
+- This skill produces the deck. Hosting defaults to html-communication; opt-outs must be explicit.

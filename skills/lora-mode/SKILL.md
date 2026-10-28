@@ -42,7 +42,7 @@ lora-mode 是任务入口：判定任务类型与规模 → 路由 → 按档位
 | 长任务需要后台执行或无人值守跑完，且不属于 PR 生命周期 | `playbooks/autonomous-run.md` |
 | 复盘、迭代技能体系、把重复工作沉淀成 skill（说"复盘/沉淀/迭代技能"时） | `playbooks/reflect.md` |
 
-**单 skill 直连规则**：单 skill 能直接完成的交付默认直连、不进本模式——教学页→teaching-html-story-deck、单页发布→html-stable-publish、单件 PPT→open-ppt、单条视频策划→samuel-video-coach、简历→chinese-ai-resume、出图→lora-visual/generate-image。**直连的判据是任务涉及面，不是有没有 skill 沾边**：单一交付物、≤2 个文件、不动共享结构 → 直连；≥3 个文件或动公共组件/共享样式 → 必须进本模式（哪怕最终只有一个 skill 干活）。需要串联下游（配图、发布、归档）或调试排查时也走 playbook。调查/选型类不按文件数判直连（不产文件）：一两问的结论型小问答直接答；需仓库侦察、外部核实或产出对比建议的成规模调查走 investigation。
+**单 skill 直连规则**：单 skill 能直接完成的交付默认直连、不进本模式——教学页→teaching-html-story-deck、单页发布→html-communication、单件 PPT→open-ppt、单条视频策划→samuel-video-coach、简历→chinese-ai-resume、出图→lora-visual/generate-image。**直连的判据是任务涉及面，不是有没有 skill 沾边**：单一交付物、≤2 个文件、不动共享结构 → 直连；≥3 个文件或动公共组件/共享样式 → 必须进本模式（哪怕最终只有一个 skill 干活）。需要串联下游（配图、发布、归档）或调试排查时也走 playbook。调查/选型类不按文件数判直连（不产文件）：一两问的结论型小问答直接答；需仓库侦察、外部核实或产出对比建议的成规模调查走 investigation。
 
 **PR / Issue 例外**：创建、编辑、审查或跟进 PR / Issue 都走对应 playbook，并读取 `references/change-impact.md`。创建或更新正文时生成、核验并附 SVG；审查时核对现有图与 diff；跟进时在代码变化后刷新图。小改仍可按 S 档实现。远端写入仍须本次明确授权。
 
@@ -78,13 +78,13 @@ lora-mode 是任务入口：判定任务类型与规模 → 路由 → 按档位
 
 ## 常开纪律（任何档位都生效）
 
-- **unslop**：所有用户可见文字——回复、说明、UI 文案、标题与封面文案——交付前按 unslop 过一遍；成段交付物（README、策划案、报告正文）正式加载 unslop 全文核对，一句话回复按其要点即可。
+- **工程写作**：PR / Issue 正文、技术文档、代码注释和工程评论按 `engineering-writing` 起草，再按 `unslop` 清理 AI 腔。英文技术文本用其中的 STE 启发式检查表；不把内部检查表称为官方合规分数。其他用户可见文字也按 `unslop` 处理。
 - **debug**：一旦出现"行为与预期不符"，无论执行到哪一步，先停下按 debug 纪律复现，再决定是否继续原流程。
 
 ## 硬边界（任何档位不得越过）
 
 - 不可逆外发操作——真实部署、生产发布、公开发布网页、付费资源、代点最终发布按钮——必须取得用户在**本次任务中**的明确确认；此前的授权不传递。
-- Issue / PR 正文、评论和标签变更都是远端写入；草拟不等于提交。`full-stop` / `full-send` 只授权操作本任务 PR：创建/更新正文与附件、推送本任务分支，以及针对 findings 发布有证据的回复；不授权改 Issue、其他 PR 或标签。公开 Postplan 报告按 `html-stable-publish` 规则逐次确认。
+- Issue / PR 正文、评论和标签变更都是远端写入；草拟不等于提交。`full-stop` / `full-send` 只授权操作本任务 PR：创建/更新正文与附件、推送本任务分支，以及针对 findings 发布有证据的回复；不授权改 Issue、其他 PR 或标签。公开 Postplan 报告按 `html-communication` 规则逐次确认。
 - 除非用户明确要求，不创建 Pull Request；本地提交（commit）也只在用户要求或仓库惯例明确允许时做。`full-stop` / `full-send` 是仅对本次任务生效的明确 PR 授权，范围见下节。
 - 不伪造证据：未执行的检查不得写成通过；截图必须是真实运行产物；AI 生成图片必须标注，不得充当运行证据。
 - 凭据只从环境变量或用户指定来源读取，绝不写入产物、仓库或命令行参数。
@@ -109,9 +109,9 @@ lora-mode 是任务入口：判定任务类型与规模 → 路由 → 按档位
 
 | 档位 | skill | 在哪干活 |
 |---|---|---|
-| 常开纪律 | unslop / debug | 用户可见文字交付前过 unslop；行为异常随时由 debug 接管 |
+| 常开纪律 | engineering-writing / unslop / debug | 工程文档和 PR / Issue 文本先按统一写作契约起草，再过 unslop；行为异常随时由 debug 接管 |
 | Issue / PR | `issue-draft` / `issue-triage` / `pr-open`（一次独立审查 + `gh`）/ `pr-review`（加载 `code-review`）/ `pr-babysit`（`gh`） | SVG 图规范、CodeGraph 条件用法、附件和自查规则见 `references/change-impact.md` |
-| playbook 主导 | oil-frontend、oil-ui、static-site-experience-release、teaching-html-story-deck、open-ppt、samuel-video-coach + video-publisher、html-stable-publish、skill-creator | 各自主导的步骤见对应 playbook 文件首行 |
+| playbook 主导 | oil-frontend、oil-ui、static-site-experience-release、teaching-html-story-deck、open-ppt、samuel-video-coach + video-publisher、html-communication、skill-creator | 各自主导的步骤见对应 playbook 文件首行 |
 | 步骤 / 路由行 | lora-visual（lora/Mochi 角色图）、generate-image（普通位图，生成后回读）、github-gem-seeker（找方案）、notion（读写/归档）、chinese-ai-resume（简历直接调度） | 按需调度 |
 | 交付步骤 | github:commit / github:pr | 仅用户要求时 |
 | 平台能力 | browser-use:control-browser / web-gui-tester / playwright-cli | 浏览器实测与截图：优先 browser-use，退而 playwright-cli 指定系统浏览器（msedge），不为临时截图下载二进制 |

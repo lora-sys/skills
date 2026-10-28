@@ -7,7 +7,7 @@
 
 1. **准备上下文。** 独立跟进或恢复会话时加载 `references/change-impact.md`；在同一 full mode 链里复用已读内容。读取 PR 状态、base/head 和最新 Change map SVG。Full-stop 只处理 head 与本任务分支匹配的 PR；若其 auto-merge 已启用或已入 merge queue，关闭并验证后再修改。普通 babysit 不改 auto-merge / queue；无法核实当前状态时停止并报告。
 2. **按优先级处理。** 合并冲突 → CI 失败 → 人工 review → bot 评论。只处理最新 push 之后的新检查和评论；先分类再动手。
-3. **区分评论。** 机械修正和有证据的真实缺陷可修；设计判断、歧义和安全发现先停下，不猜作者意图。`full-stop` / `full-send` 可在本任务 PR 上发布修复说明或带证据的驳回理由；普通 babysit 只交评论草稿，除非用户明确要求发布。提示性 bot 不构成单独等待条件。
+3. **区分评论。** 机械修正和有证据的真实缺陷可修；设计判断、歧义和安全发现先停下，不猜作者意图。回复按 `engineering-writing` 写，并过 `unslop`。`full-stop` / `full-send` 可在本任务 PR 上发布修复说明或带证据的驳回理由；普通 babysit 只交评论草稿，除非用户明确要求发布。提示性 bot 不构成单独等待条件。
 4. **每次 push 前后核对。** push 前再确认 Full-stop 的 auto-merge 已关闭且不在 merge queue；若设置被重新打开，先关闭并核实。push 后更新 head SHA、Change map SVG 和受影响检查结果，并确认 PR 附件对应最新改动。
 5. **复验改动。** 只有代码、配置或测试行为改变时才运行受影响的检查或复现；纯 PR 正文、附件或格式修正只核对最新 SHA、SVG 和远端内容。不为绿 CI 修改断言来隐藏行为差异。
 6. **事件式等待。** 每个 PR 只用一个宿主 watcher，由当前主线程拥有；收到事件后核对状态，需要处理时才继续，不发“仍在等待”的空更新。Watcher 唤醒后继续使用现有 watch，不重复启动；交接前停止 watch。没有 watcher 时报告当前状态并交还，不写轮询或 sleep 脚本。
@@ -16,4 +16,4 @@
 
 ## 禁止事项
 
-不 force-push 共享分支、不用 `--no-verify`、不把失败检查标为非必须、不因 `full-stop` 合并 PR、不关闭 Issue。仅 `full-send` 明确授权在 merge gate 通过后合并；必要 rebase 只可对本任务分支使用 `--force-with-lease`。用户要求补充公开报告时，按 `html-stable-publish` 取得本次发布确认。
+不 force-push 共享分支、不用 `--no-verify`、不把失败检查标为非必须、不因 `full-stop` 合并 PR、不关闭 Issue。仅 `full-send` 明确授权在 merge gate 通过后合并；必要 rebase 只可对本任务分支使用 `--force-with-lease`。用户要求补充公开报告时，按 `html-communication` 取得本次发布确认。

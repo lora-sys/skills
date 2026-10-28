@@ -1,6 +1,6 @@
 ---
 name: teaching-html-story-deck
-description: "生成可独立打开的互动教学 HTML 页：问题先行叙事、内嵌 SVG 图解、演讲者备注、键盘翻页、响应式与可访问性检查。用于讲解知识点、教学演示、讲解页/教学网页/课件、story deck、explainer webpage、course page、架构可视化、产品/系统设计 walkthrough、升级既有 HTML 演示页、出 HTML 报告、B 站/抖音讲解页——凡学习/讲解/演示类任务最终要一份可预览的 HTML 时使用。不要用于：单篇文章转 HTML、无教学主线的营销落地页、dashboard 等输出不是自包含 HTML 的任务。产出后交给 html-stable-publish 发布（公开上传需用户确认）。"
+description: "生成可独立打开的互动教学 HTML 页：问题先行叙事、内嵌 SVG 图解、演讲者备注、键盘翻页、响应式与可访问性检查。用于讲解知识点、教学演示、讲解页/教学网页/课件、story deck、explainer webpage、course page、架构可视化、产品/系统设计 walkthrough、升级既有 HTML 演示页、出 HTML 报告、B 站/抖音讲解页——凡学习/讲解/演示类任务最终要一份可预览的 HTML 时使用。不要用于：单篇文章转 HTML、无教学主线的营销落地页、dashboard 等输出不是自包含 HTML 的任务。产出后交给 html-communication 发布（公开上传需用户确认）。"
 license: MIT
 ---
 
@@ -219,9 +219,9 @@ Deliver:
 
 ## Delivery contract (default handoff)
 
-The default delivery path is **html-stable-publish (Postplan)**. The old anonymous-drop/Netlify flow is deprecated — do not use it.
+The default delivery path is **html-communication (Postplan)**. The old anonymous-drop/Netlify flow is deprecated — do not use it.
 
-1. After the deck passes `python scripts/validate_deck.py <deck>.html`, hand off to the `html-stable-publish` skill. Publishing is an external action: ask the user to confirm the public upload before running `npx postplan upload`, then return the public link as part of the deliverable.
+1. After the deck passes `python scripts/validate_deck.py <deck>.html`, hand off to the `html-communication` skill. Publishing is an external action: ask the user to confirm the public upload before running `npx postplan upload`, then return the public draft link as part of the deliverable.
 2. If the user explicitly says "不要部署" / "本地就行" / "给我文件就行" — skip the handoff and deliver the file path only.
 3. Never publish a deck that fails validation. The quality bar in `references/quality-gates.md` is non-negotiable for any handoff.
 

@@ -97,7 +97,7 @@ deck、video 默认不进本模式：单件 PPT 直接调度 open-ppt，单条�
 | playbook 主导 | open-ppt | deck 主导（PPTD→pptx 双产物、视觉 QA） |
 | playbook 主导 | samuel-video-coach | video 前半：选题、脚本、分镜、封面文案 |
 | playbook 主导 | video-publisher | video 后半：四平台草稿分发，停在最终发布按钮前 |
-| playbook 主导 | html-stable-publish | publish（单页）主导；teaching-page 的发布出口 |
+| playbook 主导 | html-communication | publish（单页）主导；teaching-page 的发布出口 |
 | playbook 主导 | skill-creator | skill-authoring 主导 |
 | 步骤 / 路由行 | lora-visual | 需要 lora/Mochi 角色一致性的图；deck、video、teaching-page 的配图步骤 |
 | 步骤 / 路由行 | generate-image | 普通位图后端；lora-visual 的底层；deck/video 封面素材；生成后回读检查 |

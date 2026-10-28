@@ -1,9 +1,9 @@
 ---
-name: html-stable-publish
-description: 当最终交付物是单页 HTML 或静态 HTML/CSS/JS 页面时，使用 Postplan 发布可访问、可更新的 HTML draft。适用于“部署 HTML”“发布页面”“给我一个可打开的链接”；默认使用本机 Postplan 凭据，不把 key 写入产物。
+name: html-communication
+description: Use only to publish a standalone HTML file or static site through Postplan and return its accessible public draft URL and Raw HTML URL. Applies to reports, teaching decks, diagrams, and pages.
 ---
 
-# Postplan HTML 发布
+# HTML communication through Postplan
 
 ## 适用范围
 

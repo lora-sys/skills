@@ -26,7 +26,7 @@
 | 15 | 实现标准·注释与可维护性 | **删** | 与平台内建规则重复（注释只解释意图/约束/非直观行为） |
 | 16 | 实现标准·可用性与响应式（读 design-motion.md） | **挪** | design-motion.md 下沉为 web-feature、visual-refinement 共用 reference |
 | 17 | 实现标准·用户可见变更证据（前后截图/录屏） | **留（泛化）** | 并入骨架第 7 步：任何用户可见交付物都要证据 |
-| 18 | 实现标准·媒体资产（大文件不进构建目录） | **删** | generate-image / lora-visual / html-stable-publish 各自已有资产与发布约束 |
+| 18 | 实现标准·媒体资产（大文件不进构建目录） | **删** | generate-image / lora-visual / html-communication 各自已有资产与发布约束 |
 | 19 | Git、PR 纪律（遵循仓库约定；不擅自建 PR） | **留（泛化）** | 已并入 lora-mode 硬边界 |
 | 20 | 自动审查结论当主张核验，不为取悦机器人改正确代码 | **留（泛化）** | 并入骨架第 6 步核验规则 |
 | 21 | 部署/发布门禁：不可逆操作需本次明确确认；细节按项目定不写死 | **留（泛化）** | 已并入硬边界（覆盖所有外发：网页发布、视频平台草稿确认、Notion 破坏性编辑…） |
@@ -63,7 +63,7 @@ web-feature / ui-design / visual-refinement / prototype / bug-fix / investigatio
 - **deck** —— 演示/海报/信息图：open-ppt（PPTD→pptx 双产物、视觉 QA）⇄ lora-visual、generate-image 配图，文案过 unslop
 - **video** —— 短视频全链：samuel-video-coach 策划 → generate-image 封面素材 → video-publisher 四平台草稿（停在最终发布按钮前）→ 可选 notion 归档
 - **visual-asset** —— 图像资产：lora/Mochi 角色图走 lora-visual，普通图走 generate-image；生成后必须回读检查
-- **teaching-page** —— teaching-html-story-deck →（需要角色图时 lora-visual）→ html-stable-publish
+- **teaching-page** —— teaching-html-story-deck →（需要角色图时 lora-visual）→ html-communication
 - **resume** —— chinese-ai-resume（事实核验 + ATS 交付）
 - **knowledge** —— 记录/沉淀：notion；也可作为其他 playbook 的收尾步骤
 

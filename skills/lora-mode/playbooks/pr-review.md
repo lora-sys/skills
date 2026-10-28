@@ -9,7 +9,7 @@
 2. **建立审查输入。** Spec 轴优先读取关联 Issue 正文和验收条件；Standards 轴读取 diff 与仓库规范。两条轴分开记录，不能套用禁止阅读需求的盲审协议。不要运行仓库不存在的 `/setup-matt-pocock-skills`；若没有可用 Spec，标明缺失并继续 Standards 审查。
 3. **核对 Change map。** 查看 SVG 和其中的机器可读元数据，对照真实 diff 和可查依赖，核验增删模块、边界变化、受影响消费者、SHA 与覆盖限制。图不可信时说明具体差异，不让图替代源码。
 4. **验证关键行为。** 按项目能力运行相关检查或最小复现；明确没有运行或无法验证的项目。
-5. **分级 findings。** 用 `blocker`、`should-fix`、`nit`、`FYI`；每项给证据、影响和可执行修复建议，把 Spec 与 Standards 问题分组。保留两轴各自结论，不跨轴挑一个“最严重问题”。
+5. **分级 findings。** 用 `blocker`、`should-fix`、`nit`、`FYI`；按 `engineering-writing` 写每项，包含证据、影响和可执行修复建议，并把 Spec 与 Standards 问题分组。保留两轴各自结论，不跨轴挑一个“最严重问题”。
 6. **给出 verdict。** `blocker` 或 `should-fix` 导致 `request changes`；无阻塞项但 Spec 缺失或验证有限时用 `comment`；无阻塞项且改动满足 Spec、改善代码健康度时用 `approve`。Verdict 只说明下一步动作，不合并或重排两轴 findings。
 7. **交付草稿。** 默认只输出 review 草稿，不发布评论或批准；用户明确要求提交后才调用 GitHub。图缺失或过期时要求更新 SVG 附件。
 

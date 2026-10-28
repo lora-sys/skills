@@ -41,11 +41,12 @@ npx skills list --global --agent codex
 | Skill | 用途 | 适用场景 |
 |---|---|---|
 | [`lora-mode`](skills/lora-mode/) | 个人开发总控：playbook 路由 + 七步骨架 + 隔离对抗审查；覆盖 Issue 分诊、PR 审查、影响图与 Postplan 报告 | 前后端开发、Issue / PR 生命周期、调试、调查、发布等多步任务 |
+| [`engineering-writing`](skills/engineering-writing/) | PR、Issue、技术文档和工程评论的证据化写作标准；英文技术文本含 STE 启发式检查 | 起草或修改 PR / Issue 正文、工程文档、代码审查评论和回复 |
 | [`open-ppt`](skills/open-ppt/) | PPTD 格式的演示文稿创建、编辑与 PPTX/图片导出 | 幻灯片、PPT/PPTX、海报、infographic、教学演示 |
 | [`samuel-video-coach`](skills/samuel-video-coach/) | Samuel 风格的短视频导演 Skill：分镜、台词、拍摄指导、AI 过渡与共鸣设计 | 抖音、TikTok、Reels、Shorts、Bilibili、YouTube 前期策划 |
 | [`generate-image`](skills/generate-image/) | 使用七牛云 Modelink（GPT Image 2 / Gemini）生成或编辑图片 | 文生图、图编辑、多图合成、风格迁移、海报封面插画、透明底素材 |
 | [`static-site-experience-release`](skills/static-site-experience-release/) | 静态个人站体验审查、交互精修、质量验证与 GitHub Pages 发布 | Astro / 静态作品集、博客、GitHub Pages 上线前验收 |
-| [`html-stable-publish`](skills/html-stable-publish/) | 使用 Postplan 发布和更新 HTML draft | 需要发布单页 HTML 或静态页面，并获得可访问的 draft 链接 |
+| [`html-communication`](skills/html-communication/) | 通过 Postplan 发布或更新 HTML draft，并返回公开链接 | 需要给 HTML 报告、教学页、图表或静态页面一个可访问的链接 |
 | [`chinese-ai-resume`](skills/chinese-ai-resume/) | 中文 AI Agent / LLM / 全栈简历的事实核验与 ATS 交付 | 由 GitHub 项目、经历和证据生成或修订中文简历 |
 | [`github-gem-seeker`](skills/github-gem-seeker/) | 从 GitHub 寻找成熟开源方案 | 下载、格式转换、媒体处理、归档、爬取、CLI 等成熟问题 |
 | [`teaching-html-story-deck`](skills/teaching-html-story-deck/) | 单文件互动教学故事卡与讲解页 | 技术讲解、产品 walkthrough、课程页、架构可视化、录屏演示 |

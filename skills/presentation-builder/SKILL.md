@@ -1,10 +1,10 @@
 ---
-name: open-ppt
+name: presentation-builder
 description: Create, edit, replicate, read, and export presentations. For every PPT task, the default deliverables are BOTH (1) a self-contained PPTD project folder containing the .pptd manifest plus pages/media dependencies and (2) a locally generated .pptx with embedded fonts and fade slide transitions. Use for any presentation, PowerPoint, PPT/PPTX, slide deck, PPTD, infographic, or poster task unless the user explicitly requests another format. Deliver with normal local file/folder links using absolute paths.
 ---
 
 # Definition
-open-ppt is a presentation creation and export skill built around the PPTD format and browser-side PPTX writer. It defines a YAML-format intermediate DSL (`.pptd`) that abstracts OOXML and keeps each page self-contained.
+presentation-builder is a presentation creation and export skill built around the PPTD format and browser-side PPTX writer. It defines a YAML-format intermediate DSL (`.pptd`) that abstracts OOXML and keeps each page self-contained.
 
 **The default output is not PPTD-only.** Unless the user explicitly opts out, always produce both:
 
@@ -128,7 +128,7 @@ When generating a PPT, adopt different production approaches for different user 
    - Run `scripts/export_images.py`. It loads the deck into the **local editor** (same offline mirror as `serve`), chooses export -> images, downloads the images ZIP, unzips it, and stitches all pages into one overview image. Needs Chromium via `agent-browser`, but **does not** call any cloud service.
 
      ```bash
-     python3 ~/.agents/skills/open-ppt/scripts/export_images.py \
+     python3 ~/.agents/skills/presentation-builder/scripts/export_images.py \
        /abs/path/project/deck.pptd \
        --output /abs/path/project/.qa-images
      ```
@@ -175,12 +175,12 @@ When generating a PPT, adopt different production approaches for different user 
 
    ```bash
    # preferred: local patched WASM (offline)
-   python3 ~/.agents/skills/open-ppt/scripts/export_pptx.py \
+   python3 ~/.agents/skills/presentation-builder/scripts/export_pptx.py \
      /abs/path/project/deck.pptd \
      --output /abs/path/project/deck.pptx
 
    # optional: local editor browser UI (also offline)
-   python3 ~/.agents/skills/open-ppt/scripts/export_pptx.py \
+   python3 ~/.agents/skills/presentation-builder/scripts/export_pptx.py \
      /abs/path/project/deck.pptd \
      --output /abs/path/project/deck.pptx --browser
    ```

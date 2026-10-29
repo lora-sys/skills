@@ -307,12 +307,12 @@ def export_images(
     image_cls, draw_cls, image_font = ensure_pillow()
 
     log(f"manifest: {manifest}")
-    with temporary_directory(prefix="open-ppt-images-") as temp_name:
+    with temporary_directory(prefix="presentation-builder-images-") as temp_name:
         temp_dir = Path(temp_name)
         download_dir = temp_dir / "downloads"
         download_dir.mkdir()
         server, thread, url = serve_local_editor(payload)
-        session = f"open-ppt-images-{os.getpid()}-{uuid.uuid4().hex[:8]}"
+        session = f"presentation-builder-images-{os.getpid()}-{uuid.uuid4().hex[:8]}"
         browser = BrowserSession(agent_browser, session, temp_dir, download_dir)
         downloads = default_downloads_dir()
         try:
@@ -418,7 +418,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         output = args.output or manifest.parent / ".qa-images"
         summary = export_images(args.input, output, args.keep_browser_raw, args.force)
     except (ExportError, OSError, subprocess.SubprocessError) as exc:
-        print(f"open-ppt image export failed: {exc}", file=sys.stderr)
+        print(f"presentation-builder image export failed: {exc}", file=sys.stderr)
         return 1
     print(json.dumps(summary, ensure_ascii=False, indent=2))
     return 0

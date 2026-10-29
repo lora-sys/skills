@@ -60,10 +60,10 @@
 web-feature / ui-design / visual-refinement / prototype / bug-fix / investigation / static-site-release / publish
 
 **内容创作类（6，新增——回应"skills 不一定非得跟开发相关"）**
-- **deck** —— 演示/海报/信息图：open-ppt（PPTD→pptx 双产物、视觉 QA）⇄ lora-visual、generate-image 配图，文案过 unslop
-- **video** —— 短视频全链：samuel-video-coach 策划 → generate-image 封面素材 → video-publisher 四平台草稿（停在最终发布按钮前）→ 可选 notion 归档
+- **deck** —— 演示/海报/信息图：presentation-builder（PPTD→pptx 双产物、视觉 QA）⇄ lora-visual、generate-image 配图，文案过 unslop
+- **video** —— 短视频全链：short-video-director 策划 → generate-image 封面素材 → video-publisher 四平台草稿（停在最终发布按钮前）→ 可选 notion 归档
 - **visual-asset** —— 图像资产：lora/Mochi 角色图走 lora-visual，普通图走 generate-image；生成后必须回读检查
-- **teaching-page** —— teaching-html-story-deck →（需要角色图时 lora-visual）→ html-communication
+- **teaching-page** —— interactive-teaching-page →（需要角色图时 lora-visual）→ html-communication
 - **resume** —— chinese-ai-resume（事实核验 + ATS 交付）
 - **knowledge** —— 记录/沉淀：notion；也可作为其他 playbook 的收尾步骤
 
@@ -77,7 +77,7 @@ skill-authoring / session-pickup / autonomous-run
 
 ### 触发面调整（通用化的代价与对策）
 
-- description 从"Web 开发"改为"多步交付型任务的通用总控"；**单 skill 能直接完成的小请求（读个页面、改一句话、出一张图）不套模式**，避免与 open-ppt / samuel-video-coach / generate-image / notion 等自动触发打架。
+- description 从"Web 开发"改为"多步交付型任务的通用总控"；**单 skill 能直接完成的小请求（读个页面、改一句话、出一张图）不套模式**，避免与 presentation-builder / short-video-director / generate-image / notion 等自动触发打架。
 
 ## 四、需要你拍板的 4 件事
 
@@ -102,7 +102,7 @@ v0.2 已落盘：`docs/drafts/lora-mode-SKILL-draft.md`。
 处置：
 1. description 重写为**开发触发面**：写代码/改代码/排查/发布才触发；演示文稿、短视频、简历移出主触发面，点名时才进入。
 2. **后端不再排除**：删除"纯后端/API、桌面、移动端不使用"；新增 `backend-feature.md` 薄 playbook（七步骨架去掉 UI 步骤，实现 + 测试 + debug 为主）。playbook 总数 15。
-3. deck、video 保留 playbook 但标注"点名时"，正文说明其默认直接调度 open-ppt / samuel-video-coach。
+3. deck、video 保留 playbook 但标注"点名时"，正文说明其默认直接调度 presentation-builder / short-video-director。
 
 ## 七、实测记录（2026-10-06，15/15 通过）
 
@@ -119,7 +119,7 @@ v0.2 已落盘：`docs/drafts/lora-mode-SKILL-draft.md`。
 | teaching-page | ✅ | validate_deck 11/11；审查抓到 reduced-motion 叠页真 bug |
 | publish | ✅ | 硬边界精确拦截：preflight 真跑、连 whoami 都不执行、命令与问题备好 |
 | static-site-release | ✅ | 真审计抓 P0；Lighthouse 抓到自引入的对比度回归改到 100；识破缓存假证据；补零构建预览定义 |
-| deck | ✅路由 | 按规则未进 playbook（单件直调 open-ppt），设计行为；暴露 open-ppt 导出链缺口，已写入 deck.md 已知缺口 |
+| deck | ✅路由 | 按规则未进 playbook（单件直调 presentation-builder），设计行为；暴露 presentation-builder 导出链缺口，已写入 deck.md 已知缺口 |
 | video | ✅ | 分镜校验通过、unslop 真改文案、check-package 正确报 onboarding 未完成；补 onboarding 顺序/封面规格/确认机制 |
 | skill-authoring | ✅ | skill-creator 真主导；pypdf 实测页序/拒绝/--force；补子代理逐条组织+跨工具说明 |
 | investigation | ✅ | 全程零修改；诚实结论+真实来源链；补"为什么"路由消歧、Explore 降级、gem-seeker 分工 |
@@ -128,7 +128,7 @@ v0.2 已落盘：`docs/drafts/lora-mode-SKILL-draft.md`。
 
 环境发现（待用户处理）：
 1. oil-ui 在 .zcode/skills 与 .agents/skills 双份同名，Skill 工具拒调——建议去重。
-2. open-ppt 导出链依赖的 open-ppt-skill npm 包在 npmjs/镜像均 404——open-ppt 需自带 editor/WASM 或提供降级路径。
+2. presentation-builder 导出链依赖的 open-ppt-skill npm 包在 npmjs/镜像均 404——presentation-builder 需自带 editor/WASM 或提供降级路径。
 3. browser-use 的 node_repl 通道在子代理环境不可用，playwright-cli+系统 Edge 可用——已写入降级链。
 
 原 web-development-team-playbook 已退役：references 迁入 lora-mode/references/web/，纪律升格为骨架/硬边界/原则，README 行已删，git 历史可恢复。

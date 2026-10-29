@@ -1,5 +1,5 @@
 ---
-name: teaching-html-story-deck
+name: interactive-teaching-page
 description: "生成可独立打开的互动教学 HTML 页：问题先行叙事、内嵌 SVG 图解、演讲者备注、键盘翻页、响应式与可访问性检查。用于讲解知识点、教学演示、讲解页/教学网页/课件、story deck、explainer webpage、course page、架构可视化、产品/系统设计 walkthrough、升级既有 HTML 演示页、出 HTML 报告、B 站/抖音讲解页——凡学习/讲解/演示类任务最终要一份可预览的 HTML 时使用。不要用于：单篇文章转 HTML、无教学主线的营销落地页、dashboard 等输出不是自包含 HTML 的任务。产出后交给 html-communication 发布（公开上传需用户确认）。"
 license: MIT
 ---

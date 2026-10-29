@@ -42,14 +42,14 @@ npx skills list --global --agent codex
 |---|---|---|
 | [`lora-mode`](skills/lora-mode/) | 个人开发总控：精简路由、分级验证、隔离审查与影响图；覆盖目标评测迭代、风险分层、Issue / PR 和接手既有工作 | 前后端开发、目标驱动优化、Issue / PR 生命周期、接手 PR / 分支 / Agent 线程、调试、调查与发布 |
 | [`engineering-writing`](skills/engineering-writing/) | PR、Issue、技术文档和工程评论的证据化写作标准；英文技术文本含 STE 启发式检查 | 起草或修改 PR / Issue 正文、工程文档、代码审查评论和回复 |
-| [`open-ppt`](skills/open-ppt/) | PPTD 格式的演示文稿创建、编辑与 PPTX/图片导出 | 幻灯片、PPT/PPTX、海报、infographic、教学演示 |
-| [`samuel-video-coach`](skills/samuel-video-coach/) | Samuel 风格的短视频导演 Skill：分镜、台词、拍摄指导、AI 过渡与共鸣设计 | 抖音、TikTok、Reels、Shorts、Bilibili、YouTube 前期策划 |
+| [`presentation-builder`](skills/presentation-builder/) | PPTD 格式的演示文稿创建、编辑与 PPTX/图片导出 | 幻灯片、PPT/PPTX、海报、infographic、教学演示 |
+| [`short-video-director`](skills/short-video-director/) | Samuel 风格的短视频导演 Skill：分镜、台词、拍摄指导、AI 过渡与共鸣设计 | 抖音、TikTok、Reels、Shorts、Bilibili、YouTube 前期策划 |
 | [`generate-image`](skills/generate-image/) | 使用七牛云 Modelink（GPT Image 2 / Gemini）生成或编辑图片 | 文生图、图编辑、多图合成、风格迁移、海报封面插画、透明底素材 |
 | [`static-site-experience-release`](skills/static-site-experience-release/) | 静态个人站体验审查、交互精修、质量验证与 GitHub Pages 发布 | Astro / 静态作品集、博客、GitHub Pages 上线前验收 |
 | [`html-communication`](skills/html-communication/) | 通过 Postplan 发布或更新 HTML draft，并返回公开链接 | 需要给 HTML 报告、教学页、图表或静态页面一个可访问的链接 |
 | [`chinese-ai-resume`](skills/chinese-ai-resume/) | 中文 AI Agent / LLM / 全栈简历的事实核验与 ATS 交付 | 由 GitHub 项目、经历和证据生成或修订中文简历 |
 | [`github-gem-seeker`](skills/github-gem-seeker/) | 从 GitHub 寻找成熟开源方案 | 下载、格式转换、媒体处理、归档、爬取、CLI 等成熟问题 |
-| [`teaching-html-story-deck`](skills/teaching-html-story-deck/) | 单文件互动教学故事卡与讲解页 | 技术讲解、产品 walkthrough、课程页、架构可视化、录屏演示 |
+| [`interactive-teaching-page`](skills/interactive-teaching-page/) | 单文件互动教学故事卡与讲解页 | 技术讲解、产品 walkthrough、课程页、架构可视化、录屏演示 |
 | [`lora-visual`](skills/lora-visual/) | 统一的 lora 风格解释图与透明角色插画 | 概念图、工作流、对比图、Hero 配图和可复用角色素材 |
 | [`unslop`](skills/unslop/) | 去除 AI 腔并增加自然的人类表达 | 文案、说明、博客、技术内容和沟通文本润色 |
 | [`video-publisher`](skills/video-publisher/) | 多平台视频草稿自动化（小红书、抖音、Bilibili、微信视频号），默认停在发布前 | 视频上传、标题标签、原创声明、封面、发布前验收 |
@@ -97,15 +97,15 @@ Skills CLI 会发现 `skills/<skill-name>/SKILL.md`。每个 `SKILL.md` 的目�
 
 | Skill | 来源与归属 |
 |---|---|
-| `teaching-html-story-deck` | lora-sys 创建，MIT；原始许可文件保留于技能目录。 |
+| `interactive-teaching-page` | lora-sys 创建，MIT；原始许可文件保留于技能目录。 |
 | `lora-visual` | 改编自 [oil-oil/oil-visual](https://github.com/oil-oil/oil-visual)，MIT；上游版权与许可见技能目录内的 `THIRD_PARTY_NOTICES.md`。 |
 | `unslop` | 源自 [Cursor Plugins pstack/unslop](https://github.com/cursor/plugins/tree/main/pstack/skills/unslop)，作者 Lauren Tan，MIT；上游许可文件保留于技能目录。 |
 | `lora-mode` | lora-sys 维护；接手既有工作的流程参考 [t3dotgg/tstack takeover](https://github.com/t3dotgg/tstack/blob/main/skills/takeover/SKILL.md)，按本仓库授权边界改写。 |
 | 其余技能 | 由 lora-sys 策展并作为本个人工作流集合的一部分维护。 |
 | `notion` | 包装官方 [Notion CLI (`ntn`)](https://github.com/makenotion/notion-cli)，MIT；上游版权与许可见技能目录内的 `THIRD_PARTY_NOTICES.md`。 |
 | `generate-image` | lora-sys 创建，MIT；改编自 [K-Dense-AI/claude-scientific-writer](https://github.com/K-Dense-AI/claude-scientific-writer) 的 `generate-image` skill（MIT），后端由 OpenRouter 换为七牛云 Modelink。 |
-| `open-ppt` | lora-sys 创建，MIT；基于 PPTD 格式 + 浏览器端 WASM PPTX 写入器。 |
-| `samuel-video-coach` | lora-sys 创建，MIT；改编自 Samuel 短视频导演方法论。 |
+| `presentation-builder` | lora-sys 创建，MIT；基于 PPTD 格式 + 浏览器端 WASM PPTX 写入器。 |
+| `short-video-director` | lora-sys 创建，MIT；改编自 Samuel 短视频导演方法论。 |
 | `video-publisher` | 改编自 [oil-oil/video-publisher-skill](https://github.com/oil-oil/video-publisher-skill)，MIT；上游版权与许可见技能目录内的 `LICENSE`。 |
 | `oil-frontend` | 源自 [oil-oil/oil-frontend](https://github.com/oil-oil/oil-frontend)，MIT；以镜像方式跟踪上游，每日自动同步。 |
 | `oil-ui` | 源自 [oil-oil/oil-ui](https://github.com/oil-oil/oil-ui)，MIT；以镜像方式跟踪上游，每日自动同步。 |

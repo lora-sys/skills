@@ -33,14 +33,14 @@ v1 更像专业前期策划工具。v2 默认进入“零基础手把手模式�
 
 ## 安装
 
-解压后，把整个 `samuel-video-coach` 文件夹放进你的 Agent 所识别的 Skills 目录。
+解压后，把整个 `short-video-director` 文件夹放进你的 Agent 所识别的 Skills 目录。
 
 不同 Agent 的目录和加载方式可能不同，以对应产品当前文档为准。即使 Agent 不支持 Skills，也可以把 `SKILL.md` 当作系统提示词或项目规则使用。
 
 ## 最简单调用
 
 ```text
-使用 samuel-video-coach，开启零基础手把手模式。
+使用 short-video-director，开启零基础手把手模式。
 
 视频主题：我让三个 AI Agent 互相审查一个开源项目。
 平台：抖音。
@@ -52,7 +52,7 @@ v1 更像专业前期策划工具。v2 默认进入“零基础手把手模式�
 只给主题也可以：
 
 ```text
-使用 samuel-video-coach。
+使用 short-video-director。
 我要拍“我用 AI 做了一个旅行照片故事 Agent”。
 我完全是小白。先基于合理假设给我一个能今天开拍的版本，不能确认的事实标成待补证据。
 ```
@@ -60,7 +60,7 @@ v1 更像专业前期策划工具。v2 默认进入“零基础手把手模式�
 ## 目录
 
 ```text
-samuel-video-coach/
+short-video-director/
 ├── SKILL.md
 ├── README.md
 ├── SOURCES.md

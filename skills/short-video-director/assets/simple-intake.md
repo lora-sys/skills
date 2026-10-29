@@ -21,7 +21,7 @@
 ## 可以直接复制的最短写法
 
 ```text
-使用 samuel-video-coach，零基础手把手模式。
+使用 short-video-director，零基础手把手模式。
 主题：
 我做过的事：
 结果：

@@ -50,7 +50,7 @@ lora-mode 是任务入口，不是实现手册。它只做三件事：**判定�
 | 接手、恢复、继续之前的工作 | `playbooks/session-pickup.md` |
 | 长任务需要无人值守跑完 | `playbooks/autonomous-run.md` |
 
-deck、video 默认不进本模式：单件 PPT 直接调度 open-ppt，单条视频策划直接调度 samuel-video-coach；只有需要串联配图、发布、归档等下游步骤时才走对应 playbook。
+deck、video 默认不进本模式：单件 PPT 直接调度 presentation-builder，单条视频策划直接调度 short-video-director；只有需要串联配图、发布、归档等下游步骤时才走对应 playbook。
 
 **路由行（不设 playbook，直接调度对应 skill）**：简历 → chinese-ai-resume；Notion 读写 → notion；找现成开源方案 → github-gem-seeker；lora/Mochi 角色图 → lora-visual；普通位图 → generate-image。
 
@@ -76,7 +76,7 @@ deck、video 默认不进本模式：单件 PPT 直接调度 open-ppt，单条�
 3. **根因优先** —— 一切异常。先复现、再假设、在根因处修（→ debug）；机制不明的"好了"不算好。
 4. **数据形状先行** —— 写逻辑之前。先写下状态与数据结构（字段、转换、边界态），再写实现。
 5. **状态诚实** —— 一切界面与产物。加载/成功/已保存/在线必须有底层事实支撑；禁止假成功 UI 与假数据。
-6. **先比较后动手** —— 设计类决策。并排 2–3 个方案让用户选（oil-ui 对比页、open-ppt 设计方向）；决策便宜的先做 prototype。
+6. **先比较后动手** —— 设计类决策。并排 2–3 个方案让用户选（oil-ui 对比页、presentation-builder 设计方向）；决策便宜的先做 prototype。
 7. **体验优先** —— 交付前。少而完整胜过多而粗糙；每次交付前做一次减法。
 8. **上下文卫生** —— 长任务、大范围搜索。批量读取交给子代理，主线程只留结论与决策。
 9. **不阻塞人** —— 全程。可逆决定直接做并留痕；只有硬边界才停下问。
@@ -93,9 +93,9 @@ deck、video 默认不进本模式：单件 PPT 直接调度 open-ppt，单条�
 | playbook 主导 | oil-frontend | web-feature / visual-refinement / bug-fix 的实现步骤 |
 | playbook 主导 | oil-ui | ui-design 主导；web-feature 设计先行；visual-refinement 设计判断 |
 | playbook 主导 | static-site-experience-release | static-site-release 全程 |
-| playbook 主导 | teaching-html-story-deck | teaching-page 主导 |
-| playbook 主导 | open-ppt | deck 主导（PPTD→pptx 双产物、视觉 QA） |
-| playbook 主导 | samuel-video-coach | video 前半：选题、脚本、分镜、封面文案 |
+| playbook 主导 | interactive-teaching-page | teaching-page 主导 |
+| playbook 主导 | presentation-builder | deck 主导（PPTD→pptx 双产物、视觉 QA） |
+| playbook 主导 | short-video-director | video 前半：选题、脚本、分镜、封面文案 |
 | playbook 主导 | video-publisher | video 后半：四平台草稿分发，停在最终发布按钮前 |
 | playbook 主导 | html-communication | publish（单页）主导；teaching-page 的发布出口 |
 | playbook 主导 | skill-creator | skill-authoring 主导 |
@@ -108,7 +108,7 @@ deck、video 默认不进本模式：单件 PPT 直接调度 open-ppt，单条�
 | 平台能力 | browser-use:control-browser / web-gui-tester | Web 家族的浏览器实测与黑盒测试 |
 | 平台能力 | playwright-cli | 备选浏览器自动化 |
 | 平台能力 | Explore / general-purpose 子代理 | 只读侦察、隔离对抗审查（见"子代理与并行"） |
-| 平台能力 | 官方 docx / xlsx / pdf / pptx skill | 读、改各类文档；做 PPT 仍默认 open-ppt |
+| 平台能力 | 官方 docx / xlsx / pdf / pptx skill | 读、改各类文档；做 PPT 仍默认 presentation-builder |
 
 注：browser-use、playwright-cli、skill-creator、github:*、官方文档 skill 是平台侧能力；本仓库 skill 经 skills CLI 分发到其他 agent 工具时，这几行按目标工具替换。
 
@@ -139,6 +139,6 @@ Web 专属 references（quality-gates、design-motion、common-pitfalls、stack-
 ① 读仓库确认栈与约定 → ② 核实框架文档 → ③ 出计划（目录放哪、锚点滚动、移动端折叠、验收项）→ ④ 小改动不启 oil-ui 全流程，记录原因 → ⑤ oil-frontend 实现最小变更 → ⑥ 浏览器窄宽屏截图验收 → ⑦ 隔离对抗审查 → ⑧ 证据化交付。
 
 例 2（内容链）："把这篇笔记做成短视频发抖音和B站" → `video`：
-① samuel-video-coach：选题盘点 → 故事发动机 → 逐字口播 → 逐镜头分镜（校验脚本通过）→ ② generate-image：出封面素材 → ③ video-publisher：check-package 校验 → 并行上传四平台 → 草稿停在最终发布按钮前 → ④ 可选 notion 归档选题。全程文案过 unslop。
+① short-video-director：选题盘点 → 故事发动机 → 逐字口播 → 逐镜头分镜（校验脚本通过）→ ② generate-image：出封面素材 → ③ video-publisher：check-package 校验 → 并行上传四平台 → 草稿停在最终发布按钮前 → ④ 可选 notion 归档选题。全程文案过 unslop。
 
 > lora-mode 把"完成"定义为：以最小必要变更交付真实运行、经过验证、可维护且没有假状态的成果；把"快"定义为决策便宜（原型、并排方案），而不是验证打折。

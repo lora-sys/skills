@@ -15,7 +15,7 @@ Load this matrix when a task is specialized, spans workflows, or does not match 
 
 ## Direct dispatch
 
-A single deliverable in ≤2 files with no shared-structure change goes directly to its skill: teaching page → `teaching-html-story-deck`; standalone HTML publication → `html-communication`; one deck → `open-ppt`; one video plan → `samuel-video-coach`; resume → `chinese-ai-resume`; image → `lora-visual` or `generate-image`. Use a playbook when work spans files, shared structure, debugging, or downstream handoffs. Use `goal-eval` only when the user asks to improve an outcome against a target; bugs and spec-only changes keep their normal routes.
+A single deliverable in ≤2 files with no shared-structure change goes directly to its skill: teaching page → `interactive-teaching-page`; standalone HTML publication → `html-communication`; one deck → `presentation-builder`; one video plan → `short-video-director`; resume → `chinese-ai-resume`; image → `lora-visual` or `generate-image`. Use a playbook when work spans files, shared structure, debugging, or downstream handoffs. Use `goal-eval` only when the user asks to improve an outcome against a target; bugs and spec-only changes keep their normal routes.
 
 Notion work goes to `notion`; open-source solution search goes to `github-gem-seeker`. For a mixed request, route by the final deliverable and follow explicit playbook handoffs. Keep the active route across same-task messages. If no route fits, choose the nearest playbook and state the assumption. Read `references/platform-capabilities.md` only for browser, desktop, or office-file tasks; skip it for ordinary repository work.
 

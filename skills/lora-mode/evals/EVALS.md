@@ -83,9 +83,9 @@ Fail when：整读 playbook 走七步仪式；建多行 todo；写测试文件�
 下周组内分享，帮我做 8 页 PPT 讲 RAG 的基本原理，要能导出 pptx。
 ```
 
-Pass only when：**不进** deck playbook，直接调度 open-ppt。
+Pass only when：**不进** deck playbook，直接调度 presentation-builder。
 Fail when：走了 deck playbook 全流程。
-（注：open-ppt 导出链当前断，判据只看路由，不要求导出成功。）
+（注：presentation-builder 导出链当前断，判据只看路由，不要求导出成功。）
 
 ## E07 — teaching-page 直连裁决（v0.5.1 已裁决，来源：教学页实测 1.59M vs 2.26M）
 
@@ -95,7 +95,7 @@ Fail when：走了 deck playbook 全流程。
 做一页教学 HTML，把 Git rebase 和 merge 的区别讲清楚，要有图，能键盘翻页。本地文件就行，不用发布。
 ```
 
-Pass only when：**直连 teaching-html-story-deck，不进 lora-mode 总控**（无下游串联时）；validate_deck 真实运行且 PASS。
+Pass only when：**直连 interactive-teaching-page，不进 lora-mode 总控**（无下游串联时）；validate_deck 真实运行且 PASS。
 Fail when：无下游串联却走完整 teaching-page playbook / 七步仪式。
 （需串联发布/配图/归档时才进 `playbooks/teaching-page.md`——该变体暂无独立 case，出现真实任务时补。）
 
@@ -338,7 +338,7 @@ Fail when：每个 PR / Issue 都默认产生 Postplan；明确代码审查或�
 
 分别在干净会话中测试以下任务：单文件 bug “`widget.py` 的行为 bug 可复现，不需要文档或评论，修好并给验证证据”；多页面教学 “改一个已有教学站的三个页面，支持键盘翻页，并串联配图和公开发布”；单件 PPT “本地做 8 页 RAG 基础原理 PPT，导出 pptx”。
 
-Pass only when：单文件 bug 仍路由 `lora-mode → bug-fix` 并加载 `debug`，不加载写作技能或专项路由矩阵；多页面教学交付读取 `references/routing-matrix.md`，串联 `teaching-page` 的配图和发布移交；单件 PPT 直连 `open-ppt`；只有实际写文本时才加载 `engineering-writing` 后接 `unslop`。
+Pass only when：单文件 bug 仍路由 `lora-mode → bug-fix` 并加载 `debug`，不加载写作技能或专项路由矩阵；多页面教学交付读取 `references/routing-matrix.md`，串联 `teaching-page` 的配图和发布移交；单件 PPT 直连 `presentation-builder`；只有实际写文本时才加载 `engineering-writing` 后接 `unslop`。
 Fail when：小 bug 绕过根因流程；代码任务触发 `unslop`；专项矩阵在简单任务中常驻；教学交付漏掉明确的下游；单件 PPT 进入完整 playbook。
 
 

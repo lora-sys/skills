@@ -1,15 +1,15 @@
 # deck — 演示文稿、幻灯、海报、信息图（点名时进入）
 
-> **适用**：用户点名要走完整链路时；单件 PPT 默认直接调度 open-ppt，不进本模式。
-> **主导 skill**：open-ppt。
-> **已知缺口（实测）**：open-ppt 的导出链依赖 `open-ppt-skill` npm 包，该包当前在 npmjs/镜像均不存在；开始制作前先验证导出链可用，不可用时与用户二选一：接受 PPTD-only 交付，或改用平台官方 pptx skill 重建 .pptx。
+> **适用**：用户点名要走完整链路时；单件 PPT 默认直接调度 presentation-builder，不进本模式。
+> **主导 skill**：presentation-builder。
+> **已知缺口（实测）**：presentation-builder 的导出链依赖 `open-ppt-skill` npm 包，该包当前在 npmjs/镜像均不存在；开始制作前先验证导出链可用，不可用时与用户二选一：接受 PPTD-only 交付，或改用平台官方 pptx skill 重建 .pptx。
 
 ## 步骤
 
-1. **识别现状。** 加载 open-ppt 并按其 step0–step5 执行；明确目的、受众、页数、输入材料（文档/笔记/口头描述）。
+1. **识别现状。** 加载 presentation-builder 并按其 step0–step5 执行；明确目的、受众、页数、输入材料（文档/笔记/口头描述）。
 2. **核实事实。** 内容里的技术论断、数字、引用核实；讲稿与页面文案按 unslop 出。
-3. **出计划。** 设计方向（open-ppt 的 5 种方向选型）+ 页面结构 + 配图需求清单。
-4. **制作。** open-ppt 生成 PPTD 项目；需要位图配图/封面时调度 generate-image（角色相关走 lora-visual），生成后回读检查，标注"AI 生成"。
+3. **出计划。** 设计方向（presentation-builder 的 5 种方向选型）+ 页面结构 + 配图需求清单。
+4. **制作。** presentation-builder 生成 PPTD 项目；需要位图配图/封面时调度 generate-image（角色相关走 lora-visual），生成后回读检查，标注"AI 生成"。
 5. **验收（强制）。** 图像 QA（export_images.py + 多模态检查）通过前不得导出 pptx；逐页检查溢出、对比度、错字。
 6. **按证据交付（强制双产物）。** 完整 PPTD 项目目录 + 本地生成的 .pptx；交付绝对路径。
 7. **按证据交付。** QA 输出、关键页截图、双产物路径。

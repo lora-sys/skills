@@ -71,7 +71,7 @@ class QuietHandler(SimpleHTTPRequestHandler):
 
 
 def log(message: str) -> None:
-    print(f"[open-ppt] {message}", file=sys.stderr, flush=True)
+    print(f"[presentation-builder] {message}", file=sys.stderr, flush=True)
 
 
 def run_command(
@@ -88,7 +88,7 @@ def run_command(
     system locale (GBK on zh-CN Windows) can also raise UnicodeDecodeError.
     Writing to a UTF-8 file avoids both failures.
     """
-    handle, sink_path = tempfile.mkstemp(prefix="open-ppt-", suffix=".log")
+    handle, sink_path = tempfile.mkstemp(prefix="presentation-builder-", suffix=".log")
     os.close(handle)
     sink = Path(sink_path)
     output = ""
@@ -740,7 +740,7 @@ def resolve_editor_root() -> Path:
     if env:
         candidates.append(Path(env).expanduser().resolve())
     candidates.append(SKILL_DIR / "editor")
-    # monorepo / npm package: skills/open-ppt → package root
+    # monorepo / npm package: skills/presentation-builder → package root
     candidates.append(SKILL_DIR.parent.parent / "editor")
     for candidate in candidates:
         if (candidate / "index.html").is_file():
@@ -924,12 +924,12 @@ def export_pptx(
         f"defaults: transition={transition}, embed_fonts={'on' if embed_fonts else 'off'}"
     )
 
-    with temporary_directory(prefix="open-ppt-export-") as temp_name:
+    with temporary_directory(prefix="presentation-builder-export-") as temp_name:
         temp_dir = Path(temp_name)
         download_dir = temp_dir / "downloads"
         download_dir.mkdir()
         server, thread, url = serve_local_editor(payload)
-        session = f"open-ppt-export-{os.getpid()}-{uuid.uuid4().hex[:8]}"
+        session = f"presentation-builder-export-{os.getpid()}-{uuid.uuid4().hex[:8]}"
         browser = BrowserSession(agent_browser, session, temp_dir, download_dir, cdp_port)
         downloads = default_downloads_dir()
         try:
@@ -1061,7 +1061,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             prefer_local=not args.browser,
         )
     except (ExportError, OSError, subprocess.SubprocessError) as exc:
-        print(f"open-ppt export failed: {exc}", file=sys.stderr)
+        print(f"presentation-builder export failed: {exc}", file=sys.stderr)
         return 1
     print(json.dumps(summary, ensure_ascii=False, indent=2))
     return 0

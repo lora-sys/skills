@@ -9,7 +9,7 @@ def main():
     else:
         text=skill.read_text(encoding="utf-8")
         if not text.startswith("---"): errors.append("Missing frontmatter")
-        if "name: teaching-html-story-deck" not in text: errors.append("Unexpected skill name")
+        if "name: interactive-teaching-page" not in text: errors.append("Unexpected skill name")
         if "description:" not in text: errors.append("Missing description")
     try:
         cases=json.loads((ROOT/"evals/cases.json").read_text(encoding="utf-8"))

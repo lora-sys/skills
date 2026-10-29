@@ -10,7 +10,7 @@ description: lora 的开发流程路由器，适用于功能开发、bug 修复�
 ## 路由
 
 - Web 功能 → `web-feature`；M/L 档 API、脚本、工具 → `backend-feature`；bug 或行为异常 → `bug-fix`；仓库调查 → `investigation`。S 档普通脚本走行内流程。
-- Issue 起草/分诊 → `issue-draft` / `issue-triage`；PR 创建/审查/跟进 → `pr-open` / `pr-review` / `pr-babysit`；接手 PR、分支或 Agent → `takeover`。
+- Issue 起草/分诊 → `issue-draft` / `issue-triage`；PR 创建或现有 PR 正文/Change map 更新 → `pr-open`；PR 检查与评论跟进 → `pr-babysit`；PR 审查 → `pr-review`；接手 PR、分支或 Agent → `takeover`。
 - 用户明确要求开发机安装依赖、远端测试或启动验证：纯验证直接调 `remote-dev`；涉及代码改动时先按本模式在本机完成，再移交远端；技能缺失时说明。
 - 专项或不确定的路由见 `references/routing-matrix.md`。
 - 非 bug 的单 skill 任务若≤2 个文件且不影响共享结构，直接调用对应 skill；bug 和 PR/Issue 即使很小也走本模式。
@@ -25,8 +25,9 @@ description: lora 的开发流程路由器，适用于功能开发、bug 修复�
 ## 证据与权限
 
 - 仅当仓库已有 `.codegraph/` 且 CLI/MCP 可用时使用 CodeGraph；未获授权不得初始化索引、安装工具或配置 MCP。
-- 创建或更新 PR/Issue 正文时附自包含 SVG；PR 审查时核对现有图，后续代码改变时更新。按 `references/change-impact.md` 生成并对照 diff、源码及证据；未核实的边不得写成事实。
+- 创建或更新 PR/Issue 正文时内嵌 Mermaid 影响图；PR 审查时核对图与实际 diff，后续代码改变时更新正文中的图。按 `references/change-impact.md` 生成并对照源码及证据；未核实的边不得写成事实。
 - PR 代码审查、架构审查或用户明确要求报告时准备 Postplan。每个版本公开前都单独确认；Postplan 确认不授权 PR/Issue 写入。
+- PR 报告的验证结果必须来自最新 head，并能对应到实际命令和日志。遇到失败/阻塞时，先判断根因；在用户已授权的环境内修复可控的依赖或配置问题并复跑受影响检查。仍受外部条件阻塞时如实保留状态，不把环境阻塞标成代码失败，也不把定向通过概括成全量通过。
 - 写 PR/Issue、评论、技术文档或其他 prose 时，加载 `engineering-writing` 后再加载 `unslop`；代码任务不加载写作技能。行为与预期不符时用 `debug` 复现，不声称未验证的结果。
 - 草拟不等于远端写入。未获本任务授权，不创建 PR、不提交代码。
 - `full-stop` 无需逐步确认，可创建/更新本任务 PR、推送本任务分支并做到 merge-ready；`full-send` 仅在最新 merge gate 通过后增加合并授权。两者不授权改 Issue、其他 PR 或标签，也不允许推默认分支、改写共享历史、绕过保护或使用 `--admin`。
@@ -37,3 +38,10 @@ description: lora 的开发流程路由器，适用于功能开发、bug 修复�
 真实任务后向本机 lora-mode 使用台账追加一条（不提交到源仓库）；确认的 bad case 加入 `evals/EVALS.md`。出现 bad case、同类问题被第二次纠正，或上次 reflect 后新增 5 条任务记录时，进入 `playbooks/reflect.md`。
 
 专项路由见 `references/routing-matrix.md`；PR 风险和事故反馈见 `references/pr-review-policy.md`；报告发布见 `references/postplan-reports.md`；L 档隔离审查看 `references/review-protocol.md`；M/L 质量门见 `references/web/quality-gates.md`。
+
+## 阶段变化与收尾
+
+- 用户目标从调查/环境准备扩展到代码修改、远端验证或 PR 时，在下一步操作前重判路由与规模；记录新增目标、验收证据和权限边界。复用已读上下文与通过的检查，不因阶段变化重跑无关步骤。
+- 使用子代理时默认只委派一层。子代理不得自行再启动子代理、切换其他模型或创建编排线程；遇到仓库/工具/上下文不可访问或任务范围超出授权时，向上级报告限制和所需输入，由主 Agent 决定是否补充材料或重新分派。只有用户明确要求多层协作，或主 Agent 在任务书中明确授权并说明必要性时，才可继续委派。不得用嵌套委派绕过权限、工具或隔离限制。
+- 收尾读取子代理最终结果并核对实际工作、外部写入和遗留产物，不只接受“已完成”的自述；记录额外委派的理由、范围和可见结果。
+- 收尾时保证验证结论对应最新目标和代码状态，如实说明未通过或未确认的门，并记录任务产物的去留。按任务 playbook 核对所需检查并处置临时产物。

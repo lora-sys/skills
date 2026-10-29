@@ -14,7 +14,8 @@ Before drafting, identify the reader, the decision or action they need, the veri
 - Follow the repository's title convention. State the problem or user value, not a file inventory.
 - Keep the opening to one or two sentences. Explain the problem and the change.
 - State the risk tier from the diff and give its reason.
-- Include the required SVG change map once. State its Base, Head, and coverage limits.
+- If no diff is available, mark risk and reversibility unassessed; do not infer a tier from module names or topic alone.
+- When a PR or Issue workflow requires a change map, embed it once as a Mermaid block in the body. State its Base, Head, and coverage limits.
 - Show verification as the command and observed result. Include a before/after when behavior changed.
 - State whether the change is easy to reverse and name its affected modules or users.
 - If a required fact or artifact is missing, label the draft incomplete and name what is needed. Do not make a blocked draft look ready to submit.

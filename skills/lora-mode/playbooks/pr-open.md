@@ -9,9 +9,9 @@
 3. **生成 Change map。** 比较 base/head 的代码依赖图，准备短 JSON 图数据并运行 `scripts/render-impact-svg.py`。图中标出新增、修改、删除、受影响模块、依赖边变化和分析限制；对照 diff 核验图中内容。SVG 内含简短描述和机器可读的节点/边元数据。
 4. **写 PR 描述。** 按 `engineering-writing` 起草，再按 `unslop` 检查。GitHub CLI 可用 `--attach <svg>` 上传附件并替换正文中的本地图片引用；仅准备草稿时一并交付 SVG 文件。
 5. **独立审查。** 常规只启动一次 Spec / Standards 审查，同时读取 Issue / 验收条件、base 到 head 的 diff、验证结果和 Change map。High 风险再增加一次聚焦安全、数据、并发或恢复路径的独立审查；使用 `references/pr-review-policy.md` 的人类审批门。没有 Spec 时注明并继续 Standards，不要运行缺失的 setup 命令。只修 blocker 与 should-fix。若没有独立 reviewer，自己做一轮相同检查并说明未独立复核。显式 PR review 请求继续使用 `pr-review.md` 的双轴审查。
-6. **创建并核验。** 普通“开 PR”请求创建并核验后结束；`full-stop` / `full-send` 继续交给 `pr-babysit.md`，使用一个宿主事件 watcher 等到 ready 或阻塞。用 `gh pr view` 核实标题、正文、SVG 附件、最新 SHA 和状态；缺图、图过期或附件上传失败时修好再交付。`gh` 支持 `--attach` 时直接附图；旧版本不支持时先报告阻塞，不创建缺图 PR。
+6. **创建并核验。** 创建前把 Evidence 对齐到当前 head 和最近一次真实命令/日志；较早失败若后来已解决，更新为最新结果，未复跑则标为未复验。普通“开 PR”请求可在披露外部阻塞后创建 PR，但不可称 ready 或任务完全收尾；用户要求 full-stop/full-send 时继续按 `pr-babysit.md` 等到 ready 或明确阻塞。读取 GitHub checks/status，区分失败、进行中和无运行记录。用 `gh pr view` 核实标题、正文、SVG 附件、最新 SHA 和状态；缺图、图过期或附件上传失败时修好再交付。`gh` 支持 `--attach` 时直接附图；旧版本不支持时先报告阻塞，不创建缺图 PR。
 
-**轮次预算**：普通 PR 一轮初始 review，最多两轮有实质问题的 fix → push → recheck；`pr-babysit` 与本步骤共用该预算。安全、认证、数据丢失或并发风险仍有 blocker / should-fix 时最多五轮。后续轮次只复查行为改动和未解决 findings；纯文档、正文、附件或格式变化不重跑代码测试，也不触发新一轮 review。达到上限就交付当前已验证状态和阻塞项。
+**轮次预算**：普通 PR 一轮初始 review，最多两轮有实质问题的 fix → push → recheck；`pr-babysit` 与本步骤共用该预算。安全、认证、数据丢失或并发风险仍有 blocker / should-fix 时最多五轮。后续轮次只复查行为改动和未解决 findings；纯文档、正文、附件或格式变化不重跑代码测试，也不触发新一轮 review。达到上限就交付当前已验证状态和阻塞项；未通过的必需门必须标为阻塞，不能把“已创建 PR”当成“问题已解决”。
 
 High 风险达到第三轮仍无收敛时，先重新评估设计和根因；只有后续轮次能验证实质修复时才可用到五轮。不得重复提交已核实且无新证据的 finding。
 

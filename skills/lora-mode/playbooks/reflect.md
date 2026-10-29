@@ -1,7 +1,7 @@
 # reflect — 复盘与自我迭代
 
-> 继承 SKILL.md 硬边界；本 playbook 是 lora-mode 自我迭代的唯一入口。
-> **适用**：用户说"复盘/迭代技能/沉淀一下/更新 playbook"；或 SKILL.md 交付钩子的自动触发条件命中（本次出现 bad case、同会话二次同类纠正、台账自上次 reflect 以来 ≥5 条真实任务行）——命中即自主进入，不需用户点名。**主导 skill**：skill-creator（产新 skill 时）、github-gem-seeker（先找轮子）。
+> 本 playbook 是 lora-mode 自我迭代的唯一入口。
+> **适用**：用户说"复盘/迭代技能/沉淀一下/更新 playbook"；或 lora-mode 的自动复盘条件命中（本次出现 bad case、同会话二次同类纠正、台账自上次 reflect 以来 ≥5 条真实任务行）——命中即自主进入，不需用户点名。**主导 skill**：skill-creator（产新 skill 时）、github-gem-seeker（先找轮子）。
 
 ## 数据源（没有证据不立项）
 

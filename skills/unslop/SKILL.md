@@ -1,11 +1,11 @@
 ---
 name: unslop
-description: Cut AI tells from any writing. Must always apply.
+description: Edit prose for natural, direct language when writing or revising documents, PR/Issue text, comments, or user-facing replies. Skip code-only work.
 ---
 
 # Unslop
 
-Edit text to remove AI patterns and add human voice.
+Edit prose to remove AI patterns and match the intended voice. Use this skill only when writing or revising text.
 
 ## Process
 

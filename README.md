@@ -40,7 +40,7 @@ npx skills list --global --agent codex
 
 | Skill | 用途 | 适用场景 |
 |---|---|---|
-| [`lora-mode`](skills/lora-mode/) | 个人开发总控：playbook 路由 + 七步骨架 + 隔离对抗审查；覆盖 Issue / PR、接手既有工作、风险分层与影响图 | 前后端开发、Issue / PR 生命周期、接手 PR / 分支 / Agent 线程、调试、调查、发布等多步任务 |
+| [`lora-mode`](skills/lora-mode/) | 个人开发总控：精简路由、分级验证、隔离审查与影响图；覆盖目标评测迭代、风险分层、Issue / PR 和接手既有工作 | 前后端开发、目标驱动优化、Issue / PR 生命周期、接手 PR / 分支 / Agent 线程、调试、调查与发布 |
 | [`engineering-writing`](skills/engineering-writing/) | PR、Issue、技术文档和工程评论的证据化写作标准；英文技术文本含 STE 启发式检查 | 起草或修改 PR / Issue 正文、工程文档、代码审查评论和回复 |
 | [`open-ppt`](skills/open-ppt/) | PPTD 格式的演示文稿创建、编辑与 PPTX/图片导出 | 幻灯片、PPT/PPTX、海报、infographic、教学演示 |
 | [`samuel-video-coach`](skills/samuel-video-coach/) | Samuel 风格的短视频导演 Skill：分镜、台词、拍摄指导、AI 过渡与共鸣设计 | 抖音、TikTok、Reels、Shorts、Bilibili、YouTube 前期策划 |

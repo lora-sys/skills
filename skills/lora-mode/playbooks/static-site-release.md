@@ -1,6 +1,5 @@
 # static-site-release — 存量静态站体验改造与发布
 
-> 继承 SKILL.md 七步骨架与硬边界，本文件只写每步的具体动作。
 > **适用**：已上线的个人站/作品集/博客的体验改进、内容对齐、发布验收。**主导 skill**：static-site-experience-release。
 
 ## 步骤

@@ -1,6 +1,5 @@
 # visual-refinement — 截图还原、视觉精修、像素级对齐
 
-> 继承 SKILL.md 七步骨架与硬边界，本文件只写每步的具体动作。
 > **适用**：照设计稿还原、像素级对齐、视觉精修。**主导 skill**：oil-ui（设计判断）、oil-frontend（实现）。
 
 ## 步骤
@@ -10,7 +9,7 @@
 3. **出计划。** 按差异项排实现顺序；标注哪些是设计判断（oil-ui）、哪些是实现问题（oil-frontend）。
 4. **实现。** oil-frontend 逐项修改；设计判断类差异（层级、配色方向）先过 oil-ui 确认再改。视觉标准读 `../references/web/design-motion.md`，常见坑读 `../references/web/common-pitfalls.md`。
 5. **逐项复截对比。** 同视口复截，与基准并排比对；逐项勾掉，不凭感觉宣布对齐。
-6. **按规模审查。** M 档用 SKILL.md 的行内自查卡，并复核差异清单中的视觉状态；L 档按 `../references/review-protocol.md` 做隔离审查。若随后进入 PR，由 `pr-open` 的一次独立审查替代本步骤。
+6. **按规模审查。** M 档按差异清单核对截图、相关状态和回归面；L 档按 `../references/review-protocol.md` 做隔离审查。若随后进入 PR，由 `pr-open` 的一次独立审查替代本步骤。
 7. **按证据交付。** 前后并排对比图 + 差异清单核销表。
 
 ## 证据形态

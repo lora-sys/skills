@@ -1,6 +1,5 @@
 # pr-open — 准备并创建 Pull Request
 
-> 继承 SKILL.md 的七步骨架与硬边界。本 playbook 负责把已验收的改动整理成可审 PR。
 > **适用**：用户要求开 PR；或 `full-stop` / `full-send` 串联到 PR 生命周期。**主导工具**：一个独立 reviewer + `gh`。
 
 ## 步骤

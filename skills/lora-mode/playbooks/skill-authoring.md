@@ -1,6 +1,5 @@
 # skill-authoring — 写新 SKILL.md / 改进现有 skill
 
-> 继承 SKILL.md 七步骨架与硬边界，本文件只写每步的具体动作。
 > **适用**：用户点名写或改 skill 时。**主导 skill**：skill-creator。
 
 ## 步骤

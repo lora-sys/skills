@@ -1,34 +1,24 @@
 {
   "kind": "pr",
   "title": "Authentication dependency change",
-  "description": "Base/Head relationships are reported in the prompt, not verified from source; runtime consumers and migration behavior are unknown.",
+  "description": "Dependency changes are reported in the prompt; runtime consumers and migration behavior are unknown.",
   "scope": "Supplied module summary only; source dependencies were not inspected.",
-  "base": {
-    "sha": "1111111",
-    "nodes": [
-      {"id": "web", "label": "web", "confidence": "reported", "evidence": "provided summary"},
-      {"id": "session", "label": "packages/session", "confidence": "reported", "evidence": "provided summary"},
-      {"id": "token-helper", "label": "token-helper", "confidence": "reported", "evidence": "provided summary"}
-    ],
-    "edges": [
-      {"from": "web", "to": "session", "relationship": "depends on", "confidence": "reported", "evidence": "provided summary"},
-      {"from": "session", "to": "token-helper", "relationship": "depends on", "confidence": "reported", "evidence": "provided summary"}
-    ]
-  },
-  "head": {
-    "sha": "2222222",
-    "nodes": [
-      {"id": "web", "label": "web", "confidence": "reported", "evidence": "provided summary"},
-      {"id": "api-auth", "label": "api/auth", "confidence": "reported", "evidence": "provided summary"},
-      {"id": "session", "label": "packages/session", "confidence": "reported", "evidence": "provided summary"},
-      {"id": "credential-store", "label": "credential-store", "confidence": "reported", "evidence": "provided summary"}
-    ],
-    "edges": [
-      {"from": "web", "to": "api-auth", "relationship": "depends on", "confidence": "reported", "evidence": "provided summary"},
-      {"from": "api-auth", "to": "session", "relationship": "depends on", "confidence": "reported", "evidence": "provided summary"},
-      {"from": "session", "to": "credential-store", "relationship": "depends on", "confidence": "reported", "evidence": "provided summary"}
-    ]
-  },
+  "base": {"sha": "1111111"},
+  "head": {"sha": "2222222"},
   "modified": ["session"],
+  "nodes": [
+    {"id": "web", "label": "apps/web", "presence": "both", "confidence": "reported", "evidence": "provided summary"},
+    {"id": "session", "label": "packages/session", "presence": "both", "confidence": "reported", "evidence": "provided summary"},
+    {"id": "token-helper", "label": "packages/token-helper", "presence": "base", "confidence": "reported", "evidence": "provided summary"},
+    {"id": "api-auth", "label": "api/auth", "presence": "head", "confidence": "reported", "evidence": "provided summary"},
+    {"id": "credential-store", "label": "packages/credential-store", "presence": "head", "confidence": "reported", "evidence": "provided summary"}
+  ],
+  "edges": [
+    {"from": "web", "to": "session", "relationship": "depends on", "presence": "base", "confidence": "reported", "evidence": "provided summary"},
+    {"from": "session", "to": "token-helper", "relationship": "depends on", "presence": "base", "confidence": "reported", "evidence": "provided summary"},
+    {"from": "web", "to": "api-auth", "relationship": "depends on", "presence": "head", "confidence": "reported", "evidence": "provided summary"},
+    {"from": "api-auth", "to": "session", "relationship": "depends on", "presence": "head", "confidence": "reported", "evidence": "provided summary"},
+    {"from": "session", "to": "credential-store", "relationship": "depends on", "presence": "head", "confidence": "reported", "evidence": "provided summary"}
+  ],
   "unknowns": ["Runtime consumers and migration behavior were not supplied."]
 }

@@ -1,6 +1,6 @@
 # pr-review — 审查 Pull Request
 
-> 继承 SKILL.md 的七步骨架。本流程按 spec 与工程规范审 PR，不使用“自己的交付物”零上下文协议。
+> 本流程按 spec 与工程规范审 PR，不使用“自己的交付物”零上下文协议。
 > **适用**：审查自己的或他人的 PR、给出 verdict。**主导 skill**：`code-review`。
 
 ## 步骤

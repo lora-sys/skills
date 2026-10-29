@@ -8,15 +8,19 @@ GitHub 支持 SVG 附件，`gh pr create/edit` 和 `gh issue create/edit` 可用
 
 ## SVG 内容
 
-每张图包含可见图形和机器可读的 SVG 元数据：
+每张图包含可见图形和机器可读的 SVG 元数据。PR 输入 JSON 与渲染后的元数据是不同结构：输入用唯一节点和边描述模块图；渲染器计算状态、影响距离和前后差异。
+
+PR 输入结构以 `evals/fixtures/e14-pr/map.json` 为准：`base/head` 记录 SHA，`modified` 列改动模块，节点和边各列一次并用 `presence: base|head|both` 标记版本。渲染器推导新增/删除模块、边变化和受影响消费者。Issue/state 输入见 `evals/fixtures/e16-issue/map.json`。
+
+Rendered SVG metadata:
 
 ```xml
 <title>简短图标题</title>
 <desc>一句话说明图表达的变化、范围和主要未知。</desc>
-<metadata id="lora-change-map-v1">{"schema":"lora-change-map/v1","kind":"pr","scope":"分析范围","base":{"sha":"..."},"head":{"sha":"..."},"nodes":[{"id":"...","label":"...","status":"added|modified|deleted|affected|unchanged","phases":["base","head"],"evidence":"...","confidence":"confirmed|reported|inferred|unknown"}],"edges":[{"from":"...","to":"...","relationship":"depends-on|calls|event","phase":"base|head","change":"unchanged|added|removed","evidence":"...","confidence":"confirmed|reported|inferred|unknown"}],"unknowns":["..."]}</metadata>
+<metadata id="lora-change-map-v1">{"schema":"lora-change-map/v1","kind":"pr","title":"...","scope":"分析范围","base":{"sha":"..."},"head":{"sha":"..."},"nodes":[{"id":"...","label":"...","status":"added|modified|deleted|affected|unchanged","phases":["base","head"],"impact_distance":1,"impact_by_phase":{"base":1,"head":null},"evidence":"...","confidence":"confirmed|reported|inferred|unknown"}],"edges":[{"from":"...","to":"...","relationship":"depends-on|calls|event","phases":["base","head"],"change":"unchanged|added|removed","evidence":"...","confidence":"confirmed|reported|inferred|unknown"}],"unknowns":["..."]}</metadata>
 ```
 
-PR metadata includes `base`, `head`, per-edge `phase` and `change`; each node's `phases` lists where it exists. Issue/state metadata omits those fields; node status is limited to `observed`, `expected`, `unknown` or `inferred`. Every edge must name its relationship, and the legend explains that arrows run from the `from` node to the `to` node; it must not imply every edge is a dependency.
+PR metadata includes `base` and `head` as SHA evidence, one node per module with `status`, `phases`, and impact distance, and one edge per relationship with `phases` and `change` (`unchanged`, `added`, or `removed`). The visible affected badge includes the number of dependency hops from the changed module. Issue/state metadata omits those fields; node status is limited to `observed`, `expected`, `unknown` or `inferred`. Every edge must name its relationship, and the legend explains that arrows run from the `from` node to the `to` node; it must not imply every edge is a dependency.
 
 SVG 要求：
 
@@ -30,7 +34,8 @@ SVG 要求：
 
 - 从目标分支 merge-base 和当前 head 取证，记录两个 SHA。已有索引且 CLI/MCP 可用时用 CodeGraph 导航；没有索引时遵从仓库说明和用户选择，默认不初始化。创建仓库索引、安装 CLI/MCP、配置 Agent/MCP 是三项独立操作，各自都需要用户对具体范围的明确授权，一项授权不包含另两项。仅在仓库索引已获授权且 CLI 已就绪时运行一次 `codegraph init`；CLI/MCP 缺失或未获安装授权时，不安装，改用 diff、源码和配置取证并在 Coverage 中说明。MCP watcher 和重连负责增量追赶；watcher 不可用或在 MCP 外查询时，分析前按需运行 `codegraph sync`，不设定时任务或周期性全量重建。记录索引对应的提交；索引只覆盖一个版本时，只把它作为该版本的导航证据，另一版本须从对应源码、配置或可用索引补证。
 - 只有检查到足以支持关系的具体源码、配置或运行证据，才将边标为 `confirmed` 并填写 evidence；用户/Issue 提供的关系标 `reported`，静态推断标 `inferred`，没有证据标 `unknown`。非 `unknown` 节点和边都必须填写 evidence。缺失 confidence 默认 `unknown`，不默认当作事实。
-- Base 与 Head 上下排列，以便缩放到 PR 正文宽度后仍能读清节点。依赖拓扑未变化时也画前后状态图，并明确写“依赖拓扑未变化”。
+- PR 用一张模块图表达代码库结构和变化；每个模块只出现一次。Base/Head SHA 是证据范围，显示在图头，不作为两个主图面板。依赖拓扑未变化时仍画模块图，并明确写“依赖拓扑未变化”。
+- 用 Head 依赖图安排层级；删除模块放在 Head 层级之后，删除边绕开中间模块绘制。这样 Base 历史边不会与 Head 边合并成虚假的环。
 - 画出新增、删除、修改的模块与依赖边变化，以及直接受影响的未改消费者。对照 diff 核对节点和边。
 - 元数据记录关系证据来自 import、调用、配置、CodeGraph、运行时复现或报告者陈述。标出反射、插件发现、配置路由、运行时数据流等静态分析未覆盖关系；不要把 CodeGraph 未显示的边说成不存在。
 - 文档专属改动照样给图，并写明“源代码依赖图未变化”。局部图不能称作完整调用图。
@@ -50,7 +55,7 @@ PR 正文保留 Why、改动范围、风险和真实验证结果，并嵌入附�
 ### Change map
 Base: `<base SHA>` · Head: `<head SHA>` · Coverage: <工具与限制>
 
-![Base 到 Head 的模块依赖变化图，图例解释新增、修改、删除、受影响节点及依赖箭头](./change-map.svg)
+![代码库模块依赖图，标出新增、修改、删除、受影响模块及 Base 到 Head 的依赖变化](./change-map.svg)
 ```
 
 Issue 正文保留问题/目标、实际与期望行为、验收条件和未知项，并嵌入附件：

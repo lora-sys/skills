@@ -1,6 +1,5 @@
 # publish — 把 HTML / 站点发出去
 
-> 继承 SKILL.md 七步骨架与硬边界，本文件只写每步的具体动作。
 > **适用**：单页 HTML 要公开链接、静态站点发布。**主导 skill**：html-communication（单页）、static-site-experience-release（站点发布段）。
 
 ## 步骤

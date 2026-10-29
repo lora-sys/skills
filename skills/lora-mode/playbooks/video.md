@@ -1,6 +1,5 @@
 # video — 短视频策划到多平台草稿分发（点名时进入）
 
-> 继承 SKILL.md 七步骨架与硬边界，本文件只写每步的具体动作。
 > **适用**：用户点名要走完整链路时；单条视频策划默认直接调度 samuel-video-coach。
 > **主导 skill**：samuel-video-coach（策划）→ video-publisher（分发）。
 

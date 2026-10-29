@@ -1,6 +1,5 @@
 # pr-babysit — 跟进开放的 Pull Request
 
-> 继承 SKILL.md 的七步骨架与硬边界。本 playbook 在用户要求跟进、监视或等待 PR，或由 `full-stop` / `full-send` 自动串联时运行。
 > **适用**：处理已开 PR 的冲突、CI、review 和 bot 评论，并等待到 ready gate 或阻塞。**主导工具**：`gh` 与宿主事件 watcher。
 
 ## 步骤

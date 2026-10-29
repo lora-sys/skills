@@ -49,10 +49,13 @@ class RenderImpactSvgTests(unittest.TestCase):
             root = ET.parse(output).getroot()
         self.assertEqual((data["base"]["sha"], data["head"]["sha"]), ("1111111", "2222222"))
         headings = " ".join(element.text or "" for element in root.findall(".//svg:text", SVG_NS))
-        self.assertIn("Base · 1111111", headings)
-        self.assertIn("Head · 2222222", headings)
-        self.assertNotIn("Base · Base", headings)
-        self.assertNotIn("Head · Head", headings)
+        self.assertIn("Base · 1111111 → Head · 2222222", headings)
+        self.assertIn("模块是主体；节点与依赖边标出前后变化", headings)
+        self.assertEqual(headings.count("Base · 1111111 → Head · 2222222"), 1)
+        self.assertNotIn("Base panel", headings)
+        for label in ("新增", "修改", "删除", "受影响·1", "packages/", "token-helper"):
+            self.assertIn(label, headings)
+        self.assertEqual(len(data["nodes"]), 5)
         self.assertIn("reported in the prompt", root.find("svg:desc", SVG_NS).text)
         statuses = {node["id"]: node["status"] for node in data["nodes"]}
         self.assertEqual(statuses["api-auth"], "added")
@@ -65,11 +68,67 @@ class RenderImpactSvgTests(unittest.TestCase):
         self.assertNotIn("presence", nodes["session"])
         self.assertTrue(all("presence" not in edge for edge in data["edges"]))
         self.assertTrue(all(edge["confidence"] == "reported" for edge in data["edges"]))
-        changes = {(edge["phase"], edge["from"], edge["to"]): edge["change"] for edge in data["edges"]}
-        self.assertEqual(changes[("base", "session", "token-helper")], "removed")
-        self.assertEqual(changes[("head", "session", "credential-store")], "added")
+        changes = {(edge["from"], edge["to"]): (edge["phases"], edge["change"]) for edge in data["edges"]}
+        self.assertEqual(changes[("session", "token-helper")], (["base"], "removed"))
+        self.assertEqual(changes[("session", "credential-store")], (["head"], "added"))
 
-    def test_pr_panel_title_includes_only_explicit_branch_refs(self) -> None:
+    def test_pr_layout_uses_head_topology_without_false_cross_version_cycle(self) -> None:
+        data = json.loads((FIXTURES / "e14-pr" / "map.json").read_text(encoding="utf-8"))
+        data["edges"][0] = {
+            "from": "session",
+            "to": "web",
+            "relationship": "depends on",
+            "presence": "base",
+            "confidence": "reported",
+            "evidence": "reversed in base summary",
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            input_path = Path(directory) / "map.json"
+            output_path = Path(directory) / "map.svg"
+            input_path.write_text(json.dumps(data), encoding="utf-8")
+            result = subprocess.run(
+                [sys.executable, str(SCRIPT), str(input_path), "--output", str(output_path)],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            root = ET.parse(output_path).getroot()
+        warnings = root.findall('.//svg:text[@class="warning"]', SVG_NS)
+        self.assertEqual(warnings, [])
+
+    def test_pr_rejects_edges_and_modified_nodes_missing_from_a_phase(self) -> None:
+        cases = (
+            (
+                "head edge references a node absent from that phase",
+                lambda data: data["edges"].append({
+                    "from": "api-auth",
+                    "to": "token-helper",
+                    "relationship": "depends on",
+                    "presence": "head",
+                }),
+            ),
+            ("modified node ids must exist in both base and head", lambda data: data.update(modified=["token-helper"])),
+        )
+        original = json.loads((FIXTURES / "e14-pr" / "map.json").read_text(encoding="utf-8"))
+        for expected_error, mutate in cases:
+            with self.subTest(expected_error=expected_error), tempfile.TemporaryDirectory() as directory:
+                data = json.loads(json.dumps(original))
+                mutate(data)
+                input_path = Path(directory) / "bad.json"
+                output_path = Path(directory) / "bad.svg"
+                input_path.write_text(json.dumps(data), encoding="utf-8")
+                result = subprocess.run(
+                    [sys.executable, str(SCRIPT), str(input_path), "--output", str(output_path)],
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                )
+                self.assertEqual(result.returncode, 2)
+                self.assertIn(expected_error, result.stderr)
+                self.assertFalse(output_path.exists())
+
+    def test_pr_evidence_caption_includes_only_explicit_branch_refs(self) -> None:
         data = json.loads((FIXTURES / "e14-pr" / "map.json").read_text(encoding="utf-8"))
         data["base"]["ref"] = "main"
         data["head"]["ref"] = "feature/auth-refresh"
@@ -86,8 +145,7 @@ class RenderImpactSvgTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             root = ET.parse(output_path).getroot()
         headings = " ".join(element.text or "" for element in root.findall(".//svg:text", SVG_NS))
-        self.assertIn("Base · main · 1111111", headings)
-        self.assertIn("Head · feature/auth-refresh · 2222222", headings)
+        self.assertIn("Base · main · 1111111 → Head · feature/auth-refresh · 2222222", headings)
 
     def test_issue_svg_keeps_reported_and_unknown_relationships_separate(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

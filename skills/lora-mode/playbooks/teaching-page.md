@@ -1,6 +1,5 @@
 # teaching-page — 教学 / 讲解类自包含 HTML
 
-> 继承 SKILL.md 七步骨架与硬边界，本文件只写每步的具体动作。
 > **适用**：讲解页、课件、story deck、架构 walkthrough、HTML 报告。**主导 skill**：teaching-html-story-deck。
 
 ## 步骤

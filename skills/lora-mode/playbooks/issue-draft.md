@@ -1,6 +1,5 @@
 # issue-draft — 起草可执行的 Issue
 
-> 继承 SKILL.md 的七步骨架与硬边界。本 playbook 只负责把已确认的工作写成可读、可执行的 Issue。
 > **适用**：用户要创建或整理 GitHub / GitLab Issue 描述。**主导 skill**：目标 tracker 的官方 CLI 或现有 GitHub skill。
 
 ## 步骤

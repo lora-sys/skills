@@ -60,15 +60,21 @@ def validate(data: Any) -> dict[str, Any]:
                 raise GraphError(f"{phase} must be an object")
             need_text(part, "sha", phase)
             part.setdefault("ref", phase.title())
-            part["nodes"] = validate_nodes(part.get("nodes"), phase)
-            part["edges"] = validate_edges(part.get("edges"), part["nodes"], phase)
+        out["nodes"] = validate_nodes(out.get("nodes"), "pr")
+        out["edges"] = validate_edges(out.get("edges"), out["nodes"], "pr")
         out["modified"] = out.get("modified", [])
         if not isinstance(out["modified"], list) or not all(isinstance(x, str) for x in out["modified"]):
             raise GraphError("modified must be a list of node ids")
-        base_ids = {n["id"] for n in out["base"]["nodes"]}
-        head_ids = {n["id"] for n in out["head"]["nodes"]}
+        base_ids = {n["id"] for n in out["nodes"] if n["presence"] in {"base", "both"}}
+        head_ids = {n["id"] for n in out["nodes"] if n["presence"] in {"head", "both"}}
         if not set(out["modified"]) <= base_ids & head_ids:
             raise GraphError("modified node ids must exist in both base and head")
+        for edge in out["edges"]:
+            for phase in ("base", "head"):
+                if edge["presence"] in {phase, "both"}:
+                    phase_ids = base_ids if phase == "base" else head_ids
+                    if edge["from"] not in phase_ids or edge["to"] not in phase_ids:
+                        raise GraphError(f"{phase} edge references a node absent from that phase")
     else:
         out["nodes"] = validate_nodes(out.get("nodes"), "root", ISSUE_NODE_STATUSES)
         out["edges"] = validate_edges(out.get("edges"), out["nodes"], "root")
@@ -117,7 +123,7 @@ def validate_edges(value: Any, nodes: list[dict[str, Any]], where: str) -> list[
         raise GraphError(f"{where}.edges must be a list")
     ids = {n["id"] for n in nodes}
     result: list[dict[str, Any]] = []
-    seen: set[tuple[str, str, str, str]] = set()
+    seen: set[tuple[str, str, str]] = set()
     for i, item in enumerate(value):
         at = f"{where}.edges[{i}]"
         if not isinstance(item, dict):
@@ -137,9 +143,9 @@ def validate_edges(value: Any, nodes: list[dict[str, Any]], where: str) -> list[
         edge["presence"] = edge.get("presence", "both")
         if edge["presence"] not in {"base", "head", "both"}:
             raise GraphError(f"{at}.presence must be base, head, or both")
-        key = (edge["from"], edge["to"], edge["relationship"], edge["presence"])
+        key = (edge["from"], edge["to"], edge["relationship"])
         if key in seen:
-            raise GraphError(f"duplicate edge {key}")
+            raise GraphError(f"duplicate edge {key}; use presence=both for an unchanged relationship")
         seen.add(key)
         result.append(edge)
     return result
@@ -153,7 +159,13 @@ def line_wrap(text: str, limit: int = 20) -> list[str]:
     lines: list[str] = []
     current = ""
     width = 0
-    parts = text.split(" ") if " " in text else list(text)
+    if " " in text:
+        parts = text.split(" ")
+    elif "/" in text:
+        segments = text.split("/")
+        parts = [f"{segment}/" for segment in segments[:-1]] + [segments[-1]]
+    else:
+        parts = list(text)
     for part in parts:
         unit_width = sum(2 if ord(char) > 255 else 1 for char in part)
         spacer = " " if current and " " in text else ""
@@ -199,33 +211,6 @@ def affected_distance(nodes: list[dict[str, Any]], edges: list[dict[str, Any]], 
     return distances
 
 
-def phase_nodes(data: dict[str, Any], phase: str) -> list[dict[str, Any]]:
-    part = data[phase]
-    ids = {n["id"] for n in part["nodes"]}
-    base_ids = {n["id"] for n in data["base"]["nodes"]}
-    head_ids = {n["id"] for n in data["head"]["nodes"]}
-    changed = set(data["modified"]) | (head_ids - base_ids) | (base_ids - head_ids)
-    distances = affected_distance(part["nodes"], part["edges"], changed, phase)
-    out = []
-    for node in part["nodes"]:
-        item = dict(node)
-        if item["id"] not in ids:
-            continue
-        if item["id"] not in head_ids:
-            item["status"] = "deleted"
-        elif item["id"] not in base_ids:
-            item["status"] = "added"
-        elif item["id"] in data["modified"]:
-            item["status"] = "modified"
-        elif item["id"] in distances or item.get("status") == "affected":
-            item["status"] = "affected"
-            item["impact_distance"] = distances.get(item["id"], item.get("impact_distance", 1))
-        else:
-            item["status"] = "unchanged"
-        out.append(item)
-    return out
-
-
 def ranks(nodes: list[dict[str, Any]], edges: list[dict[str, Any]]) -> tuple[dict[str, int], bool]:
     ids = {n["id"] for n in nodes}
     outgoing: dict[str, list[str]] = defaultdict(list)
@@ -251,8 +236,19 @@ def ranks(nodes: list[dict[str, Any]], edges: list[dict[str, Any]]) -> tuple[dic
     return rank, True
 
 
+def layout_ranks(nodes: list[dict[str, Any]], edges: list[dict[str, Any]]) -> tuple[dict[str, int], bool]:
+    rank, acyclic = ranks(nodes, edges)
+    if acyclic:
+        current = [rank[node["id"]] for node in nodes if node.get("status") != "deleted"]
+        deleted_rank = max(current, default=0) + 1
+        for node in nodes:
+            if node.get("status") == "deleted":
+                rank[node["id"]] = deleted_rank
+    return rank, acyclic
+
+
 def required_width(nodes: list[dict[str, Any]], edges: list[dict[str, Any]], minimum: int = 560) -> int:
-    rank, _ = ranks(nodes, edges)
+    rank, _ = layout_ranks(nodes, edges)
     counts: dict[int, int] = defaultdict(int)
     for node in nodes:
         counts[rank[node["id"]]] += 1
@@ -260,10 +256,10 @@ def required_width(nodes: list[dict[str, Any]], edges: list[dict[str, Any]], min
     return max(minimum, widest)
 
 
-def draw_graph(nodes: list[dict[str, Any]], edges: list[dict[str, Any]], x0: int, y0: int, width: int, edge_changes: dict[tuple[str, str, str], str] | None = None) -> tuple[list[str], int]:
+def draw_graph(nodes: list[dict[str, Any]], edges: list[dict[str, Any]], x0: int, y0: int, width: int, edge_changes: dict[tuple[str, str, str], str] | None = None, layout_edges: list[dict[str, Any]] | None = None) -> tuple[list[str], int]:
     if not nodes:
         return [f'<text x="{x0 + 24}" y="{y0 + 35}" class="muted">无模块节点</text>'], 90
-    rank, acyclic = ranks(nodes, edges)
+    rank, acyclic = layout_ranks(nodes, edges if layout_edges is None else layout_edges)
     groups: dict[int, list[dict[str, Any]]] = defaultdict(list)
     for node in nodes:
         groups[rank[node["id"]]].append(node)
@@ -291,7 +287,22 @@ def draw_graph(nodes: list[dict[str, Any]], edges: list[dict[str, Any]], x0: int
             continue
         sx, sy = centers[source]
         tx, ty = centers[target]
-        if rank[source] < rank[target]:
+        confidence = edge.get("confidence", "unknown")
+        presence = edge.get("presence", "both")
+        change = "removed" if presence == "base" else "added" if presence == "head" else (edge_changes or {}).get((source, target, edge.get("relationship", "")), "unchanged")
+        forward = rank[source] < rank[target]
+        rank_gap = abs(rank[target] - rank[source])
+        side_route = change == "removed" or not forward or rank_gap > 1
+        side = -1 if change == "removed" or not forward else 1
+        if side_route:
+            offset = box_w // 2 + 70
+            if forward:
+                start_y, end_y = sy + box_h // 2, ty - box_h // 2
+                d = f"M {sx} {start_y} C {sx + side * offset} {start_y}, {tx + side * offset} {end_y}, {tx} {end_y}"
+            else:
+                start_x, end_x = sx + side * box_w // 2, tx + side * box_w // 2
+                d = f"M {start_x} {sy} C {sx + side * offset} {sy}, {tx + side * offset} {ty}, {end_x} {ty}"
+        elif forward:
             start_y, end_y = sy + box_h // 2, ty - box_h // 2
             mid_y = (start_y + end_y) / 2
             d = f"M {sx} {start_y} C {sx} {mid_y}, {tx} {mid_y}, {tx} {end_y}"
@@ -299,8 +310,6 @@ def draw_graph(nodes: list[dict[str, Any]], edges: list[dict[str, Any]], x0: int
             start_x, end_x = sx + box_w // 2, tx - box_w // 2
             bend = max(start_x, end_x) + 28
             d = f"M {start_x} {sy} C {bend} {sy}, {bend} {ty}, {end_x} {ty}"
-        confidence = edge.get("confidence", "unknown")
-        change = (edge_changes or {}).get((source, target, edge.get("relationship", "")), "unchanged")
         stroke = "#1a7f37" if change == "added" else "#cf222e" if change == "removed" else "#57606a"
         dash = ' stroke-dasharray="6 5"' if confidence in {"reported", "inferred", "unknown"} or change == "removed" else ""
         marker = "arrow-green" if change == "added" else "arrow-red" if change == "removed" else "arrow"
@@ -317,6 +326,8 @@ def draw_graph(nodes: list[dict[str, Any]], edges: list[dict[str, Any]], x0: int
         label = f"{relationship} · {suffix}" if suffix else relationship
         if label:
             lx, ly = (sx + tx) // 2, (sy + ty) // 2
+            if side_route:
+                lx += side * (box_w // 2 + 85)
             index = outgoing_edge_indexes[source]
             outgoing_edge_indexes[source] += 1
             count = outgoing_edge_counts[source]
@@ -336,7 +347,8 @@ def draw_graph(nodes: list[dict[str, Any]], edges: list[dict[str, Any]], x0: int
         for i, line in enumerate(label_lines):
             parts.append(f'<text x="{x - box_w // 2 + 15}" y="{label_y + i * 18}" class="node-title">{escape(line)}</text>')
         confidence_label = {"reported": "报告", "inferred": "推测", "unknown": "待确认"}.get(confidence, "")
-        impact_label = "间接受影响" if node.get("impact_distance", 1) > 1 and node.get("status") == "affected" else status_label
+        impact_distance = node.get("impact_distance")
+        impact_label = f"受影响·{impact_distance}" if impact_distance and node.get("status") == "affected" else status_label
         badge = f"{confidence_label}·{impact_label}" if confidence_label and confidence_label != impact_label else impact_label
         parts.append(f'<text x="{x + box_w // 2 - 10}" y="{y + box_h - 10}" text-anchor="end" class="node-status" fill="{color}">{escape(badge)}</text>')
     if not acyclic:
@@ -351,58 +363,43 @@ def render(data: dict[str, Any]) -> str:
     scope = escape(data["scope"])
     unknowns = data["unknowns"]
     if data["kind"] == "pr":
-        base_nodes = phase_nodes(data, "base")
-        head_nodes = phase_nodes(data, "head")
-        base_ids = {n["id"] for n in data["base"]["nodes"]}
-        head_ids = {n["id"] for n in data["head"]["nodes"]}
-        base_edge_keys = {(e["from"], e["to"], e.get("relationship", "")) for e in data["base"]["edges"]}
-        head_edge_keys = {(e["from"], e["to"], e.get("relationship", "")) for e in data["head"]["edges"]}
+        base_ids = {n["id"] for n in data["nodes"] if n["presence"] in {"base", "both"}}
+        head_ids = {n["id"] for n in data["nodes"] if n["presence"] in {"head", "both"}}
         changed_ids = set(data["modified"]) | (head_ids - base_ids) | (base_ids - head_ids)
-        base_impacted = affected_distance(data["base"]["nodes"], data["base"]["edges"], changed_ids, "base")
-        head_impacted = affected_distance(data["head"]["nodes"], data["head"]["edges"], changed_ids, "head")
+        base_impacted = affected_distance(data["nodes"], data["edges"], changed_ids, "base")
+        head_impacted = affected_distance(data["nodes"], data["edges"], changed_ids, "head")
         impacted = dict(base_impacted)
         for node_id, distance in head_impacted.items():
             impacted[node_id] = min(distance, impacted.get(node_id, distance))
-        base_changes = {key: "removed" for key in base_edge_keys - head_edge_keys}
-        head_changes = {key: "added" for key in head_edge_keys - base_edge_keys}
-        all_nodes = {n["id"]: {k: v for k, v in n.items() if k != "presence"} for n in data["base"]["nodes"]}
-        all_nodes.update({n["id"]: {k: v for k, v in n.items() if k != "presence"} for n in data["head"]["nodes"]})
         metadata_nodes = []
-        for node_id, node in all_nodes.items():
+        for node in data["nodes"]:
+            node_id = node["id"]
             status = "deleted" if node_id not in head_ids else "added" if node_id not in base_ids else "modified" if node_id in data["modified"] else "affected" if node_id in impacted else "unchanged"
-            metadata_nodes.append({**node, "status": status, "impact_distance": impacted.get(node_id), "impact_by_phase": {"base": base_impacted.get(node_id), "head": head_impacted.get(node_id)}, "phases": [p for p, ids in (("base", base_ids), ("head", head_ids)) if node_id in ids]})
+            phases = [phase for phase, ids in (("base", base_ids), ("head", head_ids)) if node_id in ids]
+            metadata_nodes.append({k: v for k, v in node.items() if k != "presence"} | {"status": status, "impact_distance": impacted.get(node_id), "impact_by_phase": {"base": base_impacted.get(node_id), "head": head_impacted.get(node_id)}, "phases": phases})
         metadata_edges = []
-        for phase, edges in (("base", data["base"]["edges"]), ("head", data["head"]["edges"])):
-            for edge in edges:
-                key = (edge["from"], edge["to"], edge.get("relationship", ""))
-                change = "removed" if phase == "base" and key not in head_edge_keys else "added" if phase == "head" and key not in base_edge_keys else "unchanged"
-                metadata_edges.append({k: v for k, v in edge.items() if k != "presence"} | {"phase": phase, "change": change})
+        for edge in data["edges"]:
+            phases = [phase for phase in ("base", "head") if edge["presence"] in {phase, "both"}]
+            change = "removed" if phases == ["base"] else "added" if phases == ["head"] else "unchanged"
+            metadata_edges.append({k: v for k, v in edge.items() if k != "presence"} | {"phases": phases, "change": change})
         metadata = {"schema": SCHEMA, "kind": "pr", "title": data["title"], "scope": data["scope"], "base": {k: data["base"][k] for k in ("ref", "sha")}, "head": {k: data["head"][k] for k in ("ref", "sha")}, "nodes": metadata_nodes, "edges": metadata_edges, "unknowns": unknowns}
-        panel_w = max(700, required_width(base_nodes, data["base"]["edges"]), required_width(head_nodes, data["head"]["edges"]))
-        width = panel_w
-        base_top = 56
-        graph_y = base_top + 50
-        base_parts, base_h = draw_graph(base_nodes, data["base"]["edges"], 18, graph_y, panel_w - 36, base_changes)
-        head_top = base_top + base_h + 68 + 14
-        head_graph_y = head_top + 50
-        head_parts, head_h = draw_graph(head_nodes, data["head"]["edges"], 18, head_graph_y, panel_w - 36, head_changes)
-        panel_h = max(base_h, head_h) + 68
-        legend_y = head_top + panel_h + 30
+        head_edges = [edge for edge in data["edges"] if edge["presence"] in {"head", "both"}]
+        width = max(700, required_width(metadata_nodes, head_edges))
+        graph_y = 88
+        graph_parts, graph_h = draw_graph(metadata_nodes, data["edges"], 18, graph_y, width - 36, layout_edges=head_edges)
+        legend_y = graph_y + graph_h + 20
         footer_y = legend_y + 68
         footer_svg, footer_h = draw_footer(data["scope"], unknowns, footer_y, width)
         height = footer_y + footer_h + 14
         body = [f'<rect x="0" y="0" width="{width}" height="{height}" rx="12" fill="#f6f8fa"/>']
         body.append(f'<text x="24" y="34" class="chart-title">{title}</text>')
-        body.append(f'<rect x="12" y="{base_top}" width="{panel_w - 24}" height="{base_h + 68}" rx="10" fill="#ffffff" stroke="#d0d7de"/>')
-        body.append(f'<rect x="12" y="{head_top}" width="{panel_w - 24}" height="{panel_h}" rx="10" fill="#ffffff" stroke="#d0d7de"/>')
         base_ref = data["base"]["ref"]
         head_ref = data["head"]["ref"]
         base_name = f' · {escape(base_ref)}' if base_ref.casefold() != "base" else ""
         head_name = f' · {escape(head_ref)}' if head_ref.casefold() != "head" else ""
-        body.append(f'<text x="28" y="{base_top + 27}" class="panel-title">Base{base_name} · {escape(data["base"]["sha"])}</text>')
-        body.append(f'<text x="28" y="{head_top + 27}" class="panel-title">Head{head_name} · {escape(data["head"]["sha"])}</text>')
-        body.extend(base_parts)
-        body.extend(head_parts)
+        body.append(f'<text x="24" y="58" class="evidence">Base{base_name} · {escape(data["base"]["sha"])} → Head{head_name} · {escape(data["head"]["sha"])}</text>')
+        body.append(f'<text x="24" y="76" class="evidence">模块是主体；节点与依赖边标出前后变化</text>')
+        body.extend(graph_parts)
         body.append(legend_pr(width, legend_y))
         body.append(footer_svg)
     else:
@@ -427,13 +424,13 @@ def render(data: dict[str, Any]) -> str:
 <title id="title">{title}</title>
 <desc id="desc">{desc}</desc>
 <metadata id="lora-change-map-v1">{meta}</metadata>
-<style>text{{font-family:Arial,"Noto Sans CJK SC",sans-serif;fill:#24292f}}.chart-title{{font-size:18px;font-weight:700}}.panel-title{{font-size:15px;font-weight:700}}.node-title{{font-size:14px;font-weight:600}}.node-status{{font-size:11px;font-weight:700}}.edge-label{{font-size:11px;paint-order:stroke;stroke:#fff;stroke-width:5px;stroke-linejoin:round}}.muted,.scope{{font-size:12px;fill:#57606a}}.warning{{font-size:11px;fill:#9a6700}}.legend-label{{font-size:11px;fill:#57606a}}</style>
+<style>text{{font-family:Arial,"Noto Sans CJK SC",sans-serif;fill:#24292f}}.chart-title{{font-size:18px;font-weight:700}}.evidence{{font-size:11px;fill:#57606a}}.node-title{{font-size:14px;font-weight:600}}.node-status{{font-size:11px;font-weight:700}}.edge-label{{font-size:11px;paint-order:stroke;stroke:#fff;stroke-width:5px;stroke-linejoin:round}}.muted,.scope{{font-size:12px;fill:#57606a}}.warning{{font-size:11px;fill:#9a6700}}.legend-label{{font-size:11px;fill:#57606a}}</style>
 {''.join(body)}
 </svg>\n'''
 
 
 def legend_pr(width: int, y: int) -> str:
-    items = [("#1a7f37", "新增节点 / 依赖边"), ("#9a6700", "修改节点"), ("#cf222e", "删除节点 / 依赖边"), ("#0969da", "受影响消费者"), ("#57606a", "未改"), ("#6e7781", "虚线：报告/推测/待确认或已删除")]
+    items = [("#1a7f37", "新增模块 / 依赖边"), ("#9a6700", "修改模块"), ("#cf222e", "删除模块 / 依赖边"), ("#0969da", "受影响模块"), ("#57606a", "未改模块 / 前后未变边"), ("#6e7781", "虚线：报告/推测/待确认或已删除")]
     return legend_items(items, width, y, "箭头由 A 指向 B；关系看边标签。实线仅表示已核实关系")
 
 

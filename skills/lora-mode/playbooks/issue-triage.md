@@ -1,6 +1,5 @@
 # issue-triage — 分诊收到的 Issue
 
-> 继承 SKILL.md 的七步骨架与硬边界。本 playbook 只处理外部收到、尚未验证的报告。
 > **适用**：判断 Issue 是否重复、缺少信息、可交给 agent 或需要人工处理。**主导 skill**：目标 tracker 的官方 CLI 或现有 GitHub skill。
 
 ## 步骤

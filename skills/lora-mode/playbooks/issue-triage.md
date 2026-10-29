@@ -8,8 +8,8 @@
 2. **读可用上下文。** 有 Issue URL/编号和目标仓库时，再看正文、评论、标签、相关 PR 与代码，按领域概念检查重复、已实现或既有拒绝。缺少引用或访问权限时，不搜索无关仓库；明确哪些内容未检查，只按已提供信息分诊。
 3. **先验证再写 brief。** 有目标仓库和具体步骤时，按报告者步骤尝试复现并定位代码路径；缺少仓库、步骤或必要权限时，结果标为信息不足并列出缺失证据，不搜索无关代码。结果只报复现、未复现、信息不足三类；不在这里修代码。
 4. **判定类别与状态。** 类别限 `bug` 或 `enhancement`；每个 Issue 选一个状态：`needs-triage`（尚未完成初判）、`needs-info`（需要报告者补充事实）、`ready-for-agent`（范围和行为契约足以直接实现）、`ready-for-human`（需要产品、架构或安全判断）或 `wontfix`（建议拒绝并写明理由）。技术债按仓库既有类别映射，未定义时记为 enhancement 子类。无现成标签时先写结论，不要求仓库改标签体系。
-5. **画 Issue map。** 用 `scripts/render-impact-svg.py` 从短 JSON 图数据生成 SVG，表达已知路径和未知关系。信息够时画实际与期望路径；不足时画已知步骤到“等待补充”，列出具体问题，不补猜测。
-6. **写 brief。** 按 `engineering-writing` 写类型、接口和行为契约，不依赖易变的行号；附 SVG Issue map 和证据限制。普通分诊不额外生成 Postplan；只有用户要求报告或结果符合 `references/postplan-reports.md` 的报告型场景时才准备。
+5. **画 Issue map。** 在 brief 中内嵌 Mermaid 图，表达已知路径和未知关系。信息够时画实际与期望路径；不足时画已知步骤到“等待补充”，列出具体问题，不补猜测。
+6. **写 brief。** 按 `engineering-writing` 写类型、接口和行为契约，不依赖易变的行号；附 Mermaid Issue map 和证据限制。普通分诊不额外生成 Postplan；只有用户要求报告或结果符合 `references/postplan-reports.md` 的报告型场景时才准备。
 7. **推荐或移交。** 普通分诊交付类别、状态、理由、图和建议后等待；不改标签、不发评论、不关闭 Issue。若 `full-stop` / `full-send` 正在处理且状态为 `ready-for-agent`，把已核实 brief 和图交给对应实现 playbook 并继续，不停在分诊；其他状态作为阻塞交付。公开回复和 Issue 写入仍须本次明确授权；AI 起草内容标明 AI 参与。安全敏感内容不写入公开评论。
 
 ## 边界
@@ -21,4 +21,4 @@
 
 ## 证据形态
 
-复现步骤与结果、代码路径、Issue map SVG、状态建议、建议移交的 playbook。
+复现步骤与结果、代码路径、Issue map Mermaid、状态建议、建议移交的 playbook。

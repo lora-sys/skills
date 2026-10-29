@@ -7,7 +7,7 @@ Load this matrix when a task is specialized, spans workflows, or does not match 
 | UI direction, visual refinement, throwaway prototype | `ui-design`, `visual-refinement`, `prototype` |
 | Iterative quality optimization against a target or score | `goal-eval` |
 | Browser, desktop, document, or spreadsheet work | Read `references/platform-capabilities.md`, then load only the matching available skill/tool |
-| Remote host install, tests, or service verification | `remote-dev` if installed; for code changes, finish the local `lora-mode` playbook first, then hand off |
+| Remote installs, tests, or service checks | `remote-dev` if installed; pure checks go direct, code changes stay local then hand off |
 | Teaching HTML, publishing, static-site release | `teaching-page`, `publish`, `static-site-release` |
 | Deck, video, skill authoring | `deck`, `video`, `skill-authoring` |
 | Resume, image generation, GitHub solution search, Notion | Direct skill: `chinese-ai-resume`, `lora-visual` / `generate-image`, `github-gem-seeker`, `notion` |

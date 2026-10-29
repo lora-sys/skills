@@ -11,7 +11,7 @@ description: lora 的开发流程路由器，适用于功能开发、bug 修复�
 
 - Web 功能 → `web-feature`；M/L 档 API、脚本、工具 → `backend-feature`；bug 或行为异常 → `bug-fix`；仓库调查 → `investigation`。S 档普通脚本走行内流程。
 - Issue 起草/分诊 → `issue-draft` / `issue-triage`；PR 创建/审查/跟进 → `pr-open` / `pr-review` / `pr-babysit`；接手 PR、分支或 Agent → `takeover`。
-- 用户要求在开发机安装依赖、跑测试或启动验证 → 若当前环境有 `remote-dev`，本机改代码后移交该 skill；该验证不在本机安装依赖或运行项目测试。skill 不可用时说明缺失。
+- 用户明确要求开发机安装依赖、远端测试或启动验证：纯验证直接调 `remote-dev`；涉及代码改动时先按本模式在本机完成，再移交远端；技能缺失时说明。
 - 专项或不确定的路由见 `references/routing-matrix.md`。
 - 非 bug 的单 skill 任务若≤2 个文件且不影响共享结构，直接调用对应 skill；bug 和 PR/Issue 即使很小也走本模式。
 

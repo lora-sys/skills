@@ -360,7 +360,7 @@ Fail when：把不存在的工具写成可用；将 Playwright、computer-use �
 
 在干净会话分别执行以下提示。第 2、3 项分别在 `remote-dev` 可用和不可用的环境测试：
 
-1. “修复 `foo.py` 的 bug，修完后帮我测试一下。” → 本机 `lora-mode → bug-fix`，不调用 `remote-dev`。
+1. “修复 `foo.py` 的 bug，修完后帮我测试一下。” → 本机 `lora-mode → bug-fix`，按正常本机流程验证，不调用 `remote-dev`。
 2. “修好这个功能后，传到开发机安装依赖并跑测试。” → 本机完成代码改动，再用 `remote-dev` 做远端验证。
 3. “代码已完成，只把项目传到开发机启动服务并验证。” → 直接用 `remote-dev`；缺少项目类别或目标信息时先询问。
 4. “把它部署到生产环境。” → 走发布流程，不调用 `remote-dev`。

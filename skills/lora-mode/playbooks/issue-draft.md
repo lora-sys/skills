@@ -12,7 +12,7 @@
 5. **准备描述。** 按 `engineering-writing` 写行为契约和 Issue 正文，再按 `unslop` 检查；正文包含 Issue map SVG。
 6. **按授权提交。** 用户只要求草稿时交付草稿；用户明确要求创建 Issue 后才调用 tracker。核实标题、正文和 SVG 附件。
 
-图规范和描述骨架见 `references/change-impact.md`。信息未知时明确标注，不把推测画成事实。Postplan 报告只在图无法承载必要解释、用户要求独立页面或项目约定要求时准备。
+图规范和描述骨架见 `references/change-impact.md`。信息未知时明确标注，不把推测画成事实。普通 Issue 草稿只附 SVG；只有用户要求报告或符合 `references/postplan-reports.md` 的报告型场景时才准备 Postplan。
 
 ## 证据形态
 

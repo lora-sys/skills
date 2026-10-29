@@ -34,7 +34,7 @@ Reversibility: <easy to reverse | hard to reverse> · Blast radius: <受影响�
 Rollback: <feature flag, revert, or recovery steps; state when reverting this PR is sufficient>
 ```
 
-不要另写长报告或重复列出文件；图无法承载的必要背景、用户要求独立页面或仓库约定要求时，才用 Postplan。
+普通 PR 创建沿用 SVG 和简短正文，不为内部 pre-open 审查另写 Postplan。用户要求独立报告或任务符合 `references/postplan-reports.md` 的报告型场景时，再生成 Postplan。
 
 ## 移交
 

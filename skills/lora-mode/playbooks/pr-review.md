@@ -11,7 +11,7 @@
 4. **验证关键行为。** 按风险运行相关检查或最小复现；High 风险覆盖相关安全、集成和恢复路径。明确没有运行或无法验证的项目。
 5. **分级 findings。** 用 `blocker`、`should-fix`、`nit`、`FYI`；只报告由改动引入或加重且有证据的问题。过滤纯风格偏好、重复项和未经验证的猜测。按 `engineering-writing` 写每项，包含证据、影响和可执行修复建议，并把 Spec 与 Standards 问题分组。保留两轴各自结论，不跨轴挑一个“最严重问题”。
 6. **给出 verdict。** `blocker` 或 `should-fix` 导致 `request changes`；无阻塞项但 Spec 缺失或验证有限时用 `comment`；无阻塞项且改动满足 Spec、改善代码健康度时用 `approve`。Verdict 只说明下一步动作，不合并或重排两轴 findings。
-7. **交付草稿。** 默认只输出 review 草稿，不发布评论或批准；用户明确要求提交后才调用 GitHub。图缺失或过期时要求更新 SVG 附件。
+7. **交付报告。** PR 代码审查默认准备独立 Postplan HTML 报告，复用本次 findings、证据、风险和验证结果。按 `references/postplan-reports.md` 调用 `html-communication`，每次公开上传前暂停取得确认。未获确认时交付本地报告和 Markdown review 草稿。默认不发布 GitHub 评论或批准；用户明确要求提交后才调用 GitHub。只有另有远端写入授权时才把公开链接写入 PR 描述；图缺失或过期时要求更新 SVG 附件。
 
 ## 边界
 

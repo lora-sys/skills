@@ -1,6 +1,6 @@
 # Issue / PR SVG 变更图
 
-Issue 和 PR 正文默认附一张自包含 SVG。它是给人审查的图，也带有 Agent 可解析的结构化记录。日常流程不另写 HTML 报告；复杂图或用户要求独立页面时才准备 Postplan 报告。
+Issue 和 PR 正文默认附一张自包含 SVG。它是给人审查的图，也带有 Agent 可解析的结构化记录。普通 PR / Issue 流程不另写 HTML 报告；明确的 PR 代码审查、架构审查和其他报告型任务按 `references/postplan-reports.md` 选择 Postplan。
 
 GitHub 支持 SVG 附件，`gh pr create/edit` 和 `gh issue create/edit` 可用 `--attach <file.svg>` 上传并将正文里的本地图片引用替换成附件 URL。其他 tracker 使用其支持的图片附件方式。草稿交付时同时给 Markdown 正文和本地 SVG 文件，不把本机路径当成远端 URL。
 
@@ -62,7 +62,7 @@ Issue 正文保留问题/目标、实际与期望行为、验收条件和未知�
 
 给 GitHub CLI 时用 `--attach change-map.svg` 或 `--attach issue-map.svg`。CLI 会上传附件并替换正文中的本地图片引用。没有创建/更新授权时只交本地草稿；不执行 tracker 写入。
 
-若本任务已经生成并获准公开 Postplan 报告，在 PR / Issue 正文加一条补充链接；SVG 仍是内嵌主图，不要复制成长报告。不要为满足这个链接而自动公开发布。
+若本任务按报告规则生成并获准公开 Postplan，在相关 PR / Issue 正文草稿中加一条补充链接；已有记录只有获得远端写入授权后才更新。SVG 仍是内嵌主图，不复制成长报告。Postplan 发布确认和 tracker 写入授权分别取得。
 
 ## Agent 自查
 
@@ -77,6 +77,6 @@ Issue 正文保留问题/目标、实际与期望行为、验收条件和未知�
 
 图用于快速定位审查范围，不能替代复现、测试或代码审查。关键行为仍须用真实运行、测试或受控复现核验。
 
-## Postplan 例外
+## Postplan 报告
 
-只有当 SVG 无法承载必要上下文、用户要求独立网页，或项目规则要求完整报告时才生成 HTML。加载 `html-communication`，运行 preflight；上传前按本次任务取得公开发布确认，并检查页面不包含私密代码、Issue 原文、分支名、凭据或内网 URL。私有内容使用 tracker 附件或用户指定的私有报告位置。
+触发场景、确认步骤、敏感内容处理和 PR / Issue 链接权限见 `references/postplan-reports.md`。报告复用已经核实的图数据和证据；不要为了生成页面重做分析。

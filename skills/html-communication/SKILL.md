@@ -14,13 +14,13 @@ description: Use only to publish a standalone HTML file or static site through P
 - 使用已有的 `.postplan/credentials.json`，或由密钥管理器注入 `POSTPLAN_API_KEY`。API 地址可用 `POSTPLAN_API_URL` 覆盖，默认是 `https://postplan.dev`。
 - 如果没有凭据，请让用户通过安全配置方式提供。不要把 API key 放进命令行参数、shell 历史或日志。
 - 绝不把 API key 写入 HTML、项目文件、日志、对话回复或版本库；不要上传 `.env`、密码、真实用户数据、内网 URL 或私密资源。
-- 实际上传属于外部发布。执行 `npx postplan upload` 前，必须向用户确认将公开发布；仅做本地检查或 dry-run 不需要确认。
+- 实际上传属于外部发布。每次新建或更新公开页面前，都必须向用户展示发布范围并取得本次确认；旧确认不适用于后续版本。仅做本地检查或 dry-run 不需要确认。
 
 ## 发布流程
 
 1. 确认产物是单个 HTML，或目录中存在 `index.html`。对目录发布时先准备一个构建输出目录，不上传源码项目、依赖目录或敏感文件。
 2. 运行 `scripts/preflight_static_site.py <文件或目录>`，修复入口、绝对本地路径和敏感文件问题。该检查是发布前辅助检查，最终 HTML 规则仍以 Postplan CLI 返回的验证结果为准。
-3. 在得到用户明确确认后执行：
+3. 展示将公开的页面内容和范围，得到本次明确确认后执行：
 
    ```sh
    npx postplan upload <html-file>

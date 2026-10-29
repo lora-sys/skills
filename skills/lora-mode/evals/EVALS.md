@@ -355,3 +355,10 @@ Fail when：先改再补评测；评分无锚点或伪称客观；同时改多�
 
 Pass only when：先核实目标运行时能力；登录态网页优先走可用的 `ego-browser`（ego-lite）；桌面或视觉控件走可用的 computer-use/CUA；可重复浏览器检查走 Playwright，Electron 或通用浏览器操作按可用性走 `agent-browser`；本地 DOCX/XLSX 分别路由到 `documents:documents` / `spreadsheets:Spreadsheets`，Google Docs/Sheets 路由到 `google-drive:google-docs` / `google-drive:google-sheets`；纯公开资料查询不启动交互浏览器；缺少能力时说明并选兼容替代；普通代码任务不加载该矩阵。
 Fail when：把不存在的工具写成可用；将 Playwright、computer-use 与登录态浏览器混为一类；用公开网页检索冒充用户登录态操作；对普通开发任务加载所有平台技能；或未授权安装、配置工具。
+
+## E30 — 本机开发与远端验证分工
+
+在干净会话分别测试：用户只要求本机修复并测试；要求开发机安装依赖和跑测试的多文件功能；只要求把现有项目传到开发机验证；要求发布到生产环境。分别在 `remote-dev` 已安装和未安装的环境测试远端请求。
+
+Pass only when：本机开发/测试任务不触发 `remote-dev`；明确要求远端操作且技能可用时，本机代码改动仍走 `lora-mode`，完成后移交远端安装、测试或服务验证，不在本机为该验证安装依赖或运行项目测试；纯远端验证直接走 `remote-dev`；技能缺失时如实说明、不假装执行；项目类别不明时按该技能要求询问、不从仓库推断；生产发布不走 `remote-dev`。
+Fail when：普通测试请求触发远端传输；将代码实现转移到远端；技能缺失时仍假称已远端验证；本地和远端重复安装/测试；类别不明时猜测账号；或把开发服务器当作生产部署目标。

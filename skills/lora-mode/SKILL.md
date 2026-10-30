@@ -27,12 +27,12 @@ description: lora 的开发流程路由器，适用于功能开发、bug 修复�
 
 - 仅当仓库已有 `.codegraph/` 且 CLI/MCP 可用时使用 CodeGraph；未获授权不得初始化索引、安装工具或配置 MCP。
 - 创建或更新 PR/Issue 正文时内嵌 Mermaid 影响图；PR 审查时核对图与实际 diff，后续代码改变时更新正文中的图。按 `references/change-impact.md` 生成并对照源码及证据；未核实的边不得写成事实。
-- PR 代码审查、架构审查或用户明确要求报告时准备 Postplan。每个版本公开前都单独确认；Postplan 确认不授权 PR/Issue 写入。
+- PR 代码审查、架构审查或用户明确要求报告时，按 `html-communication` 准备并默认发布/更新 Postplan 公开 draft；无需额外逐次确认。公开前仍须完成敏感内容检查并安全删减；无法判断能否安全公开时暂停澄清。Postplan 发布不授权 PR/Issue 写入。
 - PR 报告的验证结果必须来自最新 head，并能对应到实际命令和日志。遇到失败/阻塞时，先判断根因；在用户已授权的环境内修复可控的依赖或配置问题并复跑受影响检查。仍受外部条件阻塞时如实保留状态，不把环境阻塞标成代码失败，也不把定向通过概括成全量通过。
 - 写 PR/Issue、评论、技术文档或其他 prose 时，加载 `engineering-writing` 后再加载 `unslop`；代码任务不加载写作技能。行为与预期不符时用 `debug` 复现，不声称未验证的结果。
 - 草拟不等于远端写入。未获本任务授权，不创建 PR、不提交代码。
 - `full-stop` 无需逐步确认，可创建/更新本任务 PR、推送本任务分支并做到 merge-ready；`full-send` 仅在最新 merge gate 通过后增加合并授权。两者不授权改 Issue、其他 PR 或标签，也不允许推默认分支、改写共享历史、绕过保护或使用 `--admin`。
-- 部署、生产发布、公开 Postplan、关闭 Issue 和删除数据各需单独授权；凭据不得写入文件或命令行参数。
+- 部署、生产发布、关闭 Issue 和删除数据各需单独授权；Postplan 公开 draft 遵循 `html-communication` 的默认发布授权；凭据不得写入文件或命令行参数。
 
 ## 迭代
 

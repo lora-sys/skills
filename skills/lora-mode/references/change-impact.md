@@ -92,4 +92,4 @@ flowchart TB
 
 ## Postplan 报告
 
-触发场景、确认步骤、敏感内容处理和 PR / Issue 链接权限见 `references/postplan-reports.md`。报告复用已经核实的图数据和证据；不要为了生成页面重做分析。
+触发场景、默认发布行为、敏感内容处理和 PR / Issue 链接权限见 `references/postplan-reports.md`。报告复用已经核实的图数据和证据；不要为了生成页面重做分析。

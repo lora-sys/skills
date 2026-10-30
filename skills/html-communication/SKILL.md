@@ -1,34 +1,42 @@
 ---
 name: html-communication
-description: Use only to publish a standalone HTML file or static site through Postplan and return its accessible public draft URL and Raw HTML URL. Applies to reports, teaching decks, diagrams, and pages.
+description: Create standalone HTML reports, teaching pages, diagrams, and static pages, and publish them to Postplan as public drafts by default. Use when creating an HTML deliverable unless the user explicitly requests local-only output.
 ---
 
 # HTML communication through Postplan
 
 ## 适用范围
 
-处理单个 HTML 文件，或根目录包含 `index.html` 的静态页面。目标平台固定为 `https://postplan.dev`，使用官方 `postplan` CLI 发布。Postplan 返回公开 draft URL 和 Raw HTML URL；同一个本地文件再次上传时默认更新对应 draft。
+处理单个 HTML 文件，或根目录包含 `index.html` 的静态页面。默认使用 `https://postplan.dev` 的官方 `postplan` CLI 发布公开 draft。同一 HTML 文件再次上传时，默认更新对应 draft。
 
-## 凭据与安全
+## 默认发布行为
+
+- 用户通过本技能请求 HTML 交付物时，默认在完成内容和发布前检查后上传到 Postplan；标准公开 draft 不需要另行询问上传确认。
+- 用户明确要求本地草稿、离线文件或不上传时，只交付本地产物。
+- 此默认行为只适用于 Postplan 公开 draft；生产网站、域名托管或其他外部平台不在默认授权范围内。
+
+## 凭据与内容安全
 
 - 使用已有的 `.postplan/credentials.json`，或由密钥管理器注入 `POSTPLAN_API_KEY`。API 地址可用 `POSTPLAN_API_URL` 覆盖，默认是 `https://postplan.dev`。
 - 如果没有凭据，请让用户通过安全配置方式提供。不要把 API key 放进命令行参数、shell 历史或日志。
-- 绝不把 API key 写入 HTML、项目文件、日志、对话回复或版本库；不要上传 `.env`、密码、真实用户数据、内网 URL 或私密资源。
-- 实际上传属于外部发布。每次新建或更新公开页面前，都必须向用户展示发布范围并取得本次确认；旧确认不适用于后续版本。仅做本地检查或 dry-run 不需要确认。
+- 绝不把 API key 写入 HTML、项目文件、日志、对话回复或版本库。
+- 上传前检查最终 HTML 及将要上传的资源。移除或匿名化密码、令牌、个人身份信息、私有客户数据、原始对话、线程 ID/链接、本机绝对路径、内网地址和未公开资源。
+- 能安全删减时，先生成不含这些内容的公开版再继续；如果无法判断哪些内容可公开，暂停上传并向用户澄清。不要上传 `.env`、私密附件或整个源码/依赖目录。
 
 ## 发布流程
 
-1. 确认产物是单个 HTML，或目录中存在 `index.html`。对目录发布时先准备一个构建输出目录，不上传源码项目、依赖目录或敏感文件。
+1. 确认产物是单个 HTML，或目录中存在 `index.html`。对目录发布时先准备干净的构建输出目录。
 2. 运行 `scripts/preflight_static_site.py <文件或目录>`，修复入口、绝对本地路径和敏感文件问题。该检查是发布前辅助检查，最终 HTML 规则仍以 Postplan CLI 返回的验证结果为准。
-3. 展示将公开的页面内容和范围，得到本次明确确认后执行：
+3. 检查最终公开内容和资源，按上面的规则清除私密信息。除非用户明确要求仅本地交付，否则直接继续发布，不再询问标准 Postplan draft 的上传确认。
+4. 发布或更新 draft：
 
    ```sh
-   npx postplan upload <html-file>
+   npx postplan upload <html-file> --description "简短说明"
    ```
 
-   可选参数：`--description "简短说明"`、`--new`（强制创建新 draft）、`--api-url <url>`。
-4. 记录 CLI 输出的 `URL`、`Raw HTML`、draft ID 和版本号。打开公开 URL 检查页面内容；请求成功后检查 Raw HTML URL 返回的内容。
-5. 返回公开 URL 和 Raw HTML URL，并说明平台为 Postplan、这是公开 draft、是否更新已有 draft，以及版本号。不要称为永久生产托管；长期域名、生产发布或细粒度访问控制需要另行选择正式托管方案。
+   可选参数：`--new`（用户要求创建新 draft 时使用）、`--api-url <url>`。
+5. 打开 CLI 返回的公开 URL 检查页面，并读取 Raw HTML URL，确认两者均可访问且内容与本地产物一致。检查失败时修复并更新同一 draft，再复核。
+6. 返回公开 URL、Raw HTML URL、draft ID 和版本号，明确说明这是 Postplan 公开 draft，不是永久生产托管。用户明确要求仅本地交付时，说明未发布并返回本地文件位置。
 
 ## 常用命令
 

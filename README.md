@@ -41,6 +41,8 @@ npx skills list --global --agent codex
 | Skill | 用途 | 适用场景 |
 |---|---|---|
 | [`lora-mode`](skills/lora-mode/) | 个人开发总控：精简路由、分级验证、隔离审查与影响图；覆盖目标评测迭代、风险分层、Issue / PR 和接手既有工作 | 前后端开发、目标驱动优化、Issue / PR 生命周期、接手 PR / 分支 / Agent 线程、调试、调查与发布 |
+| [`create-formal-verification-skill`](skills/create-formal-verification-skill/) | 为高风险代码创建可复跑的形式化验证技能，要求性质映射到源码并用反例证明检查有效 | 并发、重试、状态机、解析器或不安全代码中常规测试难覆盖的性质 |
+| [`statechart`](skills/statechart/) | 用 TLC 检查 TLA+ 模型，并生成带最短违规路径的报告与 Mermaid 状态图 | 需要审阅行为状态迁移、协议或不变量；不替代 PR/Issue 影响图 |
 | [`remote-dev`](skills/remote-dev/) | 按用户明确要求，在已配置的开发机执行依赖安装、测试或服务检查 | 用户要求远端验证；普通本机测试走 lora-mode，需本地配置目标 |
 | [`engineering-writing`](skills/engineering-writing/) | PR、Issue、技术文档和工程评论的证据化写作标准；英文技术文本含 STE 启发式检查 | 起草或修改 PR / Issue 正文、工程文档、代码审查评论和回复 |
 | [`presentation-builder`](skills/presentation-builder/) | PPTD 格式的演示文稿创建、编辑与 PPTX/图片导出 | 幻灯片、PPT/PPTX、海报、infographic、教学演示 |
@@ -108,6 +110,7 @@ Skills CLI 会发现 `skills/<skill-name>/SKILL.md`。每个 `SKILL.md` 的目�
 | `presentation-builder` | lora-sys 创建，MIT；基于 PPTD 格式 + 浏览器端 WASM PPTX 写入器。 |
 | `short-video-director` | lora-sys 创建，MIT；改编自 Samuel 短视频导演方法论。 |
 | `video-publisher` | 改编自 [oil-oil/video-publisher-skill](https://github.com/oil-oil/video-publisher-skill)，MIT；上游版权与许可见技能目录内的 `LICENSE`。 |
+| `create-formal-verification-skill` / `statechart` | 源自 [Cursor Plugins pstack](https://github.com/cursor/plugins/tree/4dd1d05818d19792e7cd6e818f1667f95f7e1dbe/pstack/skills)，作者 Lauren Tan，MIT；版权与许可见各技能目录中的 `LICENSE`；形式化验证的破坏性复测限定在临时副本；`statechart` 含本地工具路径、整数精度、区间内存与安装授权保护。 |
 | `oil-frontend` | 源自 [oil-oil/oil-frontend](https://github.com/oil-oil/oil-frontend)，MIT；以镜像方式跟踪上游，每日自动同步。 |
 | `oil-ui` | 源自 [oil-oil/oil-ui](https://github.com/oil-oil/oil-ui)，MIT；以镜像方式跟踪上游，每日自动同步。 |
 

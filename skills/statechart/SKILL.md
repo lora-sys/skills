@@ -21,7 +21,7 @@ The command does not install tools. Before the first run, install TLC 1.7.4 and 
 
 ## Run the tests
 
-The test suite is in `scripts/test`. From `scripts/`, run `rtk proxy npm ci` to install the locked `fast-check` test dependency, then run `rtk proxy env JAVA=/path/to/java TLA2TOOLS=/path/to/tla2tools.jar npm test`. Tests that need TLC are skipped when `TLA2TOOLS` is unset.
+The test suite is in `scripts/test`. From `scripts/`, run `rtk proxy npm ci` to install the locked `fast-check` test dependency, then run `rtk proxy env JAVA=/path/to/java TLA2TOOLS=/path/to/tla2tools.jar npm test`. Use a JDK, not only a JRE: `config-fuzz.test.ts` runs Java source-file mode and needs `javac` (JDK 25 is the tested version). Tests that need TLC are skipped when `TLA2TOOLS` is unset.
 
 ## Write the spec
 

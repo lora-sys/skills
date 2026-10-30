@@ -153,8 +153,11 @@ for (const name of fs.readdirSync(corpus)) {
 
 const launcher = path.join(here, "../statechart");
 
-const launcherTools = () => {
+type After = (cleanup: () => void) => void;
+
+const launcherTools = (after: After) => {
   const bin = fs.mkdtempSync(path.join(os.tmpdir(), "statechart-bin-"));
+  after(() => fs.rmSync(bin, { recursive: true, force: true }));
   for (const tool of ["dirname", "readlink", "sed"]) {
     const found = spawnSync("sh", ["-c", `command -v ${tool}`], { encoding: "utf8" });
     fs.symlinkSync(found.stdout.trim(), path.join(bin, tool));
@@ -162,34 +165,40 @@ const launcherTools = () => {
   return bin;
 };
 
-const linkedLauncher = () => {
+const linkedLauncher = (after: After) => {
   const links = fs.mkdtempSync(path.join(os.tmpdir(), "statechart-links-"));
+  after(() => fs.rmSync(links, { recursive: true, force: true }));
   const [first, second] = [path.join(links, "a"), path.join(links, "b")];
   fs.mkdirSync(first);
   fs.mkdirSync(second);
-  fs.symlinkSync(path.relative(second, launcher), path.join(second, "statechart"));
+  fs.symlinkSync(
+    path.relative(fs.realpathSync(second), fs.realpathSync(launcher)),
+    path.join(second, "statechart"),
+  );
   fs.symlinkSync(path.join(second, "statechart"), path.join(first, "statechart"));
   return path.join(first, "statechart");
 };
 
 for (const [how, command] of [
-  ["by its own path", () => launcher],
+  ["by its own path", (_after: After) => launcher],
   ["through an absolute and a relative symlink", linkedLauncher],
-] satisfies [string, () => string][]) {
-  test(`the launcher reached ${how} writes the committed chart on this Node`, () => {
+] satisfies [string, (after: After) => string][]) {
+  test(`the launcher reached ${how} writes the committed chart on this Node`, (t) => {
     const dir = path.join(corpus, "MediaPlayer");
+    const after: After = (cleanup) => t.after(cleanup);
     const r = run(dir, {
-      command: [command()],
-      env: { PATH: `${path.dirname(process.execPath)}${path.delimiter}${launcherTools()}` },
+      command: [command(after)],
+      env: { PATH: `${path.dirname(process.execPath)}${path.delimiter}${launcherTools(after)}` },
     });
+    assert.equal(r.error, undefined, r.error?.message);
     assert.equal(r.stderr, "");
     assert.equal(r.status, 1);
     assert.equal(read(path.join(r.out, "chart.mmd")), read(path.join(dir, "chart.mmd")));
   });
 }
 
-const unsetNode = () => {
-  const bin = launcherTools();
+const unsetNode = (after: After) => {
+  const bin = launcherTools(after);
   fs.writeFileSync(
     path.join(bin, "node"),
     '#!/bin/sh\necho "No version is set for node." >&2\nexit 1\n',
@@ -198,8 +207,8 @@ const unsetNode = () => {
   return bin;
 };
 
-const fakeBun = (version: string) => () => {
-  const bin = launcherTools();
+const fakeBun = (version: string) => (after: After) => {
+  const bin = launcherTools(after);
   fs.writeFileSync(
     path.join(bin, "bun"),
     `#!/bin/sh\n[ "$1" = --version ] && echo ${version} && exit\necho "$1"\n`,
@@ -208,10 +217,10 @@ const fakeBun = (version: string) => () => {
   return bin;
 };
 
-test("the launcher runs statechart.ts on Bun 1.1.5 when PATH has no Node", () => {
+test("the launcher runs statechart.ts on Bun 1.1.5 when PATH has no Node", (t) => {
   const r = run(path.join(corpus, "Login"), {
     command: [launcher],
-    env: { PATH: fakeBun("1.1.5")() },
+    env: { PATH: fakeBun("1.1.5")((cleanup) => t.after(cleanup)) },
   });
   assert.equal(r.stderr, "");
   assert.equal(r.status, 0);
@@ -240,9 +249,12 @@ for (const [what, bin] of [
   ["has none", launcherTools],
   ["has only a node that fails --version", unsetNode],
   ["has only Bun 1.1.4", fakeBun("1.1.4")],
-] satisfies [string, () => string][]) {
-  test(`the launcher stops with exit 127 and names only the runtimes when PATH ${what}`, () => {
-    const r = run(path.join(corpus, "Login"), { command: [launcher], env: { PATH: bin() } });
+] satisfies [string, (after: After) => string][]) {
+  test(`the launcher stops with exit 127 and names only the runtimes when PATH ${what}`, (t) => {
+    const r = run(path.join(corpus, "Login"), {
+      command: [launcher],
+      env: { PATH: bin((cleanup) => t.after(cleanup)) },
+    });
     assert.equal(r.status, 127);
     assert.equal(
       r.stderr,

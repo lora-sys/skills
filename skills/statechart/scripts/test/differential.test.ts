@@ -1,12 +1,13 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import fc from "fast-check";
+import { createTempDirFactory } from "./temp.ts";
 
+const tempDir = createTempDirFactory();
 const here = path.dirname(fileURLToPath(import.meta.url));
 const skip = !process.env.TLA2TOOLS && "set TLA2TOOLS to the path of tla2tools.jar to run TLC";
 
@@ -368,7 +369,7 @@ function compilerAnswers(r: Run, c: Case) {
 }
 
 async function answer(c: Case) {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "statechart-differential-"));
+  const dir = tempDir("statechart-differential-");
   try {
     fs.writeFileSync(path.join(dir, `${c.module}.tla`), c.tla);
     fs.writeFileSync(path.join(dir, `${c.module}.cfg`), configOf(c));

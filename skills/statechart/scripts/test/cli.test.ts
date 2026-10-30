@@ -9,7 +9,9 @@ import { setTimeout as sleep } from "node:timers/promises";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { plainText } from "../backends/plain-text.ts";
 import { readMessages } from "../frontends/messages.ts";
+import { createTempDirFactory } from "./temp.ts";
 
+const tempDir = createTempDirFactory();
 const here = path.dirname(fileURLToPath(import.meta.url));
 const corpus = path.join(here, "corpus");
 const read = (file: string) => fs.readFileSync(file, "utf8");
@@ -30,7 +32,7 @@ function run(
     env?: NodeJS.ProcessEnv;
   } = {},
 ) {
-  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "statechart-cli-"));
+  const tmp = tempDir("statechart-cli-");
   const out = path.join(tmp, "out");
   const log = path.join(tmp, "configs.log");
   const name = path.basename(dir);
@@ -71,7 +73,7 @@ function run(
 }
 
 function copyCase(name: string, edit: (dir: string) => void = () => {}) {
-  const dir = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "statechart-case-")), name);
+  const dir = path.join(tempDir("statechart-case-"), name);
   fs.cpSync(path.join(corpus, name), dir, { recursive: true });
   edit(dir);
   return dir;
@@ -85,7 +87,7 @@ const named = (report: string) => {
 };
 
 test("uses configured JAVA when mise discovers TLC but has no Java tool", () => {
-  const scratch = fs.mkdtempSync(path.join(os.tmpdir(), "statechart-configured-java-"));
+  const scratch = tempDir("statechart-configured-java-");
   const bin = path.join(scratch, "bin");
   const tlc = path.join(scratch, "tlc");
   fs.mkdirSync(bin);
@@ -153,11 +155,8 @@ for (const name of fs.readdirSync(corpus)) {
 
 const launcher = path.join(here, "../statechart");
 
-type After = (cleanup: () => void) => void;
-
-const launcherTools = (after: After) => {
-  const bin = fs.mkdtempSync(path.join(os.tmpdir(), "statechart-bin-"));
-  after(() => fs.rmSync(bin, { recursive: true, force: true }));
+const launcherTools = () => {
+  const bin = tempDir("statechart-bin-");
   for (const tool of ["dirname", "readlink", "sed"]) {
     const found = spawnSync("sh", ["-c", `command -v ${tool}`], { encoding: "utf8" });
     fs.symlinkSync(found.stdout.trim(), path.join(bin, tool));
@@ -165,9 +164,8 @@ const launcherTools = (after: After) => {
   return bin;
 };
 
-const linkedLauncher = (after: After) => {
-  const links = fs.mkdtempSync(path.join(os.tmpdir(), "statechart-links-"));
-  after(() => fs.rmSync(links, { recursive: true, force: true }));
+const linkedLauncher = () => {
+  const links = tempDir("statechart-links-");
   const [first, second] = [path.join(links, "a"), path.join(links, "b")];
   fs.mkdirSync(first);
   fs.mkdirSync(second);
@@ -180,15 +178,14 @@ const linkedLauncher = (after: After) => {
 };
 
 for (const [how, command] of [
-  ["by its own path", (_after: After) => launcher],
+  ["by its own path", () => launcher],
   ["through an absolute and a relative symlink", linkedLauncher],
-] satisfies [string, (after: After) => string][]) {
-  test(`the launcher reached ${how} writes the committed chart on this Node`, (t) => {
+] satisfies [string, () => string][]) {
+  test(`the launcher reached ${how} writes the committed chart on this Node`, () => {
     const dir = path.join(corpus, "MediaPlayer");
-    const after: After = (cleanup) => t.after(cleanup);
     const r = run(dir, {
-      command: [command(after)],
-      env: { PATH: `${path.dirname(process.execPath)}${path.delimiter}${launcherTools(after)}` },
+      command: [command()],
+      env: { PATH: `${path.dirname(process.execPath)}${path.delimiter}${launcherTools()}` },
     });
     assert.equal(r.error, undefined, r.error?.message);
     assert.equal(r.stderr, "");
@@ -197,8 +194,8 @@ for (const [how, command] of [
   });
 }
 
-const unsetNode = (after: After) => {
-  const bin = launcherTools(after);
+const unsetNode = () => {
+  const bin = launcherTools();
   fs.writeFileSync(
     path.join(bin, "node"),
     '#!/bin/sh\necho "No version is set for node." >&2\nexit 1\n',
@@ -207,8 +204,8 @@ const unsetNode = (after: After) => {
   return bin;
 };
 
-const fakeBun = (version: string) => (after: After) => {
-  const bin = launcherTools(after);
+const fakeBun = (version: string) => () => {
+  const bin = launcherTools();
   fs.writeFileSync(
     path.join(bin, "bun"),
     `#!/bin/sh\n[ "$1" = --version ] && echo ${version} && exit\necho "$1"\n`,
@@ -217,10 +214,10 @@ const fakeBun = (version: string) => (after: After) => {
   return bin;
 };
 
-test("the launcher runs statechart.ts on Bun 1.1.5 when PATH has no Node", (t) => {
+test("the launcher runs statechart.ts on Bun 1.1.5 when PATH has no Node", () => {
   const r = run(path.join(corpus, "Login"), {
     command: [launcher],
-    env: { PATH: fakeBun("1.1.5")((cleanup) => t.after(cleanup)) },
+    env: { PATH: fakeBun("1.1.5")() },
   });
   assert.equal(r.stderr, "");
   assert.equal(r.status, 0);
@@ -249,11 +246,11 @@ for (const [what, bin] of [
   ["has none", launcherTools],
   ["has only a node that fails --version", unsetNode],
   ["has only Bun 1.1.4", fakeBun("1.1.4")],
-] satisfies [string, (after: After) => string][]) {
-  test(`the launcher stops with exit 127 and names only the runtimes when PATH ${what}`, (t) => {
+] satisfies [string, () => string][]) {
+  test(`the launcher stops with exit 127 and names only the runtimes when PATH ${what}`, () => {
     const r = run(path.join(corpus, "Login"), {
       command: [launcher],
-      env: { PATH: bin((cleanup) => t.after(cleanup)) },
+      env: { PATH: bin() },
     });
     assert.equal(r.status, 127);
     assert.equal(
@@ -302,7 +299,7 @@ function startCommand(
   parent: string,
   {
     java = path.join(here, "java.ts"),
-    tmpdir = fs.mkdtempSync(path.join(os.tmpdir(), "statechart-tmpdir-")),
+    tmpdir = tempDir("statechart-tmpdir-"),
   }: { java?: string; tmpdir?: string } = {},
 ) {
   const name = path.basename(dir);
@@ -333,9 +330,9 @@ async function signalWhile<T extends { dir: string; reached: (parent: string) =>
   signal: NodeJS.Signals,
   setup: (fakes: string) => T & { java?: string },
 ) {
-  const fakes = fs.mkdtempSync(path.join(os.tmpdir(), "statechart-fakes-"));
-  const parent = fs.mkdtempSync(path.join(os.tmpdir(), "statechart-parent-"));
-  const tmpdir = fs.mkdtempSync(path.join(os.tmpdir(), "statechart-tmpdir-"));
+  const fakes = tempDir("statechart-fakes-");
+  const parent = tempDir("statechart-parent-");
+  const tmpdir = tempDir("statechart-tmpdir-");
   const phase = setup(fakes);
   const child = startCommand(phase.dir, parent, { java: phase.java, tmpdir });
   let stderr = "";
@@ -380,7 +377,7 @@ async function assertEmpty(dir: string) {
 }
 
 function gridCase(n: number) {
-  const dir = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "statechart-case-")), "Grid");
+  const dir = path.join(tempDir("statechart-case-"), "Grid");
   fs.cpSync(path.join(here, "grid"), dir, { recursive: true });
   for (const run of ["ChartRun.out", "verdict-1.out"])
     fs.copyFileSync(path.join(corpus, "Login", run), path.join(dir, run));
@@ -417,9 +414,9 @@ test(
   "a SIGKILL of the command stops TLC, removes the temporary folder, and writes nothing",
   { timeout: 30_000 },
   async () => {
-    const fakes = fs.mkdtempSync(path.join(os.tmpdir(), "statechart-fakes-"));
-    const parent = fs.mkdtempSync(path.join(os.tmpdir(), "statechart-parent-"));
-    const tmpdir = fs.mkdtempSync(path.join(os.tmpdir(), "statechart-tmpdir-"));
+    const fakes = tempDir("statechart-fakes-");
+    const parent = tempDir("statechart-parent-");
+    const tmpdir = tempDir("statechart-tmpdir-");
     const { java, pidFile } = sleepyJava(fakes);
     const child = startCommand(path.join(corpus, "DieHard"), parent, { java, tmpdir });
     const exited = once(child, "exit");
@@ -436,9 +433,9 @@ test(
   "a SIGKILL of the command while the view draws the chart leaves no folder behind",
   { timeout: 30_000 },
   async () => {
-    const fakes = fs.mkdtempSync(path.join(os.tmpdir(), "statechart-fakes-"));
-    const parent = fs.mkdtempSync(path.join(os.tmpdir(), "statechart-parent-"));
-    const tmpdir = fs.mkdtempSync(path.join(os.tmpdir(), "statechart-tmpdir-"));
+    const fakes = tempDir("statechart-fakes-");
+    const parent = tempDir("statechart-parent-");
+    const tmpdir = tempDir("statechart-tmpdir-");
     const drawing = path.join(fakes, "drawing");
     const release = path.join(fakes, "release");
     const dir = copyCase("Login", (d) =>
@@ -470,8 +467,8 @@ test(
   "a check killed by a signal stops the command with exit 2, and it writes nothing",
   { timeout: 30_000 },
   async () => {
-    const fakes = fs.mkdtempSync(path.join(os.tmpdir(), "statechart-fakes-"));
-    const parent = fs.mkdtempSync(path.join(os.tmpdir(), "statechart-parent-"));
+    const fakes = tempDir("statechart-fakes-");
+    const parent = tempDir("statechart-parent-");
     const { java, pidFile } = sleepyJava(fakes);
     const child = startCommand(path.join(corpus, "DieHard"), parent, { java });
     let stderr = "";
@@ -548,7 +545,7 @@ for (const signal of ["SIGINT", "SIGTERM"] satisfies NodeJS.Signals[]) {
 
 for (const signal of ["SIGINT", "SIGTERM"] satisfies NodeJS.Signals[]) {
   test(`${signal} while the command reads TLC's last output stops the check and writes nothing`, () => {
-    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "statechart-late-"));
+    const tmp = tempDir("statechart-late-");
     const java = path.join(tmp, "java.mjs");
     const tmpdir = path.join(tmp, "tmpdir");
     fs.mkdirSync(tmpdir);
@@ -757,7 +754,7 @@ test("a drawing run that TLC cannot finish stops the command with exit 2", () =>
 });
 
 test("a java that cannot start stops the command with exit 2 on a runtime that emits no close for it", () => {
-  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "statechart-no-java-"));
+  const tmp = tempDir("statechart-no-java-");
   const noClose = path.join(tmp, "no-close.mjs");
   fs.writeFileSync(
     noClose,
@@ -793,7 +790,7 @@ test("a step hidden by the view is not drawn, and the report counts it", () => {
   const dir = path.join(corpus, "MediaPlayer");
   const hidden = new Set(read(path.join(dir, "graph.dot")).match(/^.* -> .*label="ACallComesIn"/gm))
     .size;
-  const view = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "statechart-view-")), "view.mjs");
+  const view = path.join(tempDir("statechart-view-"), "view.mjs");
   fs.writeFileSync(
     view,
     `export * from ${JSON.stringify(path.join(dir, "view.mjs"))};\n` +
@@ -812,7 +809,7 @@ test("a step hidden by the view is not drawn, and the report counts it", () => {
 
 test("a view that hides a step of a bug path stops the command with exit 2", () => {
   const dir = path.join(corpus, "MediaPlayer");
-  const view = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "statechart-view-")), "view.mjs");
+  const view = path.join(tempDir("statechart-view-"), "view.mjs");
   fs.writeFileSync(
     view,
     `export * from ${JSON.stringify(path.join(dir, "view.mjs"))};\n` +
@@ -835,7 +832,7 @@ for (const [what, body, words] of [
   ],
 ] satisfies [string, string, RegExp][]) {
   test(`a view whose ${what} stops the command with exit 2`, () => {
-    const view = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "statechart-view-")), "view.mjs");
+    const view = path.join(tempDir("statechart-view-"), "view.mjs");
     fs.writeFileSync(view, body);
     const r = run(path.join(corpus, "Login"), { view });
     assert.equal(r.status, 2);
@@ -844,7 +841,7 @@ for (const [what, body, words] of [
 }
 
 const writeView = (body: string) => {
-  const view = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "statechart-view-")), "view.mjs");
+  const view = path.join(tempDir("statechart-view-"), "view.mjs");
   fs.writeFileSync(view, body);
   return view;
 };
@@ -917,7 +914,7 @@ test("a view module that throws a plain object with a message prints the message
 });
 
 test("a view that ends the check while TLC runs stops TLC, and the command exits 2 and writes nothing", async () => {
-  const { java, pidFile } = sleepyJava(fs.mkdtempSync(path.join(os.tmpdir(), "statechart-fakes-")));
+  const { java, pidFile } = sleepyJava(tempDir("statechart-fakes-"));
   const r = run(path.join(corpus, "Login"), {
     java,
     view: writeView(
@@ -1180,7 +1177,7 @@ const contents = (p: string) => {
   for (const f of fs.readdirSync(p)) files[f] = read(path.join(p, f));
   return files;
 };
-const newPath = () => path.join(fs.mkdtempSync(path.join(os.tmpdir(), "statechart-out-")), "out");
+const newPath = () => path.join(tempDir("statechart-out-"), "out");
 
 for (const [what, make, words] of [
   [

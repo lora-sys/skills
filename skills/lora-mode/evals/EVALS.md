@@ -466,5 +466,6 @@ Fail when：高风险交错只用成功样例测试或装饰性图表代替性�
 - README 拼写任务由另一个干净隔离会话执行：只生成本地 Mermaid PR 草稿，标明只改 README、不声称源码依赖改变、预览未验证；未触发形式化技能/TLC、依赖安装或远端写入。
 - Statechart 全量测试在工具齐备时通过 372/372。随后针对 Antigravity 指出的显式 `JAVA` / mise 回退缺陷添加了回归测试；最终代码状态下又运行了 340 项，其中 273 通过、0 失败、67 项因 Java/TLC 不可用而跳过，新回归测试通过。三项 quick validator 通过。
 - 后续在 Temurin JDK 25.0.5、Node 26.12.0 和 TLC 1.7.4 齐备时，Statechart 全量测试发现 1 个失败：macOS `/var` 临时路径别名下，CLI 测试用词法路径构造的相对符号链接实际悬空。修正测试夹具为从真实路径计算相对目标，并通过 `t.after` 清理它创建的临时链接和工具目录；定向链接测试通过，之后全量测试 373 项零失败、零跳过。技能测试说明明确标注全套测试需要 JDK。
+- PR #2 的 Codex review 又发现两个大模型内存风险：region 起始组合先物化整个笛卡尔积，view adapter 预先投影所有状态变量。改为逐项检查起始组合、遇到首个不存在的组合就回退父状态图；view 改为按属性读取时投影，并缓存首次读取值。新增 30 个区域/两种真实起始态的回归和覆盖 state/step/group 的大区间端到端用例。最终 `rtk proxy env JAVA=/tmp/lora-statechart-validation/tools/java TLA2TOOLS=/tmp/lora-statechart-validation/tla2tools.jar npm test` 在 Node 26.12.0、Temurin JDK 25.0.5、TLC 1.7.4 下通过 375/375，0 失败、0 跳过，用时约 146 秒。
 - 先前两次尝试也已纳入迭代：一次用手写 JavaScript 穷举代替模型检查，判 FAIL；一次因缺少 Java/TLC 未完成，正确地没有自动安装。准备好验证工具后，重新运行的正式 TLA+ 路径通过。
 - 线程/工具未提供实际 token 用量，因此不记录估算值。

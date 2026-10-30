@@ -173,6 +173,39 @@ test("the view refuses to expand intervals with more than 10,000 members", () =>
   );
 });
 
+test("a view does not expand variables that its callbacks do not read", () => {
+  const vars = (phase: string) => ({
+    phase: parseValue(JSON.stringify(phase)),
+    unused: parseValue("0..10000"),
+  });
+  const graph = graphOf(
+    [
+      ["ready", vars("Ready"), true],
+      ["done", vars("Done")],
+    ],
+    [["ready", "done", "Advance"]],
+  );
+  const { chart, report: text } = draw(
+    graph,
+    checkView(
+      {
+        state: (v: Vars) => {
+          Object.freeze(v);
+          return v.phase;
+        },
+        step: (_action: string, from: Vars, to: Vars) => `${from.phase} to ${to.phase}`,
+        group: (v: Vars) => v.phase,
+        colors: { Ready: "blue", Done: "teal" },
+      },
+      inspect,
+    ),
+  );
+  assert.match(chart, /Ready/);
+  assert.match(chart, /Done/);
+  assert.match(chart, /Ready to Done/);
+  assert.match(text, /2 states and 1 arrows/);
+});
+
 test("a label prints each value in TLA+, so values that TLC tells apart look apart", () => {
   const shown = (text: string) => show(parseValue(text));
   for (const text of [
@@ -580,6 +613,27 @@ test("the report says why regions cannot show a shared step that forks", () => {
     draw(...truthGraphs.fork).report,
     /^The regions chart lets A a0, B b0 go to A a1, B b2 by Sync, which the model never does\./m,
   );
+});
+
+test("region start validation stops at the first impossible start combination", () => {
+  const names = Array.from({ length: 30 }, (_, i) => `region${i}`);
+  const values = (value: number) => Object.fromEntries(names.map((name) => [name, value]));
+  const graph = graphOf(
+    [
+      ["all-off", values(0), true],
+      ["all-on", values(1), true],
+    ],
+    [],
+  );
+  const start = performance.now();
+  const { chart, report: text } = draw(graph, {
+    state: (v) => Object.fromEntries(names.map((name) => [name, String(v[name])])),
+  });
+  const seconds = (performance.now() - start) / 1000;
+  assert.match(text, /^The regions chart starts at region0 0,.*region29 1, where/m);
+  assert.match(text, /So the chart draws parent states in place of regions\.$/m);
+  assert.doesNotMatch(chart, /At the same time/);
+  assert.ok(seconds < 5, `region validation took ${seconds.toFixed(1)} s`);
 });
 
 const forkToBug = graphOf(

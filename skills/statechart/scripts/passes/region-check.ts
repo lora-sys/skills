@@ -31,18 +31,25 @@ export function regionsLie(
   };
   const addMove = (moves: Map<string, Move>, m: Move) =>
     moves.set(tupleKey([m.from, m.text, m.to]), m);
-  let product: string[][] = [[]];
-  for (const r of regions) {
-    const next: string[][] = [];
-    for (const c of product)
-      for (const s of r.states) if (s.start) next.push([...c, tupleKey(s.path)]);
-    product = next;
-  }
   const realStarts = new Set<string>();
   for (const i of starts) realStarts.add(tupleKey(combo(i)));
-  for (const c of product)
-    if (!realStarts.has(tupleKey(c)))
-      return `The regions chart starts at ${words(c)}, where the model never starts.`;
+  const choices = regions.map((r) => r.states.filter((s) => s.start).map((s) => tupleKey(s.path)));
+  if (choices.every((states) => states.length > 0)) {
+    const indexes = new Array<number>(regions.length).fill(0);
+    const candidate = new Array<string>(regions.length);
+    let missing: string[] | undefined;
+    while (true) {
+      for (let i = 0; i < regions.length; i++) candidate[i] = choices[i][indexes[i]];
+      if (!realStarts.has(tupleKey(candidate))) {
+        missing = [...candidate];
+        break;
+      }
+      let i = regions.length - 1;
+      while (i >= 0 && ++indexes[i] === choices[i].length) indexes[i--] = 0;
+      if (i < 0) break;
+    }
+    if (missing) return `The regions chart starts at ${words(missing)}, where the model never starts.`;
+  }
   for (const [i, r] of regions.entries())
     for (const a of r.arrows)
       if (a.condition.kind === "tuples")

@@ -41,9 +41,32 @@ const projectedVars = new WeakMap<Vars, { [name: string]: Json }>();
 const jsonVars = (vars: Vars) => {
   let j = projectedVars.get(vars);
   if (j === undefined) {
-    const fields: [string, Json][] = [];
-    for (const [name, v] of Object.entries(vars)) fields.push([name, json(v)]);
-    j = Object.fromEntries(fields);
+    const fields: { [name: string]: Json } = {};
+    j = fields;
+    for (const [name, value] of Object.entries(vars))
+      Object.defineProperty(fields, name, {
+        enumerable: true,
+        configurable: true,
+        get() {
+          const projected = json(value);
+          if (Object.getOwnPropertyDescriptor(fields, name)?.configurable)
+            Object.defineProperty(fields, name, {
+              value: projected,
+              writable: true,
+              enumerable: true,
+              configurable: true,
+            });
+          return projected;
+        },
+        set(projected: Json) {
+          Object.defineProperty(fields, name, {
+            value: projected,
+            writable: true,
+            enumerable: true,
+            configurable: true,
+          });
+        },
+      });
     projectedVars.set(vars, j);
   }
   return j;

@@ -7,8 +7,9 @@ import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { plainText } from "../backends/plain-text.ts";
 import { readMessages } from "../frontends/messages.ts";
-import { tempDir } from "./temp.ts";
+import { createTempDirFactory } from "./temp.ts";
 
+const tempDir = createTempDirFactory();
 const here = path.dirname(fileURLToPath(import.meta.url));
 const corpus = path.join(here, "corpus");
 const skip = !process.env.TLA2TOOLS && "set TLA2TOOLS to the path of tla2tools.jar to run TLC";

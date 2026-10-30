@@ -9,8 +9,9 @@ import { setTimeout as sleep } from "node:timers/promises";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { plainText } from "../backends/plain-text.ts";
 import { readMessages } from "../frontends/messages.ts";
-import { tempDir } from "./temp.ts";
+import { createTempDirFactory } from "./temp.ts";
 
+const tempDir = createTempDirFactory();
 const here = path.dirname(fileURLToPath(import.meta.url));
 const corpus = path.join(here, "corpus");
 const read = (file: string) => fs.readFileSync(file, "utf8");

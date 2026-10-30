@@ -1,6 +1,6 @@
 ---
 name: lora-mode
-description: lora 的开发流程路由器，适用于功能开发、bug 修复、仓库调查、目标评测迭代优化和所有 PR/Issue。用户点名 lora-mode、full-stop/full-send 或要求接手 PR/分支/Agent 时使用。非 bug 的单一交付物若不超过 2 个文件且不影响共享结构，直接调用对应 skill。
+description: lora 的开发流程路由器，适用于功能开发、bug 修复、并发与协议不变量验证、仓库调查、目标评测迭代优化和所有 PR/Issue。用户点名 lora-mode、full-stop/full-send 或要求接手 PR/分支/Agent 时使用。非 bug 的单一交付物若不超过 2 个文件且不影响共享结构，直接调用对应 skill。
 ---
 
 # lora-mode
@@ -10,6 +10,7 @@ description: lora 的开发流程路由器，适用于功能开发、bug 修复�
 ## 路由
 
 - Web 功能 → `web-feature`；M/L 档 API、脚本、工具 → `backend-feature`；bug 或行为异常 → `bug-fix`；仓库调查 → `investigation`。S 档普通脚本走行内流程。
+- 用户要求模型与实现对齐、证明不变量，或并发/重试/协议/状态迁移的正确性取决于普通测试难覆盖的执行顺序 → 在改代码前读 `references/formal-verification.md`，并按其中边界加载形式化验证技能；普通 PR/Issue 和 Mermaid 影响图不因此触发模型检查。
 - Issue 起草/分诊 → `issue-draft` / `issue-triage`；PR 创建或现有 PR 正文/Change map 更新 → `pr-open`；PR 检查与评论跟进 → `pr-babysit`；PR 审查 → `pr-review`；接手 PR、分支或 Agent → `takeover`。
 - 用户明确要求开发机安装依赖、远端测试或启动验证：纯验证直接调 `remote-dev`；涉及代码改动时先按本模式在本机完成，再移交远端；技能缺失时说明。
 - 专项或不确定的路由见 `references/routing-matrix.md`。

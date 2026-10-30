@@ -68,7 +68,7 @@ PR 正文仍需写 Why、改动范围、风险、真实验证结果和回滚方�
 
 - Bug 图分清报告者动作、观察到的结果和待确认的期望。Feature 图分清当前路径与目标路径。
 - 证据不足时只画已知步骤和“等待补充”节点。候选模块明确标 `待确认`，关系用虚线；不要猜测调用链。
-- 图外列出复现状态、来源、证据限制和需要补充的信息。只在需要验证并发、协议或跨状态不变量时使用 pstack `statechart` / TLA+ / TLC；普通 Issue 不做形式化建模。
+- 图外列出复现状态、来源、证据限制和需要补充的信息。只在需要验证并发、协议或跨状态不变量时使用 pstack `create-formal-verification-skill` / `statechart`；普通 Issue 不做形式化建模。Statechart 描述模型行为，不能替代本图的源码依赖证据，具体路由见 `formal-verification.md`。
 
 Issue 正文可使用内嵌 Mermaid 代码块，并同时写清问题/目标、实际与期望行为、验收条件和未知项。Issue 图不需要 PR 专用的 Base/Head SHA；图外记录报告者陈述、复现状态与证据限制。没有创建/更新授权时只交付本地 Markdown 草稿；不上传图附件或执行 tracker 写入。
 

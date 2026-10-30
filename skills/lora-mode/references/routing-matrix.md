@@ -7,6 +7,7 @@ Load this matrix when a task is specialized, spans workflows, or does not match 
 | UI direction, visual refinement, throwaway prototype | `ui-design`, `visual-refinement`, `prototype` |
 | Iterative quality optimization against a target or score | `goal-eval` |
 | Browser, desktop, document, or spreadsheet work | Read `references/platform-capabilities.md`, then load only the matching available skill/tool |
+| Concurrency, retries, protocols, or state transitions with an invariant ordinary tests cannot cover | `references/formal-verification.md`; use formal verification selectively, not for routine PR/Issue maps |
 | Remote installs, tests, or service checks | `remote-dev` if installed; pure checks go direct, code changes stay local then hand off |
 | Teaching HTML, publishing, static-site release | `teaching-page`, `publish`, `static-site-release` |
 | Deck, video, skill authoring | `deck`, `video`, `skill-authoring` |

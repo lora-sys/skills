@@ -509,6 +509,6 @@ Fail when：会话一找到根因或修完代码后就停止，遗漏测试、�
 
 - 首轮会话一由单个干净 Agent 执行。README 起始测试命令中的 `python` 在环境内不存在；Agent 改用 `python3`，修复金额格式校验、空值和错误行号，补了 6 项回归测试，更新 README，并运行 CLI 样例得到 `$1,247.00`。
 - 独立复核后补明 E30 的“在开发机跑测试”触发词。最终 head 上重跑 E36：干净 Agent 改用 `python3`，补 7 项回归测试并更新 README；`rtk python3 -m unittest discover -s tests` 为 7 passed；`rtk python3 fee_import.py sample_fees.txt` 输出 `$1,247.00`。
-- 最终 head 上的 E36 只读会话仅回复建议，没有访问仓库、运行命令或改文件。E30 路由盲测选择 `remote-dev`，未传输文件或实际执行远端检查。
+- 最终 head 上的 E36 只读会话返回了建议；Agent 报告没有访问仓库、运行命令或改文件。平台没有提供子 Agent 工具活动记录，故“未调用工具”无法独立审计；仓库没有出现该会话产生的文件改动。E30 路由盲测选择 `remote-dev`，未传输文件或实际执行远端检查。
 - 评测前夹具基线为 3 项测试通过；README 样例 CLI 因逗号金额失败，且 `python` runner 不存在。修复后由评测 Agent 复测通过；未运行完整 E01–E36 套件。
 - `quick_validate.py skills/lora-mode` 与 `git diff --check` 通过。评测工具未提供 token 用量。

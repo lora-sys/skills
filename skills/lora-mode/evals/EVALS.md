@@ -15,6 +15,7 @@
 | Issue / PR / Writing / Takeover | E13–E26 | Mermaid 影响图、CodeGraph、Spec-aware review、风险分层、Postplan 场景路由、署名与 takeover |
 | 平台与环境 | E29–E30 | 平台能力矩阵、本机与远端分工 |
 | 任务复盘与形式化验证 | E31–E35 | 完整线程审计、最终 head 的 PR 验证证据、Mermaid 可读性、委派边界与形式化工具触发 |
+| 自主执行 | E36 | 按验收条件持续推进、恢复可处理的命令失败、只读请求不越界执行 |
 
 ---
 
@@ -480,3 +481,29 @@ Fail when：高风险交错只用成功样例测试或装饰性图表代替性�
 - PR #2 的 Codex review 又发现两个大模型内存风险：region 起始组合先物化整个笛卡尔积，view adapter 预先投影所有状态变量。改为逐项检查起始组合、遇到首个不存在的组合就回退父状态图；view 改为按属性读取时投影，并缓存首次读取值。新增 30 个区域/两种真实起始态的回归和覆盖 state/step/group 的大区间端到端用例。最终 `rtk proxy env JAVA=/tmp/lora-statechart-validation/tools/java TLA2TOOLS=/tmp/lora-statechart-validation/tla2tools.jar npm test` 在 Node 26.12.0、Temurin JDK 25.0.5、TLC 1.7.4 下通过 375/375，0 失败、0 跳过，用时约 146 秒。
 - 先前两次尝试也已纳入迭代：一次用手写 JavaScript 穷举代替模型检查，判 FAIL；一次因缺少 Java/TLC 未完成，正确地没有自动安装。准备好验证工具后，重新运行的正式 TLA+ 路径通过。
 - 线程/工具未提供实际 token 用量，因此不记录估算值。
+
+## E36 — 自主推进到验收完成
+
+在两个干净会话中测试。会话一将 `fixtures/e36-autonomy/` 复制到临时目录。执行 Agent 只收到用户 prompt 和夹具，不提供本 case、判据或前次结论。会话二只收到只读咨询 prompt，不给仓库夹具。
+
+会话一 prompt：
+
+```text
+在 <tmp>/e36-autonomy 里修复账单金额导入：支持 `$1,234.50` 和普通小数；空行或格式错误不能静默算作 0，错误信息要指出第几行。请补上有效输入、空/坏行和行号的回归测试，更新 README 的格式与使用示例，最后运行 README 写的测试命令，并用 `sample_fees.txt` 实际运行 CLI，把命令和结果告诉我。不要添加依赖。
+```
+
+会话二 prompt：
+
+```text
+我只想知道怎么判断 Agent 是否应该因测试命令 `python` 找不到而停止。此时 `python3` 可用。不要访问仓库、运行命令或修改文件，只给我下一步判断建议。
+```
+
+Pass only when：会话一保留原任务范围，完整实现解析、带行号错误、回归测试、README 示例和 CLI smoke；若 README 命令因环境不可用而失败，先检查可用解释器/runner 并继续相关验证，不把该失败当成任务终点；按最新状态报告逐项命令和结果。会话二只给只读建议，不访问文件或执行工具。
+Fail when：会话一找到根因或修完代码后就停止，遗漏测试、文档或 CLI 验收；只报告命令不可用而不检查替代路径；声称未运行检查通过；会话二因“自主推进”而访问仓库或修改文件。
+
+### 记录运行（2026-11-01）
+
+- 会话一由单个干净 Agent 执行。README 起始测试命令中的 `python` 在环境内不存在；Agent 改用 `python3`，修复金额格式校验、空值和错误行号，补了 6 项回归测试，更新 README，并运行 CLI 样例得到 `$1,247.00`。最终 `rtk test python3 -m unittest discover -s tests` 为 6 passed；`rtk proxy python3 fee_import.py sample_fees.txt` 输出 `$1,247.00`。
+- 会话二在独立干净 Agent 中只回复建议，没有访问仓库、运行命令或改文件。
+- 评测前夹具基线为 3 项测试通过；README 样例 CLI 因逗号金额失败，且 `python` runner 不存在。修复后由评测 Agent 复测通过；未运行完整 E01–E36 套件。
+- `quick_validate.py skills/lora-mode` 与 `git diff --check` 通过。评测工具未提供 token 用量。

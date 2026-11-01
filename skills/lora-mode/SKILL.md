@@ -1,6 +1,6 @@
 ---
 name: lora-mode
-description: lora 的开发流程路由器，适用于功能开发、bug 修复、并发与协议不变量验证、仓库调查、目标评测迭代优化和所有 PR/Issue。用户点名 lora-mode、full-stop/full-send 或要求接手 PR/分支/Agent 时使用。非 bug 的单一交付物若不超过 2 个文件且不影响共享结构，直接调用对应 skill。
+description: lora 的开发流程路由器，适用于功能开发、bug 修复、并发与协议不变量验证、仓库调查、目标评测迭代优化和所有 PR/Issue。用户点名 lora-mode、full-stop/full-send、要求自主持续做到完成或接手 PR/分支/Agent 时使用。非 bug 的单一交付物若不超过 2 个文件且不影响共享结构，直接调用对应 skill。
 ---
 
 # lora-mode
@@ -13,6 +13,7 @@ description: lora 的开发流程路由器，适用于功能开发、bug 修复�
 - 用户要求模型与实现对齐、证明不变量，或并发/重试/协议/状态迁移的正确性取决于普通测试难覆盖的执行顺序 → 在改代码前读 `references/formal-verification.md`，并按其中边界加载形式化验证技能；普通 PR/Issue 和 Mermaid 影响图不因此触发模型检查。
 - Issue 起草/分诊 → `issue-draft` / `issue-triage`；PR 创建或现有 PR 正文/Change map 更新 → `pr-open`；PR 检查与评论跟进 → `pr-babysit`；PR 审查 → `pr-review`；接手 PR、分支或 Agent → `takeover`。
 - 用户明确要求开发机安装依赖、远端测试或启动验证：纯验证直接调 `remote-dev`；涉及代码改动时先按本模式在本机完成，再移交远端；技能缺失时说明。
+- 用户要求自主持续做到完成时，保留原任务类型路由并读取 `playbooks/autonomous-run.md`；该 playbook 规定执行方式，不替代 bug、功能、PR 等任务流程。
 - 专项或不确定的路由见 `references/routing-matrix.md`。
 - 非 bug 的单 skill 任务若≤2 个文件且不影响共享结构，直接调用对应 skill；bug 和 PR/Issue 即使很小也走本模式。
 
@@ -37,6 +38,14 @@ description: lora 的开发流程路由器，适用于功能开发、bug 修复�
 ## 迭代
 
 真实任务后向本机 lora-mode 使用台账追加一条（不提交到源仓库）；确认的 bad case 加入 `evals/EVALS.md`。出现 bad case、同类问题被第二次纠正，或上次 reflect 后新增 5 条任务记录时，进入 `playbooks/reflect.md`。
+
+## 自主推进与完成
+
+- 对明确可执行的目标，默认继续完成用户要求的全部验收项。阶段完成、进度汇报、找到根因、单次命令失败或某个搜索入口不存在，都不表示任务完成。用户的后续纠正和“继续/做得更好”沿用当前任务目标并补充验收条件。
+- 开始前从用户要求和任务必需条件整理可检查的完成项；S 档保持轻量，多阶段任务才维护完整 todo。每完成一个阶段，核对剩余项并继续可做工作。不要要求用户重复已给出的目标。
+- 遇到失败先判断是否可恢复。修复可控的代码、测试、依赖或配置根因；搜索/工具入口失败时检查替代查询、仓库线索和可用工具；不要原样重复无效操作。继续不依赖阻塞项的工作。
+- 只有既有权限边界、不可自行决定且会实质改变结果的产品选择、真正的外部阻塞或用户明确要求停止时才暂停。自主执行不扩大写入、部署、发布、付费、删除或其他授权范围。
+- 收尾时逐项标记已验证、未验证或受阻，并给出对应证据。交付物需实际存在；最终摘要对应最新工作区状态，明确做了什么、运行了哪些检查、还有什么未完成。配额、凭据、服务不可用或客户端取消等外部问题要如实标明，并在可能时完成剩余独立工作。
 
 专项路由见 `references/routing-matrix.md`；PR 风险和事故反馈见 `references/pr-review-policy.md`；报告发布见 `references/postplan-reports.md`；L 档隔离审查看 `references/review-protocol.md`；M/L 质量门见 `references/web/quality-gates.md`。
 

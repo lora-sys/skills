@@ -10,6 +10,8 @@ Read this from `pr-open.md`, `pr-review.md`, `pr-babysit.md`, and `takeover.md`.
 
 A test-only change that weakens a gate is High risk. Add `Risk: <tier> — <reason>` to the PR description. An agent's review does not count as human authorization. `full-send` supplies user authorization to merge, but it does not bypass branch protection or repository-required GitHub reviews.
 
+When repository rules require an approving review, the `full-send` merge gate also verifies that a counted `APPROVED` review's `commit_id` matches the current PR head SHA. Treat approval on an older head as outstanding even if `reviewDecision` still says `APPROVED`; re-read reviews after every head change and wait for a current-head approval.
+
 ## Findings and convergence
 
 - Report a finding only when the diff introduces or worsens a concrete failure. Cite the changed file and line, a realistic trigger, the effect, and a repair.
@@ -19,7 +21,7 @@ A test-only change that weakens a gate is High risk. Add `Risk: <tier> — <reas
 
 ## Learning from outcomes
 
-For PR work, append a compact outcome to the existing local `USAGE.md` row: risk tier, rounds-to-pass, finding disposition (fixed, disproved, intentional, deferred, or pre-existing), available human-review effort (approvals, substantive comments, and time waiting on a person), and any confirmed post-merge incident or revert. Keep private details local. Do not count an unresolved or merely unaddressed suggestion as a false positive.
+For PR work, append a compact outcome to the `USAGE.md` in the active local installation of lora-mode (this repository configures `~/.agents/skills/lora-mode/USAGE.md`): risk tier, rounds-to-pass, finding disposition (fixed, disproved, intentional, deferred, or pre-existing), available human-review effort (approvals, substantive comments, and time waiting on a person), and any confirmed post-merge incident or revert. Resolve another installation from the loaded skill path. Never create or commit this private ledger under the tracked source repository. Do not count an unresolved or merely unaddressed suggestion as a false positive.
 
 - Add a sanitized eval case when evidence confirms a missed bug, incident, or revert.
 - Add a clean-case eval when evidence confirms a review finding was false or pre-existing and the pattern could recur.

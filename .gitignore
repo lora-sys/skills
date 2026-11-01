@@ -8,7 +8,8 @@ node_modules/
 .claude/
 __pycache__/
 
-# lora-mode personal run ledger (local only, never ships)
+# lora-mode personal run ledger; never commit this local file.
 skills/lora-mode/USAGE.md
+
 skills/.playwright-cli/
 skills/remote-dev/local-targets.md

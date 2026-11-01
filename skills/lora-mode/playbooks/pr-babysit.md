@@ -10,7 +10,7 @@
 4. **每次 push 前后核对。** push 前再确认 Full-stop 的 auto-merge 已关闭且不在 merge queue；若设置被重新打开，先关闭并核实。push 后更新 head SHA、正文中的 Change map Mermaid 图和受影响检查结果，并确认正文对应最新改动。只有 PR 已有关联 Postplan 或本任务包含明确代码审查报告时才更新 HTML；按 `html-communication` 默认更新公开 draft，并在上传前检查新内容是否含敏感信息。
 5. **复验改动。** 只有代码、配置或测试行为改变时才运行受影响的检查或复现；纯 PR 正文、图或格式修正只核对最新 SHA、Mermaid 正文和远端渲染。不为绿 CI 修改断言来隐藏行为差异。
 6. **事件式等待。** 每个 PR 只用一个宿主 watcher，由当前主线程拥有；收到事件后核对状态，需要处理时才继续，不发“仍在等待”的空更新。Watcher 唤醒后继续使用现有 watch，不重复启动；交接前停止 watch。没有 watcher 时报告当前状态并交还，不写轮询或 sleep 脚本。
-7. **限定循环并判断就绪。** 使用 `pr-open.md` 中与本任务共用的 review / fix 轮次预算；需要新设计决策、权限或外部确认时也停止。merge-ready 要求：无冲突且已基于最新 base、最新 Head 的必需检查通过、风险对应的人工审批满足、没有未解决的 blocking finding 或人类 change request、必需 review 完成、Change map 与 Head 一致。High 风险没有可核实的人类审批时不得合并。非必需 bot 仅作提示。`full-stop` 再次确认 PR 未启用自动合并、未加入 merge queue；`full-send` 只有全部 gate 满足才可按仓库配置的 merge method / queue 合并。合并前刷新远端状态；任何模式都不得绕过分支保护。
+7. **限定循环并判断就绪。** 使用 `pr-open.md` 中与本任务共用的 review / fix 轮次预算；需要新设计决策、权限或外部确认时也停止。可交人审的条件：无冲突且已基于最新 base、最新 Head 的必需检查通过、没有未解决的 blocking finding 或人类 change request、Change map 与 Head 一致。尚待人类审批时，明确列为交接项。High 风险合并需要明确的人类合并授权；`full-send` 用户对本 PR 的明确授权满足此门，除非仓库另要求 GitHub review。非必需 bot 仅作提示。`full-stop` 达到可交人审状态后交给人审，不合并；`full-send` 还须满足仓库要求的 review、分支保护与队列门槛，再按仓库配置的 merge method / queue 合并。合并前刷新远端状态；任何模式都不得绕过分支保护。
 8. **汇报现场。** 简要列出 PR 链接、CI、最新 SHA、Change map 和 review 结论；只逐项说明未解决 finding 与重要取舍，不复述无关评论。交付前清点本任务创建的截图、日志、验证目录和工作树；清理确认过期的临时产物，写明仍保留的证据用途，归属不明的文件标为未确认。
 
 ## 禁止事项

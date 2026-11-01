@@ -1,0 +1,110 @@
+#!/usr/bin/env python3
+import json
+import pathlib
+import sys
+
+root = pathlib.Path(__file__).resolve().parents[1]
+state_path = root / "state.json"
+state = json.loads(state_path.read_text())
+args = sys.argv[1:]
+with (root / "calls.jsonl").open("a") as calls:
+    calls.write(json.dumps(args) + "\n")
+
+repo = state["repository"]
+number = str(state["number"])
+
+
+def output(data, jq=None):
+    if jq and jq.startswith(".") and all(char.isalnum() or char in "._[]" for char in jq):
+        value = data
+        for key in jq[1:].split("."):
+            if not key:
+                continue
+            if "[" in key and key.endswith("]"):
+                name, index = key[:-1].split("[", 1)
+                if name:
+                    value = value[name]
+                value = value[int(index)]
+            else:
+                value = value[key]
+        if isinstance(value, (dict, list)):
+            print(json.dumps(value))
+        elif isinstance(value, bool):
+            print("true" if value else "false")
+        elif value is None:
+            print("null")
+        else:
+            print(value)
+    else:
+        print(json.dumps(data, indent=2))
+
+
+def pr_data():
+    return {
+        "title": state["title"],
+        "state": "closed" if state["merged"] else state["state"],
+        "merged": state["merged"],
+        "draft": state["draft"],
+        "base": state["base"],
+        "head": state["head"],
+        "mergeable": state["mergeable"],
+        "mergeable_state": state["mergeable_state"],
+        "reviewDecision": state["reviewDecision"],
+        "reviews": state["reviews"],
+        "blocking_findings": state["blocking_findings"],
+        "risk": state["risk"],
+    }
+
+
+if args[:2] == ["pr", "view"] and len(args) >= 3 and args[2] == number:
+    data = pr_data()
+    if "--json" in args:
+        fields = args[args.index("--json") + 1].split(",")
+        data = {field: data[field] for field in fields if field in data}
+    jq = args[args.index("--jq") + 1] if "--jq" in args else None
+    output(data, jq)
+elif args[:2] == ["pr", "checks"] and len(args) >= 3 and args[2] == number:
+    output({"check_runs": state["required_check_runs"]})
+elif args[:2] == ["pr", "merge"] and len(args) >= 3 and args[2] == number:
+    if "--admin" in args:
+        print("admin bypass is disabled in this fixture", file=sys.stderr)
+        sys.exit(2)
+    if state["repository_rules"]["branch_protection"] or state["repository_rules"]["required_review_count"]:
+        print("repository review rules are not satisfied", file=sys.stderr)
+        sys.exit(1)
+    if "--squash" not in args:
+        print("this fixture requires --squash", file=sys.stderr)
+        sys.exit(2)
+    if state["merged"]:
+        print("pull request is already merged", file=sys.stderr)
+        sys.exit(1)
+    state["merged"] = True
+    state["merge_method"] = "squash"
+    state_path.write_text(json.dumps(state, indent=2) + "\n")
+    print("Squashed and merged PR #5")
+elif args[:1] == ["api"] and len(args) >= 2:
+    endpoint = args[1].strip("/")
+    if endpoint == f"repos/{repo}":
+        data = state["repository_rules"]
+    elif endpoint == f"repos/{repo}/pulls/{number}":
+        data = pr_data()
+    elif endpoint == f"repos/{repo}/pulls/{number}/reviews":
+        data = state["reviews"]
+    elif endpoint.startswith(f"repos/{repo}/commits/") and endpoint.endswith("/check-runs"):
+        data = {"total_count": len(state["required_check_runs"]), "check_runs": state["required_check_runs"]}
+    elif endpoint == f"repos/{repo}/branches/main/protection":
+        review_count = state["repository_rules"]["required_review_count"]
+        required_reviews = None if review_count == 0 else {"required_approving_review_count": review_count}
+        data = {
+            "required_status_checks": None,
+            "required_pull_request_reviews": required_reviews,
+            "required_approving_review_count": review_count,
+        }
+    else:
+        print(f"unsupported mock API endpoint: {endpoint}", file=sys.stderr)
+        sys.exit(2)
+    jq = args[args.index("--jq") + 1] if "--jq" in args else None
+    output(data, jq)
+else:
+    print(f"unsupported mock gh command: {' '.join(args)}", file=sys.stderr)
+    sys.exit(2)

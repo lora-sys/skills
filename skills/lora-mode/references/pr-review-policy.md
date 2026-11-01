@@ -6,9 +6,9 @@ Read this from `pr-open.md`, `pr-review.md`, `pr-babysit.md`, and `takeover.md`.
 |---|---|---|
 | Low | Documentation, copy, isolated tests, or additive behavior behind a disabled flag | Focused checks and the normal independent Spec / Standards review |
 | Medium | Ordinary behavior, API, component, or cross-module changes | Focused unit and consumer-path checks, plus the normal independent review |
-| High | Authentication, access control, secrets, billing, private data, destructive migrations, concurrency, CI/CD, release, deployment, installers, or shared invariants with broad impact | Focused integration, security, and recovery checks; add one independent risk-focused review when available; require the repository's human approval. If high risk has no verifiable human approval gate, stop before merge and ask for one |
+| High | Authentication, access control, secrets, billing, private data, destructive migrations, concurrency, CI/CD, release, deployment, installers, or shared invariants with broad impact | Focused integration, security, and recovery checks; add one independent risk-focused review when available; require explicit human authorization to merge. In `full-send`, the user's explicit authorization on this PR satisfies that gate unless repository rules require a separate GitHub review. Never bypass required reviews or branch protection. Without `full-send` or another verifiable human authorization, stop before merge and ask for one |
 
-A test-only change that weakens a gate is High risk. Add `Risk: <tier> — <reason>` to the PR description. An agent's review does not count as a required human approval. `full-send` does not bypass branch protection or the High-risk human gate.
+A test-only change that weakens a gate is High risk. Add `Risk: <tier> — <reason>` to the PR description. An agent's review does not count as human authorization. `full-send` supplies user authorization to merge, but it does not bypass branch protection or repository-required GitHub reviews.
 
 ## Findings and convergence
 

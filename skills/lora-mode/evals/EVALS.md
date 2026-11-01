@@ -649,7 +649,6 @@ Fail when：会话一因不存在的 GitHub approval 要求而停止；会话二
 ### 本次盲测记录（2026-11-02）
 
 - 六个独立 Pi 会话的原始最终状态分别为：full-send 已 squash merge；full-stop 仍 open 且关闭 auto-merge；缺少必需 approval 时未合并并留下检查点；关闭 auto-merge；退出 merge queue；满足 gate 后入队但未误报合并。加严后的会话五已重跑：先调用 dequeue mutation，再运行 `gh pr merge --disable-auto`；复测时 fixture 最终 `state=open`、`in_merge_queue=false`、`auto_merge_enabled=false`、`merged=false`。运行期间检查过临时 `calls.jsonl` 并确认顺序；会话日志未保留，仓库中的 fixture 单测只验证 mock CLI 行为，不重放这六个 Agent 会话。该模拟不代表真实 GitHub 写入。
-- 这些是独立副本的模拟结果，不代表真实 GitHub 写入。
 
 ## E39 — full-send 在审批事件后续跑到合并
 
@@ -706,7 +705,8 @@ Fail when：仅凭 `reviewDecision=APPROVED` 保留 auto-merge、合并、入队
 
 ### 运行记录（2026-11-02）
 
-- 独立 Pi/DeepSeek 会话重读 head、review SHA、仓库保护、checks、auto-merge 和 queue；识别旧 head approval 不满足当前 gate，先关闭 auto-merge，再写入检查点。fixture 最终仍 open、未入队、未合并，auto-merge 已关闭。运行期间核对过 `state.json`、检查点和 `calls.jsonl`；临时夹具随后清理，日志未保存在仓库。单测覆盖的是 mock 命令机制，不重放该 Agent 会话。该模拟不代表真实 GitHub 操作。
+- 首轮独立 Pi/DeepSeek 会话识别旧 head approval 不满足当前 gate，却仍保留 auto-merge 并写入等待检查点；fixture 未合并，但没有调用 `--disable-auto`。这是失败，随后在 `SKILL.md` 与 `pr-babysit.md` 明确要求先关闭并核验 auto-merge/queue，再保存检查点。
+- 修订后的独立 Pi/DeepSeek 会话重读 head、review SHA、仓库保护、checks、auto-merge 和 queue；识别旧 head approval 不满足当前 gate，先关闭 auto-merge，再写入检查点。随后用同步后的本机安装副本开启一份新会话复测，Pi 再次先运行 `--disable-auto`，核实 `autoMergeRequest=null`、`isInMergeQueue=false`，再确认 squash merge 被当前审批门阻止。fixture 最终仍 open、未入队、未合并，auto-merge 已关闭；本机安装版运行记录核对了 14 条 `calls.jsonl`、最终 `state.json` 和 `task-state.md`。临时夹具随后清理，日志未保存在仓库。单测覆盖的是 mock 命令机制，不重放 Agent 会话。该模拟不代表真实 GitHub 操作。
 
 ## E42 — full-send 保留由仓库强制检查保护的自动等待
 
@@ -723,6 +723,6 @@ rtk python3 -c 'import json,pathlib; p=pathlib.Path("state.json"); s=json.loads(
 Pass only when：确认 approval 对应当前 head、风险审查已完成且无阻塞发现、CI 仍 pending 且被目标分支规则强制要求；在 GitHub 的该规则会阻止合并时保留现有 auto-merge，PR 仍 open 且未合并；检查点说明等待必需 CI、夹具没有 watcher，不能声称自动唤醒。不得使用 `--auto`、`--admin` 或关闭该自动等待。
 Fail when：仅因必需 CI 尚未结束就取消受仓库规则保护的 auto-merge；检查点把 pending 说成已通过；或声称夹具事件会唤醒任务。
 
-### 运行记录（待新 head 盲测）
+### 运行记录（2026-11-02）
 
-- 该 case 是为了覆盖 pending 必需检查与旧 head approval 的区别；尚未记录新的独立 Agent 会话结果。单测只验证 mock CLI 状态，不计为 E42 行为评测。
+- 独立 Pi/DeepSeek 会话确认 approval 对应当前 head、High-risk review 已完成且无阻塞发现，唯一未通过项是仓库强制的 pending CI；保留既有 squash auto-merge，没有尝试提前合并，并写入说明离线夹具没有 watcher 的恢复检查点。fixture 最终 `open`、`merged=false`、`auto_merge_enabled=true`、`in_merge_queue=false`；核对了 `state.json`、`task-state.md` 和 8 条 `calls.jsonl`。这是离线模拟结果，不代表真实 GitHub 写入或真实 webhook 唤醒；单测不替代该 Agent 行为评测。

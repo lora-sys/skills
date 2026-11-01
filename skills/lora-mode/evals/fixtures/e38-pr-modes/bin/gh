@@ -120,7 +120,7 @@ def pr_view_data():
         "reviewDecision": state["reviewDecision"],
         "reviews": all_reviews,
         "latestReviews": list(latest_reviews.values()),
-        "statusCheckRollup": check_run_rollup(),
+        "statusCheckRollup": status_check_rollup(),
         "autoMergeRequest": {
             "enabledAt": state.get("auto_merge_enabled_at", "2026-11-02T00:00:00Z"),
             "mergeMethod": state.get("auto_merge_method"),
@@ -163,21 +163,34 @@ def counted_approvals():
         # Comment-only reviews are informational and do not replace a submitted decision.
         if login and review_state in ("APPROVED", "CHANGES_REQUESTED", "DISMISSED"):
             latest_by_reviewer[login] = review
-    dismiss_stale = state["repository_rules"].get("dismiss_stale_reviews", False)
+    # The fixture models lora-mode's stricter merge gate: required approval
+    # must match the current head even when GitHub keeps stale approvals.
     return sum(
         1
         for review in latest_by_reviewer.values()
         if review.get("state", "").upper() == "APPROVED"
-        and (not dismiss_stale or review.get("commit_id") == state["head"]["sha"])
+        and review.get("commit_id") == state["head"]["sha"]
+    )
+
+
+def status_check_passed(check):
+    return (
+        check.get("status") == "completed"
+        and check.get("conclusion") in ("success", "skipped", "neutral")
     )
 
 
 def merge_gate_ready():
-    checks_passed = all(
-        check.get("status") == "completed" and check.get("conclusion") == "success"
-        for check in state["required_check_runs"]
-    )
     rules = state["repository_rules"]
+    check_runs = state["required_check_runs"]
+    checks_by_name = {check.get("name"): check for check in check_runs}
+    check_runs_passed = all(status_check_passed(check) for check in check_runs)
+    required_checks_passed = all(
+        context in checks_by_name
+        and status_check_passed(checks_by_name[context])
+        for context in rules.get("required_status_checks", [])
+    )
+    checks_passed = check_runs_passed and required_checks_passed
     risk_review = state.get("risk_review") or {}
     risk_review_ready = state["risk"] != "High" or (
         risk_review.get("status") == "completed"
@@ -231,9 +244,26 @@ def form_values():
     return values
 
 
-def check_run_rollup():
+def status_check_rollup():
+    return [
+        {
+            "__typename": "CheckRun",
+            "completedAt": run.get("completed_at"),
+            "conclusion": (run.get("conclusion") or "").upper() or None,
+            "detailsUrl": run.get("html_url", "https://github.com/example/checks"),
+            "name": run.get("name"),
+            "startedAt": run.get("started_at"),
+            "status": run.get("status", "queued").upper(),
+            "workflowName": run.get("workflow", "CI"),
+        }
+        for run in state["required_check_runs"]
+    ]
+
+
+def pr_check_rows():
     bucket_for = {
         "success": "pass",
+        "neutral": "pass",
         "failure": "fail",
         "timed_out": "fail",
         "action_required": "fail",
@@ -241,7 +271,7 @@ def check_run_rollup():
         "cancelled": "cancel",
         "skipped": "skipping",
     }
-    return [
+    rows = [
         {
             "bucket": bucket_for.get(run.get("conclusion"), "pending"),
             "completedAt": run.get("completed_at"),
@@ -255,6 +285,21 @@ def check_run_rollup():
         }
         for run in state["required_check_runs"]
     ]
+    present = {run.get("name") for run in state["required_check_runs"]}
+    for context in state["repository_rules"].get("required_status_checks", []):
+        if context not in present:
+            rows.append({
+                "bucket": "pending",
+                "completedAt": None,
+                "description": context,
+                "event": "push",
+                "link": "https://github.com/example/checks",
+                "name": context,
+                "startedAt": None,
+                "state": "PENDING",
+                "workflow": "CI",
+            })
+    return rows
 
 
 def fail(message, code=1):
@@ -272,7 +317,8 @@ if args[:2] == ["pr", "view"] and len(args) >= 3 and args[2] == number:
         data = {field: data[field] for field in fields}
     output(data, jq_arg())
 elif args[:2] == ["pr", "checks"] and len(args) >= 3 and args[2] == number:
-    data = check_run_rollup()
+    checks = pr_check_rows()
+    data = checks
     if "--json" in args:
         fields = args[args.index("--json") + 1].split(",")
         allowed = {"bucket", "completedAt", "description", "event", "link", "name", "startedAt", "state", "workflow"}
@@ -284,9 +330,9 @@ elif args[:2] == ["pr", "checks"] and len(args) >= 3 and args[2] == number:
     else:
         for check in data:
             print(f"{check['bucket']}: {check['name']} ({check['state']})")
-    if any(check["bucket"] == "pending" for check in check_run_rollup()):
+    if any(check["bucket"] == "pending" for check in checks):
         sys.exit(8)
-    if any(check["bucket"] == "fail" for check in check_run_rollup()):
+    if any(check["bucket"] == "fail" for check in checks):
         sys.exit(1)
 elif args[:2] == ["pr", "merge"] and len(args) >= 3 and args[2] == number:
     if "--admin" in args:
@@ -372,7 +418,7 @@ elif args[:1] == ["api"] and len(args) >= 2:
         data = state["reviews"]
     elif endpoint == f"repos/{repo}/commits/{state['head']['sha']}/check-runs":
         data = {"total_count": len(state["required_check_runs"]), "check_runs": state["required_check_runs"]}
-    elif endpoint == f"repos/{repo}/branches/main/protection":
+    elif endpoint == f"repos/{repo}/branches/{state['base']['ref']}/protection":
         if not state["repository_rules"]["branch_protection"]:
             fail("HTTP 404: branch protection is not enabled")
         review_count = state["repository_rules"]["required_review_count"]

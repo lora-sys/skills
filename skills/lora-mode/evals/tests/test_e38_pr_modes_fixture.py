@@ -94,7 +94,7 @@ class MockGhTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertFalse(self.read_state()["merged"])
 
-    def test_stale_approval_can_count_when_repo_does_not_dismiss_it(self):
+    def test_stale_approval_is_rejected_even_when_repo_does_not_dismiss_it(self):
         state = self.read_state()
         state["repository_rules"]["branch_protection"] = True
         state["repository_rules"]["required_review_count"] = 1
@@ -109,8 +109,66 @@ class MockGhTests(unittest.TestCase):
 
         result = self.run_gh("pr", "merge", "5", "--squash")
 
+        self.assertNotEqual(result.returncode, 0)
+        self.assertFalse(self.read_state()["merged"])
+
+    def test_missing_required_status_context_is_pending_and_blocks_merge(self):
+        state = self.read_state()
+        state["repository_rules"]["branch_protection"] = True
+        state["repository_rules"]["required_status_checks"] = ["CI"]
+        state["required_check_runs"] = []
+        self.write_state(state)
+
+        checks = self.run_gh("pr", "checks", "5", "--json", "bucket,name,state")
+        merge = self.run_gh("pr", "merge", "5", "--squash")
+
+        self.assertEqual(checks.returncode, 8)
+        self.assertEqual(json.loads(checks.stdout)[0]["name"], "CI")
+        self.assertEqual(json.loads(checks.stdout)[0]["bucket"], "pending")
+        self.assertNotEqual(merge.returncode, 0)
+        self.assertFalse(self.read_state()["merged"])
+
+    def test_required_skipped_or_neutral_status_check_allows_merge(self):
+        for conclusion in ("skipped", "neutral"):
+            with self.subTest(conclusion=conclusion):
+                state = json.loads(json.dumps(BASE_STATE))
+                state["repository_rules"]["branch_protection"] = True
+                state["repository_rules"]["required_status_checks"] = ["CI"]
+                state["required_check_runs"] = [{
+                    "name": "CI",
+                    "status": "completed",
+                    "conclusion": conclusion,
+                }]
+                self.write_state(state)
+
+                checks = self.run_gh("pr", "checks", "5", "--json", "bucket,name,state")
+                merge = self.run_gh("pr", "merge", "5", "--squash")
+
+                self.assertEqual(checks.returncode, 0, checks.stderr)
+                self.assertEqual(merge.returncode, 0, merge.stderr)
+                self.assertTrue(self.read_state()["merged"])
+
+    def test_status_check_rollup_uses_gh_pr_view_fields(self):
+        result = self.run_gh("pr", "view", "5", "--json", "statusCheckRollup")
+
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertTrue(self.read_state()["merged"])
+        check = json.loads(result.stdout)["statusCheckRollup"][0]
+        self.assertEqual(check["__typename"], "CheckRun")
+        self.assertEqual(check["status"], "COMPLETED")
+        self.assertEqual(check["conclusion"], "SUCCESS")
+        self.assertNotIn("bucket", check)
+
+    def test_branch_protection_endpoint_uses_pull_request_base(self):
+        state = self.read_state()
+        state["base"]["ref"] = "release"
+        state["repository_rules"]["branch_protection"] = True
+        state["repository_rules"]["required_status_checks"] = ["CI"]
+        self.write_state(state)
+
+        result = self.run_gh("api", "repos/lora-sys/skills/branches/release/protection")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIsNotNone(json.loads(result.stdout)["required_status_checks"])
 
     def test_comment_review_does_not_revoke_an_approval(self):
         state = self.read_state()

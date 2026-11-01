@@ -7,7 +7,7 @@ import tempfile
 import unittest
 
 
-FIXTURE = Path(__file__).parent
+FIXTURE = Path(__file__).resolve().parents[1] / "fixtures" / "e38-pr-modes"
 BASE_STATE = json.loads((FIXTURE / "state.json").read_text())
 
 
@@ -40,6 +40,18 @@ class MockGhTests(unittest.TestCase):
             check=False,
         )
 
+    def test_cli_reports_merged_while_rest_reports_closed(self):
+        merged = self.run_gh("pr", "merge", "5", "--squash")
+        self.assertEqual(merged.returncode, 0, merged.stderr)
+
+        cli = self.run_gh("pr", "view", "5", "--json", "state")
+        rest = self.run_gh("api", "repos/lora-sys/skills/pulls/5")
+
+        self.assertEqual(json.loads(cli.stdout)["state"], "MERGED")
+        rest_data = json.loads(rest.stdout)
+        self.assertEqual(rest_data["state"], "closed")
+        self.assertTrue(rest_data["merged"])
+
     def test_pr_view_is_read_only_even_when_auto_merge_is_eligible(self):
         state = self.read_state()
         state["auto_merge_enabled"] = True
@@ -64,10 +76,11 @@ class MockGhTests(unittest.TestCase):
         self.assertFalse(self.read_state()["merged"])
         self.assertTrue(self.read_state()["auto_merge_enabled"])
 
-    def test_stale_approval_does_not_satisfy_required_review(self):
+    def test_stale_approval_is_rejected_when_repo_dismisses_stale_reviews(self):
         state = self.read_state()
         state["repository_rules"]["branch_protection"] = True
         state["repository_rules"]["required_review_count"] = 1
+        state["repository_rules"]["dismiss_stale_reviews"] = True
         state["reviewDecision"] = "APPROVED"
         state["reviews"] = [{
             "state": "APPROVED",
@@ -79,6 +92,101 @@ class MockGhTests(unittest.TestCase):
         result = self.run_gh("pr", "merge", "5", "--squash")
 
         self.assertNotEqual(result.returncode, 0)
+        self.assertFalse(self.read_state()["merged"])
+
+    def test_stale_approval_can_count_when_repo_does_not_dismiss_it(self):
+        state = self.read_state()
+        state["repository_rules"]["branch_protection"] = True
+        state["repository_rules"]["required_review_count"] = 1
+        state["repository_rules"]["dismiss_stale_reviews"] = False
+        state["reviewDecision"] = "APPROVED"
+        state["reviews"] = [{
+            "state": "APPROVED",
+            "commit_id": "older-head",
+            "user": {"login": "reviewer-1"},
+        }]
+        self.write_state(state)
+
+        result = self.run_gh("pr", "merge", "5", "--squash")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue(self.read_state()["merged"])
+
+    def test_comment_review_does_not_revoke_an_approval(self):
+        state = self.read_state()
+        state["repository_rules"]["branch_protection"] = True
+        state["repository_rules"]["required_review_count"] = 1
+        state["reviewDecision"] = "APPROVED"
+        state["reviews"] = [
+            {"state": "APPROVED", "commit_id": state["head"]["sha"], "user": {"login": "reviewer-1"}},
+            {"state": "COMMENTED", "commit_id": state["head"]["sha"], "user": {"login": "reviewer-1"}},
+        ]
+        self.write_state(state)
+
+        result = self.run_gh("pr", "merge", "5", "--squash")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue(self.read_state()["merged"])
+
+    def test_null_review_user_does_not_crash_cli_or_gate(self):
+        state = self.read_state()
+        state["repository_rules"]["branch_protection"] = True
+        state["repository_rules"]["required_review_count"] = 1
+        state["reviewDecision"] = "APPROVED"
+        state["reviews"] = [{"state": "COMMENTED", "user": None}]
+        self.write_state(state)
+
+        view = self.run_gh("pr", "view", "5", "--json", "reviews")
+        merge = self.run_gh("pr", "merge", "5", "--squash")
+
+        self.assertEqual(view.returncode, 0, view.stderr)
+        self.assertIsNone(json.loads(view.stdout)["reviews"][0]["author"])
+        self.assertNotEqual(merge.returncode, 0)
+        self.assertNotIn("AttributeError", merge.stderr)
+        self.assertFalse(self.read_state()["merged"])
+
+    def test_full_send_can_merge_with_current_head_required_approval(self):
+        state = self.read_state()
+        state["repository_rules"]["branch_protection"] = True
+        state["repository_rules"]["required_review_count"] = 1
+        state["reviewDecision"] = "APPROVED"
+        state["reviews"] = [{
+            "state": "APPROVED",
+            "commit_id": state["head"]["sha"],
+            "user": {"login": "reviewer-1"},
+        }]
+        self.write_state(state)
+
+        result = self.run_gh("pr", "merge", "5", "--squash")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue(self.read_state()["merged"])
+
+    def test_auto_merge_disables_when_current_head_approval_is_missing(self):
+        state = self.read_state()
+        state["repository_rules"]["branch_protection"] = True
+        state["repository_rules"]["required_review_count"] = 1
+        state["mergeable_state"] = "blocked"
+        state["reviewDecision"] = "APPROVED"
+        state["reviews"] = [{
+            "state": "APPROVED",
+            "commit_id": "older-head",
+            "user": {"login": "reviewer-1"},
+        }]
+        state["auto_merge_enabled"] = True
+        state["auto_merge_method"] = "squash"
+        self.write_state(state)
+
+        before = self.run_gh("pr", "view", "5", "--json", "headRefOid,reviews,autoMergeRequest")
+        disabled = self.run_gh("pr", "merge", "5", "--disable-auto")
+        after = self.run_gh("pr", "view", "5", "--json", "state,autoMergeRequest")
+
+        self.assertEqual(before.returncode, 0, before.stderr)
+        self.assertEqual(disabled.returncode, 0, disabled.stderr)
+        self.assertEqual(json.loads(before.stdout)["reviews"][0]["commit"]["oid"], "older-head")
+        self.assertIsNotNone(json.loads(before.stdout)["autoMergeRequest"])
+        self.assertEqual(json.loads(after.stdout)["state"], "OPEN")
+        self.assertIsNone(json.loads(after.stdout)["autoMergeRequest"])
         self.assertFalse(self.read_state()["merged"])
 
     def test_changes_requested_blocks_merge_despite_an_approval(self):
@@ -187,6 +295,44 @@ class MockGhTests(unittest.TestCase):
         self.assertTrue(self.read_state()["in_merge_queue"])
         self.assertFalse(self.read_state()["merged"])
 
+    def test_merge_queue_state_is_visible_by_node_query_and_direct_merge_is_rejected(self):
+        state = self.read_state()
+        state["in_merge_queue"] = True
+        state["auto_merge_enabled"] = True
+        state["auto_merge_method"] = "squash"
+        self.write_state(state)
+
+        queued_view = self.run_gh(
+            "api", "graphql",
+            "--raw-field", 'query=query($id: ID!) { node(id: $id) { ... on PullRequest { isInMergeQueue } } }',
+            "--field", f'id={state["node_id"]}',
+            "-q", ".data.node.isInMergeQueue",
+        )
+        direct_merge = self.run_gh("pr", "merge", "5", "--squash")
+
+        self.assertEqual(queued_view.returncode, 0, queued_view.stderr)
+        self.assertEqual(queued_view.stdout.strip(), "true")
+        self.assertEqual(direct_merge.returncode, 2)
+        self.assertTrue(self.read_state()["in_merge_queue"])
+        self.assertTrue(self.read_state()["auto_merge_enabled"])
+        self.assertFalse(self.read_state()["merged"])
+
+    def test_branch_protection_endpoint_reports_required_review_and_checks(self):
+        state = self.read_state()
+        state["repository_rules"]["branch_protection"] = True
+        state["repository_rules"]["required_review_count"] = 1
+        state["repository_rules"]["dismiss_stale_reviews"] = True
+        state["repository_rules"]["required_status_checks"] = ["CI"]
+        self.write_state(state)
+
+        result = self.run_gh("api", "repos/lora-sys/skills/branches/main/protection")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        data = json.loads(result.stdout)
+        self.assertEqual(data["required_status_checks"]["contexts"], ["CI"])
+        self.assertEqual(data["required_pull_request_reviews"]["required_approving_review_count"], 1)
+        self.assertTrue(data["required_pull_request_reviews"]["dismiss_stale_reviews"])
+
     def test_cli_json_shapes_and_unknown_fields(self):
         checks = self.run_gh("pr", "checks", "5", "--json", "bucket,name,state")
         self.assertEqual(checks.returncode, 0, checks.stderr)
@@ -196,8 +342,26 @@ class MockGhTests(unittest.TestCase):
         invalid = self.run_gh("pr", "view", "5", "--json", "risk_review")
         self.assertNotEqual(invalid.returncode, 0)
 
-        unsupported_jq = self.run_gh("pr", "checks", "5", "--json", "name,state", "--jq", ".[] | .name")
-        self.assertNotEqual(unsupported_jq.returncode, 0)
+        names = self.run_gh("pr", "checks", "5", "--json", "name,state", "--jq", ".[] | .name")
+        self.assertEqual(names.returncode, 0, names.stderr)
+        self.assertEqual(names.stdout.strip(), "CI")
+
+        state = self.read_state()
+        state["reviews"] = [{
+            "state": "APPROVED",
+            "commit_id": state["head"]["sha"],
+            "user": {"login": "reviewer-1"},
+        }]
+        self.write_state(state)
+        reviews = self.run_gh("pr", "view", "5", "--json", "reviews", "--jq", ".reviews[]")
+        self.assertEqual(reviews.returncode, 0, reviews.stderr)
+        review_rows = [json.loads(line) for line in reviews.stdout.splitlines() if line]
+        self.assertEqual(len(review_rows), 1)
+        self.assertEqual(review_rows[0]["commit"]["oid"], state["head"]["sha"])
+
+        commits = self.run_gh("pr", "view", "5", "--json", "reviews", "-q", ".reviews[] | .commit.oid")
+        self.assertEqual(commits.returncode, 0, commits.stderr)
+        self.assertEqual(commits.stdout.strip(), state["head"]["sha"])
 
     def test_failed_and_pending_checks_return_nonzero(self):
         state = self.read_state()

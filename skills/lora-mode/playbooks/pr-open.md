@@ -4,7 +4,7 @@
 
 ## 步骤
 
-1. **准备上下文。** 当前任务链尚未加载或会话恢复时读取 `references/change-impact.md` 和 `references/pr-review-policy.md`；否则复用。查看目标分支、merge-base、head、未提交改动和该分支是否已有 PR；保持用户已有工作。Full mode 若当前在默认分支，为本任务创建 topic branch，不推默认分支。只接续 head 与当前任务分支匹配的已有 PR；分支不匹配就停止，不修改该 PR。Full-stop 授权仅对这条任务 PR 关闭 auto-merge / 退出 merge queue；改动前和每次 push 前核实已关闭，不能确认时暂停。
+1. **准备上下文。** 当前任务链尚未加载或会话恢复时读取 `references/change-impact.md` 和 `references/pr-review-policy.md`；否则复用。查看目标分支、merge-base、head、未提交改动和该分支是否已有 PR；保持用户已有工作。Full mode 若当前在默认分支，为本任务创建 topic branch，不推默认分支。只接续 head 与当前任务分支匹配的已有 PR；分支不匹配就停止，不修改该 PR。Full-stop 授权仅对这条任务 PR 关闭 auto-merge / 退出 merge queue；改动前和每次 push 前核实已关闭，不能确认时暂停。Full-send 接手已有 PR 时按 `pr-babysit.md` 步骤 1 检查 queue / auto-merge：Agent 额外核验的条件满足、且所有未完成 gate 都有已核实的仓库规则保护时，才可保留并等待；否则先清除排队/自动合并再等待或写入。
 2. **核对范围与风险。** 一个 PR 聚焦一个逻辑变更。按实际 diff 和受影响模块给出 Low / Medium / High 风险与理由；作者身份不降低风险。只有摘要、没有 diff 时，风险和可逆性标为 `未评估`，说明缺少哪些证据，不从模块名称或主题猜测等级。按仓库惯例取标题范例，标题简洁说明问题或收益。描述先说问题和解决方式，再给影响图、风险和验证；不列文件清单复述 diff。
 3. **生成 Change map。** 比较 base/head 的代码依赖图，在 PR 正文中用 Mermaid 表达新增、修改、删除、受影响模块、关系变化和分析限制；对照 diff 核验节点与关系。图按 `references/change-impact.md` 使用短标签、分组和可读布局，不生成 SVG 或 JSON 附件。
 4. **写 PR 描述。** 按 `engineering-writing` 起草，再按 `unslop` 检查。把 Mermaid 代码块直接放在正文；只准备草稿时交付完整 Markdown 正文。

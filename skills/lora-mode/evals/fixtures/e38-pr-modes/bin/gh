@@ -17,31 +17,71 @@ number = str(state["number"])
 
 def output(data, jq=None):
     if jq:
-        if jq == ".[]" and isinstance(data, list):
-            for item in data:
-                print(json.dumps(item))
-            return
-        if not jq.startswith(".") or not all(char.isalnum() or char in "._[]" for char in jq):
-            fail("fixture supports only simple jq field and index paths", 2)
-        value = data
-        for key in jq[1:].split("."):
-            if not key:
-                continue
-            if "[" in key and key.endswith("]"):
-                name, index = key[:-1].split("[", 1)
-                if name:
-                    value = value[name]
-                value = value[int(index)]
+        expressions = [expression.strip() for expression in jq.split("|")]
+        values = [data]
+        expands = False
+        try:
+            for expression in expressions:
+                if not expression.startswith("."):
+                    fail("fixture supports simple jq paths and array iteration", 2)
+                expands = expands or "[]" in expression
+                next_values = []
+                for value in values:
+                    current = [value]
+                    index = 1
+                    while index < len(expression):
+                        char = expression[index]
+                        if char == ".":
+                            index += 1
+                            continue
+                        if char == "[":
+                            end = expression.find("]", index)
+                            if end == -1:
+                                fail("fixture supports simple jq paths and array iteration", 2)
+                            token = expression[index + 1 : end]
+                            selected = []
+                            for item in current:
+                                if not isinstance(item, list):
+                                    fail("fixture jq array operation requires an array", 2)
+                                if token:
+                                    selected.append(item[int(token)])
+                                else:
+                                    selected.extend(item)
+                            current = selected
+                            index = end + 1
+                            continue
+                        start = index
+                        while index < len(expression) and (expression[index].isalnum() or expression[index] == "_"):
+                            index += 1
+                        if start == index:
+                            fail("fixture supports simple jq paths and array iteration", 2)
+                        key = expression[start:index]
+                        current = [item[key] for item in current]
+                    next_values.extend(current)
+                values = next_values
+        except (IndexError, KeyError, TypeError, ValueError):
+            fail("fixture jq path did not match the returned data", 2)
+
+        if expands or len(values) > 1:
+            for value in values:
+                if isinstance(value, (dict, list)):
+                    print(json.dumps(value))
+                elif isinstance(value, bool):
+                    print("true" if value else "false")
+                elif value is None:
+                    print("null")
+                else:
+                    print(value)
+        elif values:
+            value = values[0]
+            if isinstance(value, (dict, list)):
+                print(json.dumps(value))
+            elif isinstance(value, bool):
+                print("true" if value else "false")
+            elif value is None:
+                print("null")
             else:
-                value = value[key]
-        if isinstance(value, (dict, list)):
-            print(json.dumps(value))
-        elif isinstance(value, bool):
-            print("true" if value else "false")
-        elif value is None:
-            print("null")
-        else:
-            print(value)
+                print(value)
     else:
         print(json.dumps(data, indent=2))
 
@@ -54,7 +94,7 @@ def pr_view_data():
     latest_reviews = {}
     all_reviews = []
     for review in state["reviews"]:
-        user = review.get("user", {})
+        user = review.get("user") or {}
         login = user.get("login") or review.get("login")
         item = {
             "author": {"login": login} if login else None,
@@ -70,7 +110,7 @@ def pr_view_data():
         "id": state["node_id"],
         "number": state["number"],
         "title": state["title"],
-        "state": "CLOSED" if state["merged"] else state["state"].upper(),
+        "state": "MERGED" if state["merged"] else state["state"].upper(),
         "isDraft": state["draft"],
         "baseRefName": state["base"]["ref"],
         "headRefName": state["head"]["ref"],
@@ -114,18 +154,21 @@ def rest_pr_data():
     }
 
 
-def latest_head_approvals():
+def counted_approvals():
     latest_by_reviewer = {}
     for review in state["reviews"]:
-        user = review.get("user", {})
+        user = review.get("user") or {}
         login = user.get("login") or review.get("login")
-        if login:
+        review_state = review.get("state", "").upper()
+        # Comment-only reviews are informational and do not replace a submitted decision.
+        if login and review_state in ("APPROVED", "CHANGES_REQUESTED", "DISMISSED"):
             latest_by_reviewer[login] = review
+    dismiss_stale = state["repository_rules"].get("dismiss_stale_reviews", False)
     return sum(
         1
         for review in latest_by_reviewer.values()
         if review.get("state", "").upper() == "APPROVED"
-        and review.get("commit_id") == state["head"]["sha"]
+        and (not dismiss_stale or review.get("commit_id") == state["head"]["sha"])
     )
 
 
@@ -146,7 +189,7 @@ def merge_gate_ready():
         review_decision != "CHANGES_REQUESTED"
         and (
             required_reviews == 0
-            or (review_decision == "APPROVED" and latest_head_approvals() >= required_reviews)
+            or (review_decision == "APPROVED" and counted_approvals() >= required_reviews)
         )
     )
     return (
@@ -173,13 +216,16 @@ def merge_squash():
 
 
 def jq_arg():
-    return args[args.index("--jq") + 1] if "--jq" in args else None
+    for flag in ("--jq", "-q"):
+        if flag in args:
+            return args[args.index(flag) + 1]
+    return None
 
 
 def form_values():
     values = {}
     for index, arg in enumerate(args[:-1]):
-        if arg in ("-f", "-F"):
+        if arg in ("-f", "-F", "--field", "--raw-field"):
             key, value = args[index + 1].split("=", 1)
             values[key] = value
     return values
@@ -257,6 +303,8 @@ elif args[:2] == ["pr", "merge"] and len(args) >= 3 and args[2] == number:
         fail("this fixture requires --squash", 2)
     elif state["merged"]:
         fail("pull request is already merged")
+    elif state.get("in_merge_queue"):
+        fail("pull request is already in the merge queue", 2)
     elif "--auto" in args and not merge_gate_ready():
         state["auto_merge_enabled"] = True
         state["auto_merge_method"] = "squash"
@@ -290,13 +338,22 @@ elif args[:2] == ["api", "graphql"]:
         state["in_merge_queue"] = False
         write_state()
         output({"data": {"dequeuePullRequest": {"clientMutationId": forms.get("clientMutationId")}}}, jq_arg())
-    elif "isInMergeQueue" in query and "pullRequest" in query:
+    elif "isInMergeQueue" in query and re.search(r"pullrequest", query, re.IGNORECASE):
         pull_request = {
             "id": state["node_id"],
             "isInMergeQueue": state.get("in_merge_queue", False),
             "mergeQueueEntry": {"id": "MQE_fixture"} if state.get("in_merge_queue") else None,
         }
-        output({"data": {"repository": {"pullRequest": pull_request}}}, jq_arg())
+        node_query = re.search(r"\bnode\s*\(", query, re.IGNORECASE)
+        if node_query:
+            inline_id = re.search(r'node\s*\(\s*id\s*:\s*"([^"]+)"', query, re.IGNORECASE)
+            requested_id = forms.get("id") or (inline_id.group(1) if inline_id else None)
+            if requested_id != state["node_id"]:
+                fail("isInMergeQueue requires the pull request GraphQL id", 2)
+            data = {"data": {"node": pull_request}}
+        else:
+            data = {"data": {"repository": {"pullRequest": pull_request}}}
+        output(data, jq_arg())
     else:
         fail("unsupported fixture GraphQL operation", 2)
 elif args[:1] == ["api"] and len(args) >= 2:
@@ -321,8 +378,19 @@ elif args[:1] == ["api"] and len(args) >= 2:
         review_count = state["repository_rules"]["required_review_count"]
         required_reviews = None if review_count == 0 else {"required_approving_review_count": review_count}
         data = {
-            "required_status_checks": None,
-            "required_pull_request_reviews": required_reviews,
+            "required_status_checks": (
+                {"strict": False, "contexts": state["repository_rules"].get("required_status_checks", [])}
+                if state["repository_rules"].get("required_status_checks")
+                else None
+            ),
+            "required_pull_request_reviews": (
+                {
+                    **required_reviews,
+                    "dismiss_stale_reviews": state["repository_rules"].get("dismiss_stale_reviews", False),
+                }
+                if required_reviews
+                else None
+            ),
         }
     else:
         fail(f"unsupported mock API endpoint: {endpoint}", 2)

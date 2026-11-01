@@ -1,12 +1,15 @@
 {
   "repository": "lora-sys/skills",
   "number": 5,
+  "rest_id": 5,
+  "node_id": "PR_fixture_5",
   "title": "Strengthen autonomous completion in lora-mode",
   "state": "open",
   "draft": false,
   "base": {"ref": "main"},
   "head": {"ref": "codex/lora-mode-autonomous-completion", "sha": "e38fixture00000000000000000000000000000000"},
   "risk": "High",
+  "risk_review": {"status": "completed", "blocking_findings": []},
   "mergeable": true,
   "mergeable_state": "clean",
   "reviewDecision": null,
@@ -22,6 +25,9 @@
     "allow_squash_merge": true,
     "delete_branch_on_merge": false
   },
+  "auto_merge_enabled": false,
+  "auto_merge_method": null,
+  "in_merge_queue": false,
   "merged": false,
   "merge_method": null
 }

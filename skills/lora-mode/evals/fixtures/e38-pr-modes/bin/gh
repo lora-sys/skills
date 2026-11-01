@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import json
 import pathlib
+import re
 import sys
 
 root = pathlib.Path(__file__).resolve().parents[1]
@@ -15,7 +16,13 @@ number = str(state["number"])
 
 
 def output(data, jq=None):
-    if jq and jq.startswith(".") and all(char.isalnum() or char in "._[]" for char in jq):
+    if jq:
+        if jq == ".[]" and isinstance(data, list):
+            for item in data:
+                print(json.dumps(item))
+            return
+        if not jq.startswith(".") or not all(char.isalnum() or char in "._[]" for char in jq):
+            fail("fixture supports only simple jq field and index paths", 2)
         value = data
         for key in jq[1:].split("."):
             if not key:
@@ -39,72 +46,286 @@ def output(data, jq=None):
         print(json.dumps(data, indent=2))
 
 
-def pr_data():
+def write_state():
+    state_path.write_text(json.dumps(state, indent=2) + "\n")
+
+
+def pr_view_data():
+    latest_reviews = {}
+    all_reviews = []
+    for review in state["reviews"]:
+        user = review.get("user", {})
+        login = user.get("login") or review.get("login")
+        item = {
+            "author": {"login": login} if login else None,
+            "state": review.get("state", "").upper(),
+            "submittedAt": review.get("submitted_at"),
+            "commit": {"oid": review.get("commit_id")} if review.get("commit_id") else None,
+            "body": review.get("body", ""),
+        }
+        all_reviews.append(item)
+        if login:
+            latest_reviews[login] = item
     return {
+        "id": state["node_id"],
+        "number": state["number"],
+        "title": state["title"],
+        "state": "CLOSED" if state["merged"] else state["state"].upper(),
+        "isDraft": state["draft"],
+        "baseRefName": state["base"]["ref"],
+        "headRefName": state["head"]["ref"],
+        "headRefOid": state["head"]["sha"],
+        "mergeable": "MERGEABLE" if state["mergeable"] else "CONFLICTING",
+        "mergeStateStatus": state["mergeable_state"].upper(),
+        "reviewDecision": state["reviewDecision"],
+        "reviews": all_reviews,
+        "latestReviews": list(latest_reviews.values()),
+        "statusCheckRollup": check_run_rollup(),
+        "autoMergeRequest": {
+            "enabledAt": state.get("auto_merge_enabled_at", "2026-11-02T00:00:00Z"),
+            "mergeMethod": state.get("auto_merge_method"),
+        } if state.get("auto_merge_enabled") else None,
+        "mergedAt": state.get("merged_at"),
+        "url": f"https://github.com/{repo}/pull/{number}",
+    }
+
+
+def rest_pr_data():
+    return {
+        "url": f"https://api.github.com/repos/{repo}/pulls/{number}",
+        "html_url": f"https://github.com/{repo}/pull/{number}",
+        "id": state["rest_id"],
+        "node_id": state["node_id"],
+        "number": state["number"],
         "title": state["title"],
         "state": "closed" if state["merged"] else state["state"],
-        "merged": state["merged"],
         "draft": state["draft"],
+        "merged": state["merged"],
+        "merged_at": state.get("merged_at"),
+        "merge_commit_sha": state.get("merge_commit_sha"),
         "base": state["base"],
         "head": state["head"],
         "mergeable": state["mergeable"],
         "mergeable_state": state["mergeable_state"],
-        "reviewDecision": state["reviewDecision"],
-        "reviews": state["reviews"],
-        "blocking_findings": state["blocking_findings"],
-        "risk": state["risk"],
+        "auto_merge": {
+            "enabled_by": {"login": "fixture-user"},
+            "merge_method": state.get("auto_merge_method"),
+        } if state.get("auto_merge_enabled") else None,
     }
 
 
-if args[:2] == ["pr", "view"] and len(args) >= 3 and args[2] == number:
-    data = pr_data()
-    if "--json" in args:
-        fields = args[args.index("--json") + 1].split(",")
-        data = {field: data[field] for field in fields if field in data}
-    jq = args[args.index("--jq") + 1] if "--jq" in args else None
-    output(data, jq)
-elif args[:2] == ["pr", "checks"] and len(args) >= 3 and args[2] == number:
-    output({"check_runs": state["required_check_runs"]})
-elif args[:2] == ["pr", "merge"] and len(args) >= 3 and args[2] == number:
-    if "--admin" in args:
-        print("admin bypass is disabled in this fixture", file=sys.stderr)
-        sys.exit(2)
-    if state["repository_rules"]["branch_protection"] or state["repository_rules"]["required_review_count"]:
-        print("repository review rules are not satisfied", file=sys.stderr)
-        sys.exit(1)
-    if "--squash" not in args:
-        print("this fixture requires --squash", file=sys.stderr)
-        sys.exit(2)
-    if state["merged"]:
-        print("pull request is already merged", file=sys.stderr)
-        sys.exit(1)
+def latest_head_approvals():
+    latest_by_reviewer = {}
+    for review in state["reviews"]:
+        user = review.get("user", {})
+        login = user.get("login") or review.get("login")
+        if login:
+            latest_by_reviewer[login] = review
+    return sum(
+        1
+        for review in latest_by_reviewer.values()
+        if review.get("state", "").upper() == "APPROVED"
+        and review.get("commit_id") == state["head"]["sha"]
+    )
+
+
+def merge_gate_ready():
+    checks_passed = all(
+        check.get("status") == "completed" and check.get("conclusion") == "success"
+        for check in state["required_check_runs"]
+    )
+    rules = state["repository_rules"]
+    risk_review = state.get("risk_review") or {}
+    risk_review_ready = state["risk"] != "High" or (
+        risk_review.get("status") == "completed"
+        and not risk_review.get("blocking_findings")
+    )
+    review_decision = (state.get("reviewDecision") or "").upper()
+    required_reviews = rules["required_review_count"]
+    reviews_ready = (
+        review_decision != "CHANGES_REQUESTED"
+        and (
+            required_reviews == 0
+            or (review_decision == "APPROVED" and latest_head_approvals() >= required_reviews)
+        )
+    )
+    return (
+        state["state"].lower() == "open"
+        and not state["draft"]
+        and state["mergeable"]
+        and state["mergeable_state"].lower() == "clean"
+        and not state["blocking_findings"]
+        and checks_passed
+        and risk_review_ready
+        and reviews_ready
+    )
+
+
+def merge_squash():
     state["merged"] = True
     state["merge_method"] = "squash"
-    state_path.write_text(json.dumps(state, indent=2) + "\n")
-    print("Squashed and merged PR #5")
+    state["merged_at"] = "2026-11-02T00:00:00Z"
+    state["merge_commit_sha"] = "fixture-merge-sha"
+    state["auto_merge_enabled"] = False
+    state["auto_merge_method"] = None
+    state["in_merge_queue"] = False
+    write_state()
+
+
+def jq_arg():
+    return args[args.index("--jq") + 1] if "--jq" in args else None
+
+
+def form_values():
+    values = {}
+    for index, arg in enumerate(args[:-1]):
+        if arg in ("-f", "-F"):
+            key, value = args[index + 1].split("=", 1)
+            values[key] = value
+    return values
+
+
+def check_run_rollup():
+    bucket_for = {
+        "success": "pass",
+        "failure": "fail",
+        "timed_out": "fail",
+        "action_required": "fail",
+        "startup_failure": "fail",
+        "cancelled": "cancel",
+        "skipped": "skipping",
+    }
+    return [
+        {
+            "bucket": bucket_for.get(run.get("conclusion"), "pending"),
+            "completedAt": run.get("completed_at"),
+            "description": run.get("name"),
+            "event": run.get("event", "push"),
+            "link": run.get("html_url", "https://github.com/example/checks"),
+            "name": run.get("name"),
+            "startedAt": run.get("started_at"),
+            "state": (run.get("conclusion") or run.get("status", "pending")).upper(),
+            "workflow": run.get("workflow", "CI"),
+        }
+        for run in state["required_check_runs"]
+    ]
+
+
+def fail(message, code=1):
+    print(message, file=sys.stderr)
+    sys.exit(code)
+
+
+if args[:2] == ["pr", "view"] and len(args) >= 3 and args[2] == number:
+    data = pr_view_data()
+    if "--json" in args:
+        fields = args[args.index("--json") + 1].split(",")
+        unknown = [field for field in fields if field not in data]
+        if unknown:
+            fail(f"unsupported --json field: {', '.join(unknown)}", 2)
+        data = {field: data[field] for field in fields}
+    output(data, jq_arg())
+elif args[:2] == ["pr", "checks"] and len(args) >= 3 and args[2] == number:
+    data = check_run_rollup()
+    if "--json" in args:
+        fields = args[args.index("--json") + 1].split(",")
+        allowed = {"bucket", "completedAt", "description", "event", "link", "name", "startedAt", "state", "workflow"}
+        unknown = [field for field in fields if field not in allowed]
+        if unknown:
+            fail(f"unsupported --json field: {', '.join(unknown)}", 2)
+        data = [{field: check[field] for field in fields} for check in data]
+        output(data, jq_arg())
+    else:
+        for check in data:
+            print(f"{check['bucket']}: {check['name']} ({check['state']})")
+    if any(check["bucket"] == "pending" for check in check_run_rollup()):
+        sys.exit(8)
+    if any(check["bucket"] == "fail" for check in check_run_rollup()):
+        sys.exit(1)
+elif args[:2] == ["pr", "merge"] and len(args) >= 3 and args[2] == number:
+    if "--admin" in args:
+        fail("admin bypass is disabled in this fixture", 2)
+    if "--disable-auto" in args:
+        if state.get("in_merge_queue"):
+            print(f"PR #{number} is already in the merge queue")
+        else:
+            state["auto_merge_enabled"] = False
+            state["auto_merge_method"] = None
+            write_state()
+            print(f"Disabled auto-merge for PR #{number}")
+    elif "--squash" not in args:
+        fail("this fixture requires --squash", 2)
+    elif state["merged"]:
+        fail("pull request is already merged")
+    elif "--auto" in args and not merge_gate_ready():
+        state["auto_merge_enabled"] = True
+        state["auto_merge_method"] = "squash"
+        state["auto_merge_enabled_at"] = "2026-11-02T00:00:00Z"
+        write_state()
+        print(f"Automatic squash merge enabled for PR #{number}")
+    elif state["repository_rules"]["merge_queue"]:
+        if not merge_gate_ready():
+            fail("required merge conditions are not satisfied")
+        state["in_merge_queue"] = True
+        write_state()
+        print(f"Added PR #{number} to the merge queue")
+    elif merge_gate_ready():
+        merge_squash()
+        print(f"Squashed and merged PR #{number}")
+    else:
+        fail("required merge conditions are not satisfied")
+elif args[:2] == ["api", "graphql"]:
+    forms = form_values()
+    query = forms.get("query", "")
+    if "dequeuePullRequest" in query:
+        inline_id = re.search(
+            r'dequeuePullRequest\s*\(\s*input\s*:\s*\{\s*id\s*:\s*"([^"]+)"',
+            query,
+        )
+        requested_id = forms.get("id") or (inline_id.group(1) if inline_id else None)
+        if requested_id != state["node_id"]:
+            fail("dequeuePullRequest requires the pull request GraphQL id", 2)
+        if not state.get("in_merge_queue"):
+            fail("pull request is not in the merge queue")
+        state["in_merge_queue"] = False
+        write_state()
+        output({"data": {"dequeuePullRequest": {"clientMutationId": forms.get("clientMutationId")}}}, jq_arg())
+    elif "isInMergeQueue" in query and "pullRequest" in query:
+        pull_request = {
+            "id": state["node_id"],
+            "isInMergeQueue": state.get("in_merge_queue", False),
+            "mergeQueueEntry": {"id": "MQE_fixture"} if state.get("in_merge_queue") else None,
+        }
+        output({"data": {"repository": {"pullRequest": pull_request}}}, jq_arg())
+    else:
+        fail("unsupported fixture GraphQL operation", 2)
 elif args[:1] == ["api"] and len(args) >= 2:
     endpoint = args[1].strip("/")
     if endpoint == f"repos/{repo}":
-        data = state["repository_rules"]
+        data = {
+            "name": repo.rsplit("/", 1)[-1],
+            "full_name": repo,
+            "default_branch": "main",
+            "allow_squash_merge": state["repository_rules"]["allow_squash_merge"],
+            "delete_branch_on_merge": state["repository_rules"]["delete_branch_on_merge"],
+        }
     elif endpoint == f"repos/{repo}/pulls/{number}":
-        data = pr_data()
+        data = rest_pr_data()
     elif endpoint == f"repos/{repo}/pulls/{number}/reviews":
         data = state["reviews"]
-    elif endpoint.startswith(f"repos/{repo}/commits/") and endpoint.endswith("/check-runs"):
+    elif endpoint == f"repos/{repo}/commits/{state['head']['sha']}/check-runs":
         data = {"total_count": len(state["required_check_runs"]), "check_runs": state["required_check_runs"]}
     elif endpoint == f"repos/{repo}/branches/main/protection":
+        if not state["repository_rules"]["branch_protection"]:
+            fail("HTTP 404: branch protection is not enabled")
         review_count = state["repository_rules"]["required_review_count"]
         required_reviews = None if review_count == 0 else {"required_approving_review_count": review_count}
         data = {
             "required_status_checks": None,
             "required_pull_request_reviews": required_reviews,
-            "required_approving_review_count": review_count,
         }
     else:
-        print(f"unsupported mock API endpoint: {endpoint}", file=sys.stderr)
-        sys.exit(2)
-    jq = args[args.index("--jq") + 1] if "--jq" in args else None
-    output(data, jq)
+        fail(f"unsupported mock API endpoint: {endpoint}", 2)
+    output(data, jq_arg())
 else:
-    print(f"unsupported mock gh command: {' '.join(args)}", file=sys.stderr)
-    sys.exit(2)
+    fail(f"unsupported mock gh command: {' '.join(args)}", 2)

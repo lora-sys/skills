@@ -28,16 +28,16 @@ description: lora 的开发流程路由器，适用于功能开发、bug 修复�
 
 - 仅当仓库已有 `.codegraph/` 且 CLI/MCP 可用时使用 CodeGraph；未获授权不得初始化索引、安装工具或配置 MCP。
 - 创建或更新 PR/Issue 正文时内嵌 Mermaid 影响图；PR 审查时核对图与实际 diff，后续代码改变时更新正文中的图。按 `references/change-impact.md` 生成并对照源码及证据；未核实的边不得写成事实。
-- PR 代码审查、架构审查或用户明确要求报告时，按 `html-communication` 准备并默认发布/更新 Postplan 公开 draft；无需额外逐次确认。公开前仍须完成敏感内容检查并安全删减；无法判断能否安全公开时暂停澄清。Postplan 发布不授权 PR/Issue 写入。
+- PR 代码审查、架构审查或用户明确要求报告时，按 `html-communication` 准备并默认发布/更新 Postplan 公开 draft；无需额外逐次确认。公开前完成敏感内容检查并安全删减；无法判断哪些内容可公开时不上传，先完成安全的本地报告，再就公开范围提出具体澄清。Postplan 发布不授权 PR/Issue 写入。
 - PR 报告的验证结果必须来自最新 head，并能对应到实际命令和日志。遇到失败/阻塞时，先判断根因；在用户已授权的环境内修复可控的依赖或配置问题并复跑受影响检查。仍受外部条件阻塞时如实保留状态，不把环境阻塞标成代码失败，也不把定向通过概括成全量通过。
 - 写 PR/Issue、评论、技术文档或其他 prose 时，加载 `engineering-writing` 后再加载 `unslop`；代码任务不加载写作技能。行为与预期不符时用 `debug` 复现，不声称未验证的结果。
 - 草拟不等于远端写入。未获本任务授权，不创建 PR、不提交代码。
-- `full-stop` 无需逐步确认，可创建/更新本任务 PR、推送本任务分支并做到 merge-ready，然后交给人审；`full-send` 授权在最新 merge gate 通过后合并本任务 PR。High 风险任务中，用户明确给出的 `full-send` 是人类合并授权；若仓库保护规则另要求 GitHub review，必须照常满足，不能绕过。两者不授权改 Issue、其他 PR 或标签，也不允许推默认分支、改写共享历史、绕过保护或使用 `--admin`。
+- `full-stop` 无需逐步确认，可创建/更新本任务 PR、推送本任务分支并做到 merge-ready，然后交给人审；须确认 auto-merge 已关闭且 PR 不在 merge queue，禁止用 `--auto` 预先安排合并。缺少仓库要求的人类 approval 是 full-stop 的预期交接点；其他就绪条件满足后交给人审，不等待 approval 事件。`full-send` 授权在最新 merge gate 通过后合并本任务 PR。High 风险任务中，用户明确给出的 `full-send` 是人类合并授权；若仓库保护规则另要求 GitHub review，必须照常满足，不能绕过。full-send 遇到必需 approval 未到时不算完成：有可用 PR watcher 就等待事件并从最新状态续跑；没有 watcher 时留下检查点并如实报告阻塞。两者不授权改 Issue、其他 PR 或标签，也不允许推默认分支、改写共享历史、绕过保护或使用 `--admin`。
 - 部署、生产发布、关闭 Issue 和删除数据各需单独授权；Postplan 公开 draft 遵循 `html-communication` 的默认发布授权；凭据不得写入文件或命令行参数。
 
 ## 迭代
 
-真实任务后向本机 lora-mode 使用台账追加一条（不提交到源仓库）；确认的 bad case 加入 `evals/EVALS.md`。出现 bad case、同类问题被第二次纠正，或上次 reflect 后新增 5 条任务记录时，进入 `playbooks/reflect.md`。
+真实任务后向当前实际加载的本机安装版 lora-mode 目录下的 `USAGE.md` 追加一条；本仓库配置的安装位置是 `~/.agents/skills/lora-mode/`，其他环境按实际加载路径定位，不猜测安装根目录。台账不得写入或提交源仓库中的 `skills/lora-mode/USAGE.md`。确认的 bad case 加入 `evals/EVALS.md`。出现 bad case、同类问题被第二次纠正，或上次 reflect 后新增 5 条任务记录时，进入 `playbooks/reflect.md`。
 
 ## 自主推进与完成
 

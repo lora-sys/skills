@@ -12,10 +12,14 @@
    - **Rework**：目标仍有效，但实现需要改变。保留有用证据，在隔离 topic branch 重做必要部分。
    - **Superseded**：主干已有等效或更好的实现，或目标不再成立。停止修改并报告证据；不擅自关闭 Issue 或 PR。
 
-   用户明确要求原分支内继续或使用 stacked PR 时照办。否则保留原分支作为来源，避免覆盖他人的改动；涉及产品决策时暂停并提问。
+   分支归属与处置：
+   - 他人拥有的 source branch 默认只读。需要新代码时，在本任务自有隔离分支基于目标主干修复，创建以目标主干为 base 的 replacement PR，带上必要来源改动并链接原 PR；full-send 可完成并合并这个 task-owned PR。
+   - 不要把贡献者 source branch 设为 stacked PR 的 base，因为合并会写入该分支。只有用户明确要求更新 source branch 时，才可追加普通提交；不得改写其历史。Full-send 本身不授权向贡献者分支 push 或在来源 PR 留评论。
+   - 若用户明确要求合并已命名的 source PR 本身且它满足全部门槛，可按 full-send 合并；无需写 source branch，合并会关闭该 PR。若合并 task-owned replacement PR，来源 PR 保持打开，除非用户另行授权关闭。
+   - 不要因安全的 task-owned PR 生命周期再请求逐步确认，也不要建议用来源 PR 评论替代自有分支修复。先核实 source/base/head 最新关系，保留应继承的提交与署名；只有缺少真实仓库或必要源代码时才报告具体阻塞。
 5. **实现和验证。** 只完成原目标需要的改动；按 `references/pr-review-policy.md` 分配验证与 review 深度。修改代码时运行相关检查和原始场景复现，更新 PR 正文中与最新 Head 对应的 Mermaid 图。需要创建或更新 PR 时移交 `pr-open.md`；需要等待 CI 或处理 review 时移交 `pr-babysit.md`。
 6. **保留署名。** 尽量保留原提交与已验证的 author / co-author trailers。把自己的修复作为新提交。若创建 replacement PR，在描述中链接来源 PR 并说明沿用了什么、重做了什么。不要猜测邮箱、模型身份或贡献者归属。
-7. **遵守写入边界。** 接手请求允许在本地继续工作；推送、评论、更新或关闭原 PR、合并、部署仍按本次明确授权和 lora-mode 硬边界处理。默认不 force-push 原作者分支。发现权限不足时交付本地结果和阻塞项。
+7. **遵守写入边界。** 接手本身只授权本地继续工作。Push、评论、PR 更新/关闭、合并和部署仍按 `SKILL.md` 的授权边界执行；必要 rebase 的 `--force-with-lease` 仅可用于本任务自有分支。
 8. **汇报接手结果。** 说明来源、处置方式、继承与重做的工作、验证证据、署名处理和剩余决定。没有运行的检查明确标为未运行。
 
 ## 结束条件

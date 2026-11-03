@@ -40,7 +40,7 @@ npx skills list --global --agent codex
 
 | Skill | 用途 | 适用场景 |
 |---|---|---|
-| [`lora-mode`](skills/lora-mode/) | 个人开发总控：精简路由、分级验证、隔离审查与影响图；覆盖目标评测迭代、自主完成、事件续跑、风险分层、Issue / PR 和接手既有工作 | 前后端开发、目标驱动优化、自主任务与已授权事件跟进、Issue / PR 生命周期、接手 PR / 分支 / Agent 线程、调试、调查与发布 |
+| [`lora-mode`](skills/lora-mode/) | 个人开发总控：精简路由、分级验证、隔离审查与影响图；覆盖目标评测迭代、自主完成、事件续跑、风险分层、Issue / PR、合并后清理和接手既有工作 | 前后端开发、目标驱动优化、自主任务与已授权事件跟进、Issue / PR 生命周期、合并后的分支/worktree/产物清理、接手 PR / 分支 / Agent 线程、调试、调查与发布 |
 | [`review-loop`](skills/review-loop/) | 限轮数的独立代码审查循环；优先使用明确免费或已授权的低成本模型，修复实质发现后再审 | 用户要求独立复审、review loop 或修复后复审；不承担 PR 生命周期写入 |
 | [`create-formal-verification-skill`](skills/create-formal-verification-skill/) | 为高风险代码创建可复跑的形式化验证技能，要求性质映射到源码并用反例证明检查有效 | 并发、重试、状态机、解析器或不安全代码中常规测试难覆盖的性质 |
 | [`maintain-formal-verification-skill`](skills/maintain-formal-verification-skill/) | 代码变化后复用项目已有的形式化验证，核对源码覆盖、维护模型并诚实更新验证记录 | 重构或行为变化命中已有验证技能、模型或其覆盖源码 |

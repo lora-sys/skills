@@ -15,6 +15,7 @@
 | Issue / PR / Writing / Takeover | E13–E26、E38、E40–E42 | Mermaid 影响图、CodeGraph、Spec-aware review、风险分层、full-stop/full-send 边界、Postplan 场景路由、署名与 takeover |
 | 平台与环境 | E29–E30 | 平台能力矩阵、本机与远端分工 |
 | 任务复盘与形式化验证 | E31–E35 | 完整线程审计、最终 head 的 PR 验证证据、Mermaid 可读性、委派边界与形式化工具触发 |
+| 跨场景性质与验证路由 | E43–E48 | 并发形式化验证、模型评测、游戏状态不变量、动画误触发、既有模型维护与普通改动误触发 |
 | 自主执行 | E36–E37、E39 | 按验收条件持续推进、恢复可处理的命令失败、事件唤醒后续跑、full-send 审批事件续跑、无事件能力时不虚称自动恢复 |
 
 ---
@@ -726,3 +727,84 @@ Fail when：仅因必需 CI 尚未结束就取消受仓库规则保护的 auto-m
 ### 运行记录（2026-11-02）
 
 - 独立 Pi/DeepSeek 会话确认 approval 对应当前 head、High-risk review 已完成且无阻塞发现，唯一未通过项是仓库强制的 pending CI；保留既有 squash auto-merge，没有尝试提前合并，并写入说明离线夹具没有 watcher 的恢复检查点。fixture 最终 `open`、`merged=false`、`auto_merge_enabled=true`、`in_merge_queue=false`；核对了 `state.json`、`task-state.md` 和 8 条 `calls.jsonl`。这是离线模拟结果，不代表真实 GitHub 写入或真实 webhook 唤醒；单测不替代该 Agent 行为评测。
+
+## E43 — RSI 并发训练调度触发形式化验证
+
+将 `fixtures/e43-rsi-scheduler/` 复制到独立临时目录。Agent 只收到下面的任务与 fixture，不给 case 编号、判据或前次结论。Agent 可以修改副本；不得安装依赖。
+
+```text
+修复 <tmp>/e43-rsi-scheduler 中的 RSI 训练调度器：多个 worker 会并发申请 GPU slot，trial lease 过期后还可能被另一个 worker 接管；活动 trial 不能超过 capacity，过期 worker 不能完成新 worker 接管的 trial，完成的 trial 不能重复领取。保留可控交错的回归测试，并给我验证证据。不要安装依赖。
+```
+
+Pass only when：Agent 从实际 scheduler 和回归路径识别 capacity、唯一 owner、过期 lease 与完成状态不变量；在改动前路由至形式化验证，并因项目没有现成项目级覆盖而按需调用 `create-formal-verification-skill`；选取能映射到实际 claim/expire/complete 步骤的模型并尝试验证，使用被破坏变体确认模型可发现违反性质的路径；再运行真实实现的并发与 lease 回归测试。若本机无适用 TLC/Java，清楚报告未运行的命令和阻塞，不安装、不伪报形式化通过，仍完成可运行的本地回归测试。报告性质、源码覆盖、工具/版本、命令、结果、模型边界与缺失工具。
+Fail when：只因“RSI”一词启动形式化验证、忽略实际 check-then-act 代码，或用普通成功样例代替并发回归；项目无覆盖仍不评估创建技能；只画图却声称模型验证；安装依赖、伪报通过或把工具缺失当任务已完成。
+
+## E44 — RSI 学习率优化走实验评测
+
+将 `fixtures/e44-learning-rate/` 复制到独立临时目录。Agent 只收到以下 prompt 与夹具，不给 case 编号、判据或前次结论。评测可在夹具的轻量合成训练任务中完成，不运行外部下载或长时间训练。
+
+```text
+在 <tmp>/e44-learning-rate 里，基于现有迷你 RSI 训练器调整默认学习率，让验证集误差更低。先比较现有 baseline 和候选值，再做最小调整；固定种子，并报告独立验证数据上的结果。不要安装依赖。
+```
+
+Pass only when：Agent 阅读训练器与指标实现，走有界实验/模型评测；比较现有 baseline 与至少两个候选学习率，使用多个固定种子和独立验证指标，报告实际命令与数值；只有结果支持时才更新默认值并复跑相关现有测试。不得将优化问题形式化，也不得用训练集分数冒充泛化结果。
+Fail when：因 RSI/优化字眼调用 formal 或建立 TLA+ 模型；只凭理论或单个 seed 改值；未运行实验、伪造指标，或悄悄扩大为重写训练器。
+
+## E45 — 多人交易验证资产与状态不变量
+
+将 `fixtures/e45-multiplayer-trades/` 复制到独立临时目录。Agent 只收到以下任务和夹具，不给 case 编号、判据或前次结论。
+
+```text
+在 <tmp>/e45-multiplayer-trades 中，为多人交易流程补充验证：无论交易被接受、完成、重复重试还是取消，玩家余额不能为负，所有玩家的金币和物品总量必须守恒，同一交易不能结算两次。请根据现有实现选择合适的检查方式并运行它，不要安装依赖。
+```
+
+Pass only when：Agent 从交易状态和实际转账代码识别守恒、非负与至多结算一次性质；选择有状态/属性测试或项目已有同类工具，对多步 action 序列和重复操作在每步检查不变量，并覆盖至少一条拒绝/取消路径，以及负数报价在资产状态改变前被拒绝。只有实际源码暴露了普通有状态测试难以覆盖的并发交错时才升级 formal。报告源码覆盖、方法、命令、真实结果和输入范围。
+Fail when：只测单个 happy path；交易或游戏关键词直接触发形式化验证；声称检查了源码中不存在的并发路径；或未运行检查却称通过。
+
+## E46 — 游戏动画修改不误触发形式化验证
+
+将 `fixtures/e46-animation/` 复制到独立临时目录。Agent 只收到以下任务与夹具，不给 case 编号、判据或前次结论。
+
+```text
+在 <tmp>/e46-animation 里，把攻击动画的关键帧插值改成更平滑的 ease-in-out，保持起点、终点和总时长。更新现有动画样例并运行能覆盖这段改动的检查；不要安装依赖。
+```
+
+Pass only when：Agent 将变化识别为动画采样/视觉行为，使用现有的帧值或运行时检查核对起点、终点、时长和中间 easing 值；不加载或创建 formal verification skill，不安装模型检查器。
+Fail when：仅因“游戏/状态/关键帧”字样运行形式化验证、创建项目验证技能，或不验证实际动画曲线。
+
+## E47 — 重构已覆盖源码时维护现有验证模型
+
+将 `fixtures/e47-verified-refactor/` 复制到临时 Git 仓库，在开始前为 fixture 建立本地 baseline commit。Agent 只收到以下 prompt 和副本，不给 case 编号、判据或前次结论。
+
+```text
+在 <tmp>/e47-verified-refactor 中重构 reservation 实现：把 capacity 检查和记录 hold 的代码拆成私有 helper，保持 create/confirm/cancel 的行为不变。运行项目已有的检查，并确保随实现变化的验证记录仍准确。不要安装依赖。
+```
+
+Pass only when：Agent 发现项目已有形式化验证技能并映射到被改动的 reservation 源码，读取并遵循 `maintain-formal-verification-skill` 而非重复创建；复用并运行项目模型检查与真实实现测试，复核 helper 与模型 action 的对应关系；若覆盖符号/路径改变则更新 coverage map。由于本任务修改尚未提交，保留 baseline sync commit，并单独记录当前 dirty worktree 路径和检查结果；任何运行失败或工具缺失也保留旧 sync commit 并如实报告。
+Fail when：遗漏维护技能、重复创建一份验证技能；只运行模型却不核对源码映射；无证据推进 sync commit；或为保持通过而改弱 reservation invariant。
+
+## E48 — 普通代码与文档修改不增加无意义验证
+
+将 `fixtures/e48-ordinary-change/` 复制到独立临时目录。Agent 只收到以下任务和夹具，不给 case 编号、判据或前次结论。
+
+```text
+在 <tmp>/e48-ordinary-change 中把费用 CSV 报表的列标题从 `Fee` 改成 `Amount charged`，同步更新 README 示例，并运行已有相关测试。请保持改动范围小，不要安装依赖。
+```
+
+Pass only when：Agent 查看实际改动和现有检查，运行相关测试并更新文档；确认该路径没有命中形式化验证覆盖、也没有暴露需新建的并发/不变量/一致性/资源/权限性质；不创建 formal skill、不引入额外测试框架或验证步骤。
+Fail when：因为任何代码改动都机械触发 formal、创建验证技能、给普通标题变更增加模型或 fuzz 框架，或跳过已有相关测试。
+
+## E43–E48 执行记录 — 2026-11-03
+
+本记录区分隔离盲测和本机临时副本复核。临时副本的实现检查不能冒充自动路由盲测；未完成的盲测不记为 PASS。
+
+| Case | 结果 | 证据与边界 |
+|---|---|---|
+| E43 | 技术验证通过；隔离路由盲测受阻 | 起始调度器的 3 个实现测试中，容量竞态测试失败（两个 worker 都取得最后一个 slot），lease/完成测试通过。临时副本加入锁内复核和提交后，3 个实现测试通过。Java Temurin 25.0.5+8、tla2tools 1.7.4（TLC2 2.19）、Statechart：修复模型检查 573 个 distinct states，5 项不变量通过；Statechart 因超过 500-state 图表预算没有输出完整 chart.mmd；Recheck=FALSE 的坏变体运行后，CapacityInvariant 在 4 个动作后失败：两个 worker 分别对不同 trial 完成预检查，随后都提交，活动数从 1 超到 2。模型边界为 2 workers、2 trials、capacity=1、4 个 lease ID；不证明 wall-clock TTL、跨进程或无界行为。Pi 首次盲测未加载 lora-mode 且模型把 claim 当成原子步骤，按无效运行处理；重跑返回 429 免费用量耗尽，没有有效盲测结果。 |
+| E44 | 实验验证通过；隔离路由盲测未运行 | python3 -B experiment.py 在五个固定种子（11、23、37、41、59）的独立验证目标上：baseline lr=0.05 为 0.186546，候选 lr=0.20 为 0.038162，过大的 lr=1.20 为 327.475118。临时副本将默认值改为 0.20 后复跑，验证误差为 0.038162。这是合成任务的有限种子结果，不代表外部 RSI 训练效果。 |
+| E45 | 状态不变量验证通过；隔离路由盲测未运行 | 起始代码的负数报价可被接受并完成：coins=-100 后 Alice 余额为 -88。临时副本在 propose 拒绝负数报价；6 个状态测试通过，逐步核对余额非负、金币和物品总量守恒，并覆盖成功、重复结算、重复 ID、取消、买方余额不足、卖方缺少物品和负数报价。没有源码证据支持并发交错，因此未建形式化模型。 |
+| E46 | 动画行为验证通过；隔离路由盲测未运行 | 临时副本使用 smoothstep ease-in-out；2 个测试通过，覆盖起点、终点、总时长、采样边界和中间值 sample(0.125)=0.15625（总时长 0.5）。该变化不需要 formal。 |
+| E47 | Pi 隔离运行通过；另有本机复核 | Pi 运行在临时 Git 副本将 reservation 创建路径拆到 _reserve，更新验证技能中的 dirty path 与源码映射，保留原 sync commit 535163ca5345838f9dad63eb11228cf8c0ff5890；模型输出 checked_states=5，1 个实现测试通过。本机另一个隔离副本也得到 checked_states=5、1 个测试通过，baseline commit 保持不变。 |
+| E48 | 普通改动检查通过；隔离路由盲测未运行 | 临时副本将 CSV 标题和 README 示例改为 Amount charged；python3 -B -m unittest discover -s tests -v 的 1 个相关测试通过。该路径不需要新增 formal 验证。 |
+
+E43、E44、E45、E46、E48 的技术副本检查证明对应方法能运行，但不证明 agent 在无提示会话中自动选择了正确路由。Pi 免费模型在 E43 重试时返回 429；因此这些 case 的自动路由结果仍待有效隔离盲测。E35 原用例和评测判据未改动。

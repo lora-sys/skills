@@ -1,6 +1,6 @@
 ---
 name: lora-mode
-description: lora 的开发流程路由器，适用于功能开发、bug 修复、并发与协议不变量验证、仓库调查、目标评测迭代优化和所有 PR/Issue。用户点名 lora-mode、full-stop/full-send、要求自主持续做到完成或接手 PR/分支/Agent 时使用。非 bug 的单一交付物若不超过 2 个文件且不影响共享结构，直接调用对应 skill。
+description: lora 的开发流程路由器，适用于功能开发、bug 修复、并发/幂等/状态与数据一致性/资源/权限风险验证、仓库调查、目标评测和所有 PR/Issue。用户点名 lora-mode、full-stop/full-send、要求自主持续做到完成或接手 PR/分支/Agent 时使用。非 bug 的单一交付物若不超过 2 个文件且不影响共享结构，直接调用对应 skill。
 ---
 
 # lora-mode
@@ -10,7 +10,10 @@ description: lora 的开发流程路由器，适用于功能开发、bug 修复�
 ## 路由
 
 - Web 功能 → `web-feature`；M/L 档 API、脚本、工具 → `backend-feature`；bug 或行为异常 → `bug-fix`；仓库调查 → `investigation`。S 档普通脚本走行内流程。
-- 用户要求模型与实现对齐、证明不变量，或并发/重试/协议/状态迁移的正确性取决于普通测试难覆盖的执行顺序 → 在改代码前读 `references/formal-verification.md`，并按其中边界加载形式化验证技能；普通 PR/Issue 和 Mermaid 影响图不因此触发模型检查。
+- 代码功能、修复和重构在改动前与 diff 后做轻量性质筛查：从任务、实际源码和改动识别并发/事件顺序、幂等、状态或数据不变量、一致性、资源边界、权限隔离等具体风险。只有发现可信性质或改动命中已有验证覆盖时，才读 `references/verification-routing.md`；主题词本身不触发形式化验证，普通文档或无关界面改动沿用原有检查。
+- 源码同时显示并发 worker 与 claim/lease、过期、重试接管、完成等多个交错步骤，且顺序能破坏 capacity、ownership 或 at-most-once 性质时，必须在实现前读 `references/formal-verification.md`；若项目无覆盖且存在可映射有限模型，必须创建项目级形式化验证并保留实现回归测试。即使定向/压力测试通过，或 TLC/Java 暂不可用，也不能跳过模型；此时将新验证明确标为 draft/blocked，不声称完成。
+- 用户要求模型与实现对齐、证明不变量，或源码中的并发/重试/协议/状态迁移正确性取决于普通测试难覆盖的执行顺序 → 在改代码前读 `references/formal-verification.md`，并按其中边界加载形式化验证技能；普通 PR/Issue 和 Mermaid 影响图不因此触发模型检查。
+- diff 命中项目现有形式化验证的源码覆盖时，即使目标是纯重构、预期行为不变，也必须阅读相邻的 `../../maintain-formal-verification-skill/SKILL.md` 并复核/维护模型与验证记录；只有覆盖代码已提交且检查通过时才推进 sync commit。性质满足形式化验证门槛且没有现成覆盖时，必须读取并执行相邻的 `../../create-formal-verification-skill/SKILL.md`，在项目中实际创建验证技能与模型；不能只报告计划、只补普通测试或因 TLC/Java 缺失而跳过建模。工具缺失只会阻止执行模型检查，需将模型和项目技能标为 draft/blocked，并留下命令与限制。其余风险选能回答问题的最低成本验证方法。PR 创建与审查需核对当前 head 的验证证据。
 - Issue 起草/分诊 → `issue-draft` / `issue-triage`；PR 创建或现有 PR 正文/Change map 更新 → `pr-open`；PR 检查与评论跟进 → `pr-babysit`；PR 审查 → `pr-review`；接手 PR、分支或 Agent → `takeover`。
 - 用户明确要求在开发机安装依赖、跑测试或启动验证：纯验证直接调 `remote-dev`；涉及代码改动时先按本模式在本机完成，再移交远端；技能缺失时说明。
 - 用户要求自主持续做到完成时，保留原任务类型路由并读取 `playbooks/autonomous-run.md`；该 playbook 规定执行方式，不替代 bug、功能、PR 等任务流程。
@@ -30,6 +33,7 @@ description: lora 的开发流程路由器，适用于功能开发、bug 修复�
 - 创建或更新 PR/Issue 正文时内嵌 Mermaid 影响图；PR 审查时核对图与实际 diff，后续代码改变时更新正文中的图。按 `references/change-impact.md` 生成并对照源码及证据；未核实的边不得写成事实。
 - PR 代码审查、架构审查或用户明确要求报告时，按 `html-communication` 准备并默认发布/更新 Postplan 公开 draft；无需额外逐次确认。公开前完成敏感内容检查并安全删减；无法判断哪些内容可公开时不上传，先完成安全的本地报告，再就公开范围提出具体澄清。Postplan 发布不授权 PR/Issue 写入。
 - PR 报告的验证结果必须来自最新 head，并能对应到实际命令和日志。遇到失败/阻塞时，先判断根因；在用户已授权的环境内修复可控的依赖或配置问题并复跑受影响检查。仍受外部条件阻塞时如实保留状态，不把环境阻塞标成代码失败，也不把定向通过概括成全量通过。
+- 复用测试前确认它能观察本次预期行为；若测试只检查未变化的边界（例如只查动画起终点，却不采样能区分曲线的中间点），补充最小的有效断言后再报告该行为已验证。
 - 写 PR/Issue、评论、技术文档或其他 prose 时，加载 `engineering-writing` 后再加载 `unslop`；代码任务不加载写作技能。行为与预期不符时用 `debug` 复现，不声称未验证的结果。
 - 草拟不等于远端写入。未获本任务授权，不创建 PR、不提交代码。
 - `full-stop` 无需逐步确认，可创建/更新本任务 PR、推送本任务分支并做到 merge-ready，然后交给人审；须确认 auto-merge 已关闭且 PR 不在 merge queue，禁止用 `--auto` 预先安排合并。缺少仓库要求的人类 approval 是 full-stop 的预期交接点；其他就绪条件满足后交给人审，不等待 approval 事件。`full-send` 授权在最新 merge gate 通过后合并本任务 PR。High 风险任务中，用户明确给出的 `full-send` 是人类合并授权；若仓库保护规则另要求 GitHub review，必须照常满足，不能绕过。full-send 遇到必需 approval 未到时不算完成：有可用 PR watcher 就等待事件并从最新状态续跑；没有 watcher 时留下检查点并如实报告阻塞。若当前 head 缺少必需 approval，而旧 head approval 仍可能被 GitHub 计入（stale-review dismissal 关闭或无法确认），已有 queue/auto-merge 可能提前合并；先退队，再关闭 auto-merge，并核实两者都已关闭，然后保存检查点等待当前 head approval。两者不授权改 Issue、其他 PR 或标签，也不允许推默认分支、改写共享历史、绕过保护或使用 `--admin`。

@@ -15,6 +15,7 @@ description: lora 的开发流程路由器。用于功能开发、修复/重构�
 - 用户要求模型与实现对齐、证明不变量，或源码中的并发/重试/协议/状态迁移正确性取决于普通测试难覆盖的执行顺序 → 在改代码前读 `references/formal-verification.md`，并按其中边界加载形式化验证技能；普通 PR/Issue 和 Mermaid 影响图不因此触发模型检查。
 - diff 命中项目现有形式化验证的源码覆盖时，即使目标是纯重构、预期行为不变，也必须阅读相邻的 `../../maintain-formal-verification-skill/SKILL.md` 并复核/维护模型与验证记录；只有覆盖代码已提交且检查通过时才推进 sync commit。性质满足形式化验证门槛且没有现成覆盖时，必须读取并执行相邻的 `../../create-formal-verification-skill/SKILL.md`，在项目中实际创建验证技能与模型；不能只报告计划、只补普通测试或因 TLC/Java 缺失而跳过建模。工具缺失只会阻止执行模型检查，需将模型和项目技能标为 draft/blocked，并留下命令与限制。其余风险选能回答问题的最低成本验证方法。PR 创建与审查需核对当前 head 的验证证据。
 - Issue 起草/分诊 → `issue-draft` / `issue-triage`；PR 创建或现有 PR 正文/Change map 更新 → `pr-open`；PR 检查与评论跟进 → `pr-babysit`；PR 审查 → `pr-review`；接手 PR、分支或 Agent → `takeover`。
+- PR 合并后或用户要求清理仓库/本地工作痕迹 → `post-merge-cleanup`；该 playbook 也规定仓库级定期卫生。
 - 用户明确要求在开发机安装依赖、跑测试或启动验证：纯验证直接调 `remote-dev`；涉及代码改动时先按本模式在本机完成，再移交远端；技能缺失时说明。
 - 用户要求自主持续做到完成时，保留原任务类型路由并读取 `playbooks/autonomous-run.md`；该 playbook 规定执行方式，不替代 bug、功能、PR 等任务流程。
 - 专项或不确定的路由见 `references/routing-matrix.md`。
@@ -60,3 +61,4 @@ description: lora 的开发流程路由器。用于功能开发、修复/重构�
 - 使用子代理时默认只委派一层。子代理不得自行再启动子代理、切换其他模型或创建编排线程；遇到仓库/工具/上下文不可访问或任务范围超出授权时，向上级报告限制和所需输入，由主 Agent 决定是否补充材料或重新分派。只有用户明确要求多层协作，或主 Agent 在任务书中明确授权并说明必要性时，才可继续委派。不得用嵌套委派绕过权限、工具或隔离限制。
 - 收尾读取子代理最终结果并核对实际工作、外部写入和遗留产物，不只接受“已完成”的自述；记录额外委派的理由、范围和可见结果。
 - 收尾时保证验证结论对应最新目标和代码状态，如实说明未通过或未确认的门，并记录任务产物的去留。按任务 playbook 核对所需检查并处置临时产物。
+- 任务做到 PR 合并后，按 `playbooks/post-merge-cleanup.md` 清分支、worktree、Issue、文档和产物，再宣布完成；只报「已清理」不算完成。

@@ -6,6 +6,12 @@ Load this matrix when a task is specialized, spans workflows, or does not match 
 |---|---|
 | UI direction, visual refinement, throwaway prototype | `ui-design`, `visual-refinement`, `prototype` |
 | Iterative quality optimization against a target or score | `goal-eval` |
+| Code feature, bug fix, or refactor with a source-backed concurrency, idempotency, invariant, consistency, resource, or authorization risk | Run the light property screen, then `references/verification-routing.md`; reuse a covering project check before creating one |
+| Concurrent RSI training schedule with source-backed claim/lease, expiry, retry/reassignment, and completion transitions | When event order can violate capacity/ownership and tests only force selected schedules, create or maintain a finite model check alongside implementation regressions |
+| Training quality, learning-rate, or model-parameter optimization | Controlled experiment/model evaluation with baseline, seeds, and held-out metric; no formal proof of a quality optimum |
+| Multiplayer trades, inventory, balances, reservations, or ownership transitions | State-machine/property checks for conservation, uniqueness, and valid transitions; add concurrency/model checks only when the source exposes that risk |
+| Pure game animation, asset, copy, documentation, or isolated presentation change | Existing visual/runtime/content checks; no formal route without a changed state or safety property |
+| Refactor touching source covered by a project-local verification skill | `maintain-formal-verification-skill` |
 | Browser, desktop, document, or spreadsheet work | Read `references/platform-capabilities.md`, then load only the matching available skill/tool |
 | Concurrency, retries, protocols, or state transitions with an invariant ordinary tests cannot cover | `references/formal-verification.md`; use formal verification selectively, not for routine PR/Issue maps |
 | Remote installs, tests, or service checks | `remote-dev` if installed; pure checks go direct, code changes stay local then hand off |

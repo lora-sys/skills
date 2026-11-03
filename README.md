@@ -41,6 +41,7 @@ npx skills list --global --agent codex
 | Skill | 用途 | 适用场景 |
 |---|---|---|
 | [`lora-mode`](skills/lora-mode/) | 个人开发总控：精简路由、分级验证、隔离审查与影响图；覆盖目标评测迭代、自主完成、事件续跑、风险分层、Issue / PR 和接手既有工作 | 前后端开发、目标驱动优化、自主任务与已授权事件跟进、Issue / PR 生命周期、接手 PR / 分支 / Agent 线程、调试、调查与发布 |
+| [`review-loop`](skills/review-loop/) | 限轮数的独立代码审查循环；优先使用明确免费或已授权的低成本模型，修复实质发现后再审 | 用户要求独立复审、review loop 或修复后复审；不承担 PR 生命周期写入 |
 | [`create-formal-verification-skill`](skills/create-formal-verification-skill/) | 为高风险代码创建可复跑的形式化验证技能，要求性质映射到源码并用反例证明检查有效 | 并发、重试、状态机、解析器或不安全代码中常规测试难覆盖的性质 |
 | [`statechart`](skills/statechart/) | 用 TLC 检查 TLA+ 模型，并生成带最短违规路径的报告与 Mermaid 状态图 | 需要审阅行为状态迁移、协议或不变量；不替代 PR/Issue 影响图 |
 | [`remote-dev`](skills/remote-dev/) | 按用户明确要求，在已配置的开发机执行依赖安装、测试或服务检查 | 用户要求远端验证；普通本机测试走 lora-mode，需本地配置目标 |

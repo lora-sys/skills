@@ -744,7 +744,7 @@ Fail when：只因“RSI”一词启动形式化验证、忽略实际 check-then
 将 `fixtures/e44-learning-rate/` 复制到独立临时目录。Agent 只收到以下 prompt 与夹具，不给 case 编号、判据或前次结论。评测可在夹具的轻量合成训练任务中完成，不运行外部下载或长时间训练。
 
 ```text
-在 <tmp>/e44-learning-rate 里，基于现有迷你 RSI 训练器调整默认学习率，让验证集误差更低。先比较现有 baseline 和候选值，再做最小调整；固定种子，并报告独立验证数据上的结果。不要安装依赖。
+在 <tmp>/e44-learning-rate 里，基于现有迷你 RSI 训练器调整默认学习率，让验证集误差更低。先用多个固定种子比较现有 baseline 和至少两个候选学习率，再按结果做最小调整；报告独立验证数据上的结果和实际运行命令。不要安装依赖。
 ```
 
 Pass only when：Agent 阅读训练器与指标实现，走有界实验/模型评测；比较现有 baseline 与至少两个候选学习率，使用多个固定种子和独立验证指标，报告实际命令与数值；只有结果支持时才更新默认值并复跑相关现有测试。不得将优化问题形式化，也不得用训练集分数冒充泛化结果。
@@ -800,11 +800,11 @@ Fail when：因为任何代码改动都机械触发 formal、创建验证技能�
 
 | Case | 结果 | 证据与边界 |
 |---|---|---|
-| E43 | 技术验证通过；隔离路由盲测受阻 | 起始调度器的 3 个实现测试中，容量竞态测试失败（两个 worker 都取得最后一个 slot），lease/完成测试通过。临时副本加入锁内复核和提交后，3 个实现测试通过。Java Temurin 25.0.5+8、tla2tools 1.7.4（TLC2 2.19）、Statechart：修复模型检查 573 个 distinct states，5 项不变量通过；Statechart 因超过 500-state 图表预算没有输出完整 chart.mmd；Recheck=FALSE 的坏变体运行后，CapacityInvariant 在 4 个动作后失败：两个 worker 分别对不同 trial 完成预检查，随后都提交，活动数从 1 超到 2。模型边界为 2 workers、2 trials、capacity=1、4 个 lease ID；不证明 wall-clock TTL、跨进程或无界行为。Pi 首次盲测未加载 lora-mode 且模型把 claim 当成原子步骤，按无效运行处理；重跑返回 429 免费用量耗尽，没有有效盲测结果。 |
-| E44 | 实验验证通过；隔离路由盲测未运行 | python3 -B experiment.py 在五个固定种子（11、23、37、41、59）的独立验证目标上：baseline lr=0.05 为 0.186546，候选 lr=0.20 为 0.038162，过大的 lr=1.20 为 327.475118。临时副本将默认值改为 0.20 后复跑，验证误差为 0.038162。这是合成任务的有限种子结果，不代表外部 RSI 训练效果。 |
-| E45 | 状态不变量验证通过；隔离路由盲测未运行 | 起始代码的负数报价可被接受并完成：coins=-100 后 Alice 余额为 -88。临时副本在 propose 拒绝负数报价；6 个状态测试通过，逐步核对余额非负、金币和物品总量守恒，并覆盖成功、重复结算、重复 ID、取消、买方余额不足、卖方缺少物品和负数报价。没有源码证据支持并发交错，因此未建形式化模型。 |
-| E46 | 动画行为验证通过；隔离路由盲测未运行 | 临时副本使用 smoothstep ease-in-out；2 个测试通过，覆盖起点、终点、总时长、采样边界和中间值 sample(0.125)=0.15625（总时长 0.5）。该变化不需要 formal。 |
+| E43 | 更新触发描述后的 Codex 隔离路由通过；Pi 运行未加载技能，不计入路由结果 | 起始实现的 barrier 回归稳定复现两个 worker 领取一个 slot。Pi 隔离任务以及首次 Codex 子任务只运行普通实现测试，没有加载 `lora-mode`/形式化技能；不计为路由通过。补充 frontmatter 中并发 worker、调度、claim/lease 和过期接管等触发词后，全新 Codex 会话加载 `lora-mode`、`references/formal-verification.md` 和 `create-formal-verification-skill`，在临时项目创建技能与 TLA+ 模型。仓库夹具 `python3 -m unittest discover -s tests -v` 共 3 个实现测试，加入锁内复核和提交后全部通过；临时副本为固定该回归另写了第 4 个测试，未提交到仓库，故本行只声明可复现的 3 项。Statechart CLI 1.7.4、TLC 2.19、JDK 25，运行 `RSIScheduler.tla`/`RSIScheduler.cfg`/view 文件并输出到新 scratch 目录：126 states、225 steps；`TypeOK`、`CapacityBound`、`AtMostOneActivePerTrial`、`CompletedNotActive`、`StaleCompletionRejected`、`NoDeadlock` 通过。破坏 `RecheckCapacity`、`RecheckTrialState`、`FenceLease` 的变体分别触发 capacity、completed-active、stale completion 反例。模型边界为 2 workers、2 trials、capacity=1、最多 2 leases；不覆盖 wall-clock TTL、GPU 执行、Python 内存模型或外部持久化。Pi 的普通实现修复与压力结果不是形式化验证证据。 |
+| E44 | Pi 隔离盲测通过；实验复核通过 | 干净 Pi 会话只收到任务和夹具，把 `src/rsi_optimizer.py` 的 `DEFAULT_LR` 从 0.05 改为 0.20 一行，报告独立验证误差由 0.218533 降至 0.042515、编译检查通过；这两个数字无法由仓库夹具的固定 seed 复现，单独归属该盲测运行，不与下列复核混为同一基线。本机复核 `python3 experiment.py` 在夹具默认的 5 个固定训练 seed（11、23、37、41、59）上比较 baseline lr=0.05（0.186546）、候选 lr=0.20（0.038162）和过大候选 lr=1.20（327.475118）。另一次 held-out 复核只把训练 seed 换成 1000–5999、保持相同 `VALIDATION_TARGETS`：0.05 为 0.213848，0.20 为 0.036877，1.20 为 268.891932；命令 `python3 -c 'from src.rsi_optimizer import mean_validation_loss; seeds=tuple(range(1000,6000)); [print(lr, mean_validation_loss(lr,seeds)) for lr in (0.05, 0.2, 1.2)]'`。`experiment.py` 改用显式 `BASELINE_LR` 与 `CANDIDATE_LRS`，改默认值后仍输出相同基线与候选对比。三组指标来自不同运行，不混为同一基线。夹具为合成任务，held-out 仅更换训练 seed，不代表外部 RSI 训练效果。 |
+| E45 | Pi 隔离盲测通过；状态不变量验证通过 | 干净 Pi 会话根据源码选用顺序状态机验证，没有声称源码存在并发。初始 `trade_service.py` 接受负报价 `coins=-20`，可把 Alice 余额从 12 降至 -8；加一行 guard 后拒绝。命令 `python3 -m unittest -v test_trade_service`：15 项通过。`python3 coverage_report.py`：42/42 可执行行（100%），穷举 5,342 个可达状态和 277,784 个转移，状态空间闭合，0 个不变量违例。检查余额非负、金币和物品总量守恒、同一交易至多结算一次，并覆盖完成、重复、取消、拒绝和负数报价。穷举输入域限于已知玩家与非负报价；未知玩家名的既有 KeyError 行为被测试固定，但未扩展修复。 |
+| E46 | Pi 隔离盲测通过；动画行为验证通过 | 干净 Pi 会话仅修改动画插值为 smootherstep ease-in-out，没有加载或创建 formal skill。3 项测试覆盖曲线中点与前后采样、单调性、输入夹取、起点、终点和 0.5 秒总时长；`sample(0.125)=0.103515625`。 |
 | E47 | Pi 隔离运行通过；另有本机复核 | Pi 运行在临时 Git 副本将 reservation 创建路径拆到 _reserve，更新验证技能中的 dirty path 与源码映射，保留原 sync commit 535163ca5345838f9dad63eb11228cf8c0ff5890；模型输出 checked_states=5，1 个实现测试通过。本机另一个隔离副本也得到 checked_states=5、1 个测试通过，baseline commit 保持不变。 |
-| E48 | 普通改动检查通过；隔离路由盲测未运行 | 临时副本将 CSV 标题和 README 示例改为 Amount charged；python3 -B -m unittest discover -s tests -v 的 1 个相关测试通过。该路径不需要新增 formal 验证。 |
+| E48 | Pi 隔离盲测通过；普通改动检查通过 | 干净 Pi 会话只同步修改 CSV 标题、README 示例和既有断言；`python3 -B -m unittest discover -s tests -v` 的 1 个相关测试通过。没有创建形式化验证或引入新框架。 |
 
-E43、E44、E45、E46、E48 的技术副本检查证明对应方法能运行，但不证明 agent 在无提示会话中自动选择了正确路由。Pi 免费模型在 E43 重试时返回 429；因此这些 case 的自动路由结果仍待有效隔离盲测。E35 原用例和评测判据未改动。
+E43 的最终隔离路由运行使用已注册 lora-mode 的 Codex 会话；先前未加载技能的 Pi/Codex 子任务明确保留为无效运行。E44、E45、E46、E48 的 Pi 隔离任务按各自表中证据记录；E47 的 Pi 隔离运行通过。E35 原用例和评测判据未改动。

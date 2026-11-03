@@ -1,6 +1,6 @@
 ---
 name: lora-mode
-description: lora 的开发流程路由器，适用于功能开发、bug 修复、并发/幂等/状态与数据一致性/资源/权限风险验证、仓库调查、目标评测和所有 PR/Issue。用户点名 lora-mode、full-stop/full-send、要求自主持续做到完成或接手 PR/分支/Agent 时使用。非 bug 的单一交付物若不超过 2 个文件且不影响共享结构，直接调用对应 skill。
+description: lora 的开发流程路由器。用于功能开发、修复/重构、仓库调查、目标评测和所有 PR/Issue；尤其适用于并发 worker/任务调度、claim/lease 过期接管、幂等、状态与数据不变量、资源限制和权限边界验证。用户点名 lora-mode、full-stop/full-send 或要求自主持续完成、接手 PR/分支/Agent 时也使用。非 bug 的单一交付物若不超过 2 个文件且不影响共享结构，直接调用对应 skill。
 ---
 
 # lora-mode

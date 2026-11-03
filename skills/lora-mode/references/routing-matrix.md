@@ -19,6 +19,7 @@ Load this matrix when a task is specialized, spans workflows, or does not match 
 | Deck, video, skill authoring | `deck`, `video`, `skill-authoring` |
 | Resume, image generation, GitHub solution search, Notion | Direct skill: `chinese-ai-resume`, `lora-visual` / `generate-image`, `github-gem-seeker`, `notion` |
 | Resume an interrupted task; unattended long task; skill reflection | `session-pickup`, `autonomous-run`, `reflect` |
+| Merged PR, or a request to clean repository and local work traces | `post-merge-cleanup` |
 
 ## Direct dispatch
 

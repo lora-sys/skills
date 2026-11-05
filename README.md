@@ -42,6 +42,9 @@ npx skills list --global --agent codex
 |---|---|---|
 | [`lora-mode`](skills/lora-mode/) | 个人开发总控：精简路由、分级验证、隔离审查与影响图；覆盖目标评测迭代、自主完成、事件续跑、风险分层、Issue / PR、合并后清理和接手既有工作 | 前后端开发、目标驱动优化、自主任务与已授权事件跟进、Issue / PR 生命周期、合并后的分支/worktree/产物清理、接手 PR / 分支 / Agent 线程、调试、调查与发布 |
 | [`review-loop`](skills/review-loop/) | 限轮数的独立代码审查循环；优先使用明确免费或已授权的低成本模型，修复实质发现后再审 | 用户要求独立复审、review loop 或修复后复审；不承担 PR 生命周期写入 |
+| [`modernize`](skills/modernize/) | 判断旧 PR 是否仍值得保留，并在授权范围内更新分支或重做实现 | 更新、rebase 或评估旧 PR |
+| [`council`](skills/council/) | 并行收集三个不同 provider 的只读评审意见，核实后汇总分歧 | 用户明确要求 council 或跨模型评审；普通审查仍走 review-loop |
+| [`leaving-pr-comments`](skills/leaving-pr-comments/) | 为代表用户提交的 GitHub 评论和回复标明代理身份，并检查内容与格式 | 撰写或发布 PR / Issue 评论、review 回复；是否发布仍由当前任务授权决定 |
 | [`create-formal-verification-skill`](skills/create-formal-verification-skill/) | 为高风险代码创建可复跑的形式化验证技能，要求性质映射到源码并用反例证明检查有效 | 并发、重试、状态机、解析器或不安全代码中常规测试难覆盖的性质 |
 | [`maintain-formal-verification-skill`](skills/maintain-formal-verification-skill/) | 代码变化后复用项目已有的形式化验证，核对源码覆盖、维护模型并诚实更新验证记录 | 重构或行为变化命中已有验证技能、模型或其覆盖源码 |
 | [`statechart`](skills/statechart/) | 用 TLC 检查 TLA+ 模型，并生成带最短违规路径的报告与 Mermaid 状态图 | 需要审阅行为状态迁移、协议或不变量；不替代 PR/Issue 影响图 |
@@ -106,6 +109,7 @@ Skills CLI 会发现 `skills/<skill-name>/SKILL.md`。每个 `SKILL.md` 的目�
 | `lora-visual` | 改编自 [oil-oil/oil-visual](https://github.com/oil-oil/oil-visual)，MIT；上游版权与许可见技能目录内的 `THIRD_PARTY_NOTICES.md`。 |
 | `unslop` | 源自 [Cursor Plugins pstack/unslop](https://github.com/cursor/plugins/tree/main/pstack/skills/unslop)，作者 Lauren Tan，MIT；上游许可文件保留于技能目录。 |
 | `lora-mode` | lora-sys 维护；接手流程参考 [t3dotgg/tstack takeover](https://github.com/t3dotgg/tstack/blob/main/skills/takeover/SKILL.md)，注释审查、盲测、变更影响验证和重复问题的结构化修复参考 [backnotprop/pstack](https://github.com/backnotprop/pstack)，均按本仓库流程与授权边界改写。 |
+| `modernize` / `council` / `leaving-pr-comments` | 改编自 [t3dotgg/tstack](https://github.com/t3dotgg/tstack/tree/1085050f3baed1ac724caa4a8166145fb2ac88af/skills)，MIT；各技能目录保留上游 LICENSE，流程按 lora-mode 的审查、授权与 PR 规则改写。 |
 | 其余技能 | 由 lora-sys 策展并作为本个人工作流集合的一部分维护。 |
 | `notion` | 包装官方 [Notion CLI (`ntn`)](https://github.com/makenotion/notion-cli)，MIT；上游版权与许可见技能目录内的 `THIRD_PARTY_NOTICES.md`。 |
 | `generate-image` | lora-sys 创建，MIT；改编自 [K-Dense-AI/claude-scientific-writer](https://github.com/K-Dense-AI/claude-scientific-writer) 的 `generate-image` skill（MIT），后端由 OpenRouter 换为七牛云 Modelink。 |

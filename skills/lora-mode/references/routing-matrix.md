@@ -17,6 +17,8 @@ Load this matrix when a task is specialized, spans workflows, or does not match 
 | Browser, desktop, document, or spreadsheet work | Read `references/platform-capabilities.md`, then load only the matching available skill/tool |
 | Concurrency, retries, protocols, or state transitions with an invariant ordinary tests cannot cover | `references/formal-verification.md`; use formal verification selectively, not for routine PR/Issue maps |
 | Remote installs, tests, or service checks | `remote-dev` if installed; pure checks go direct, code changes stay local then hand off |
+| Refresh or assess an older PR | `modernize`; use `takeover` when the request is to take responsibility for inherited work |
+| Explicit multi-provider review | `council`; ordinary review stays on `code-review` or `review-loop` |
 | Teaching HTML, publishing, static-site release | `teaching-page`, `publish`, `static-site-release` |
 | Skill authoring | `skill-authoring` |
 | Image generation, GitHub solution search | Direct skill: `lora-visual` / `generate-image`, `github-gem-seeker` |

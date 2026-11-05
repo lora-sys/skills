@@ -15,7 +15,7 @@
 
    最新 gate 满足后按仓库流程合并或入队。普通 babysit 不改 auto-merge / queue。任何模式无法核实当前状态时都停止写入并报告。
 2. **按优先级处理。** 合并冲突 → CI 失败 → 人工 review → bot 评论。只处理最新 push 之后的新检查和评论；先按 `references/pr-review-policy.md` 核实证据与风险，再分类动手。
-3. **区分评论。** 只修 diff 引入或加重且有证据的缺陷；过滤纯风格意见、重复项和未验证猜测。机械修正可直接处理；设计判断、歧义和安全发现先停下，不猜作者意图。回复按 `engineering-writing` 写，并过 `unslop`。`full-stop` / `full-send` 可在本任务 PR 上发布修复说明或带证据的驳回理由；普通 babysit 只交评论草稿，除非用户明确要求发布。提示性 bot 不构成单独等待条件。
+3. **区分评论。** 只修 diff 引入或加重且有证据的缺陷；过滤纯风格意见、重复项和未验证猜测。机械修正可直接处理；设计判断、歧义和安全发现先停下，不猜作者意图。评论回复按 `engineering-writing` 和 `unslop` 起草；要发布时再用 `leaving-pr-comments` 格式化归属。`full-stop` / `full-send` 可在本任务 PR 上发布修复说明或带证据的驳回理由；普通 babysit 只交评论草稿，除非用户明确要求发布。提示性 bot 不构成单独等待条件。
 4. **每次 push 前后核对。** Full-stop 首次写入、每次 push 和交还人审前都重读远端状态，确认 auto-merge 关闭且 PR 不在 merge queue；不得安排未来合并。push 后更新 head SHA、正文中的 Change map Mermaid 图和受影响检查结果，并确认正文对应最新改动。只有 PR 已有关联 Postplan 或本任务包含明确代码审查报告时才更新 HTML；按 `html-communication` 默认更新公开 draft，并在上传前检查新内容是否含敏感信息。
 5. **复验改动。** 只有代码、配置或测试行为改变时才运行受影响的检查或复现；纯 PR 正文、图或格式修正只核对最新 SHA、Mermaid 正文和远端渲染。不为绿 CI 修改断言来隐藏行为差异。
 6. **事件式等待。** 每个 PR 只用一个宿主 watcher，由当前主线程拥有。若任务需要等 CI 或其他必需门槛，且没有现成 watcher、平台也提供 watcher，在授权范围内启动一次；启动后让当前运行让出，不轮询。T3 环境使用 `watch_pull_request`；调用后结束当前轮。唤醒后读取最新 PR 状态和检查点，继续未完成项；watch 仍然生效时不要重复注册。

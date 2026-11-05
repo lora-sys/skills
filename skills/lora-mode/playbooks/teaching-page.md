@@ -1,4 +1,4 @@
-# teaching-page — 教学 / 讲解类自包含 HTML
+# teaching-page: 教学 / 讲解类自包含 HTML
 
 > **适用**：讲解页、课件、story deck、架构 walkthrough、HTML 报告。**主导 skill**：interactive-teaching-page。
 

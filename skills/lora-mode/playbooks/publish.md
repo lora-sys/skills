@@ -1,4 +1,4 @@
-# publish — 把 HTML / 站点发出去
+# publish: 把 HTML / 站点发出去
 
 > **适用**：单页 HTML 要公开链接、静态站点发布。**主导 skill**：html-communication（单页）、static-site-experience-release（站点发布段）。
 

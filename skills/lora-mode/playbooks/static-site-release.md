@@ -1,4 +1,4 @@
-# static-site-release — 存量静态站体验改造与发布
+# static-site-release: 存量静态站体验改造与发布
 
 > **适用**：已上线的个人站/作品集/博客的体验改进、内容对齐、发布验收。**主导 skill**：static-site-experience-release。
 

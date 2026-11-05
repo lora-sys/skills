@@ -105,7 +105,7 @@ Skills CLI 会发现 `skills/<skill-name>/SKILL.md`。每个 `SKILL.md` 的目�
 | `interactive-teaching-page` | lora-sys 创建，MIT；原始许可文件保留于技能目录。 |
 | `lora-visual` | 改编自 [oil-oil/oil-visual](https://github.com/oil-oil/oil-visual)，MIT；上游版权与许可见技能目录内的 `THIRD_PARTY_NOTICES.md`。 |
 | `unslop` | 源自 [Cursor Plugins pstack/unslop](https://github.com/cursor/plugins/tree/main/pstack/skills/unslop)，作者 Lauren Tan，MIT；上游许可文件保留于技能目录。 |
-| `lora-mode` | lora-sys 维护；接手既有工作的流程参考 [t3dotgg/tstack takeover](https://github.com/t3dotgg/tstack/blob/main/skills/takeover/SKILL.md)，按本仓库授权边界改写。 |
+| `lora-mode` | lora-sys 维护；接手流程参考 [t3dotgg/tstack takeover](https://github.com/t3dotgg/tstack/blob/main/skills/takeover/SKILL.md)，注释审查、盲测、变更影响验证和重复问题的结构化修复参考 [backnotprop/pstack](https://github.com/backnotprop/pstack)，均按本仓库流程与授权边界改写。 |
 | 其余技能 | 由 lora-sys 策展并作为本个人工作流集合的一部分维护。 |
 | `notion` | 包装官方 [Notion CLI (`ntn`)](https://github.com/makenotion/notion-cli)，MIT；上游版权与许可见技能目录内的 `THIRD_PARTY_NOTICES.md`。 |
 | `generate-image` | lora-sys 创建，MIT；改编自 [K-Dense-AI/claude-scientific-writer](https://github.com/K-Dense-AI/claude-scientific-writer) 的 `generate-image` skill（MIT），后端由 OpenRouter 换为七牛云 Modelink。 |

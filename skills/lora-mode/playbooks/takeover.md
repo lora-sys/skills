@@ -1,4 +1,4 @@
-# takeover — 接手既有工作
+# takeover: 接手既有工作
 
 > 适用：用户要求接手他人的 PR、分支或 Agent 线程。当前用户自己的任务恢复走 `session-pickup.md`。复用现有分诊、PR review、PR open 和 babysit 流程，不复制它们的细节。
 

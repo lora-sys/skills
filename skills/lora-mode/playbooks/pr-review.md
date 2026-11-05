@@ -1,6 +1,6 @@
-# pr-review — 审查 Pull Request
+# pr-review: 审查 Pull Request
 
-> 本流程按 spec 与工程规范审 PR，不使用“自己的交付物”零上下文协议。
+> 本流程按 spec 与工程规范审 PR，不使用"自己的交付物"零上下文协议。
 > **适用**：审查自己的或他人的 PR、给出 verdict。**主导 skill**：`code-review`。
 
 ## 步骤
@@ -9,7 +9,7 @@
 2. **建立审查输入。** 按 diff 和影响范围给改动分 Low / Medium / High 风险，并记录证据。Spec 轴优先读取关联 Issue 正文和验收条件；Standards 轴读取 diff 与仓库规范。两条轴分开记录，不能套用禁止阅读需求的盲审协议。不要运行仓库不存在的 `/setup-matt-pocock-skills`；若没有可用 Spec，标明缺失并继续 Standards 审查。
 3. **核对 Change map。** 对照 Mermaid 图、真实 diff 和可查依赖，核验增删模块、关系变化、受影响消费者、SHA 与覆盖限制。图不可信或没有正确渲染时说明具体差异，不让图替代源码。
 4. **验证关键行为。** 按 diff、源码和风险筛查相关性质；有并发、幂等、不变量、一致性、资源或权限风险时按 `references/verification-routing.md` 选择检查。核对已有形式化验证是否覆盖当前 head；覆盖代码已变则运行维护流程。High 风险覆盖相关安全、集成和恢复路径。逐项记录真实命令、结果、假设/边界；明确没有运行或无法验证的项目。
-5. **分级 findings。** 用 `blocker`、`should-fix`、`nit`、`FYI`；只报告由改动引入或加重且有证据的问题。过滤纯风格偏好、重复项和未经验证的猜测。按 `engineering-writing` 写每项，包含证据、影响和可执行修复建议，并把 Spec 与 Standards 问题分组。保留两轴各自结论，不跨轴挑一个“最严重问题”。
+5. **分级 findings。** 用 `blocker`、`should-fix`、`nit`、`FYI`；只报告由改动引入或加重且有证据的问题。过滤纯风格偏好、重复项和未经验证的猜测。按 `engineering-writing` 写每项，包含证据、影响和可执行修复建议，并把 Spec 与 Standards 问题分组。保留两轴各自结论，不跨轴挑一个"最严重问题"。
 6. **给出 verdict。** `blocker` 或 `should-fix` 导致 `request changes`；无阻塞项但 Spec 缺失或验证有限时用 `comment`；无阻塞项且改动满足 Spec、改善代码健康度时用 `approve`。Verdict 只说明下一步动作，不合并或重排两轴 findings。
 7. **交付报告。** PR 代码审查默认准备独立 Postplan HTML 报告，复用本次 findings、证据、风险和验证结果。按 `references/postplan-reports.md` 调用 `html-communication`，敏感内容检查通过后默认发布公开 draft；无法判断哪些内容可公开时不上传，先交付安全的本地报告，再就公开范围提出具体澄清。默认不发布 GitHub 评论或批准；用户明确要求提交后才调用 GitHub。只有另有远端写入授权时才把公开链接写入 PR 描述；图缺失或过期时要求更新正文中的 Mermaid Change map。交付前列出需保留的报告文件及用途，清除本任务创建且不再需要的预览/日志临时文件；归属不明的文件标为未确认，不删除。
 

@@ -4,7 +4,7 @@ Use this reference only after the task, source, or diff shows a concrete propert
 
 ## Identify the property
 
-Read the relevant implementation and its callers, state/data model, existing checks, and the requested behavior. State the promise in one sentence, identify the code that implements it, and name the user harm if it breaks. Examples include “at most one worker owns a training slot,” “a retry cannot charge twice,” “assets remain conserved after a trade,” or “one tenant cannot read another tenant's records.” Do not invent hidden guarantees. If no meaningful property beyond local behavior is exposed, run the ordinary checks for the changed path and stop the verification route there.
+Read the relevant implementation and its callers, state/data model, existing checks, and the requested behavior. State the promise in one sentence, identify the code that implements it, and name the user harm if it breaks. Examples include "at most one worker owns a training slot," "a retry cannot charge twice," "assets remain conserved after a trade," or "one tenant cannot read another tenant's records." Do not invent hidden guarantees. If no meaningful property beyond local behavior is exposed, run the ordinary checks for the changed path and stop the verification route there.
 
 Repeat the screen after editing: confirm which properties the diff can affect, whether it changes a model's assumptions, and whether existing verification covers the changed source. This catches newly exposed risks without expanding unrelated work.
 
@@ -48,4 +48,4 @@ Assumptions/bounds:
 Uncovered behavior or blocker:
 ```
 
-Keep each claim scoped to the code, model, input domain, seeds, environment, and run actually observed. A model-checker pass is evidence about its stated model and bounds; it is not a blanket proof of the implementation. A failed, skipped, unavailable, or unrun check is never “passed.”
+Keep each claim scoped to the code, model, input domain, seeds, environment, and run actually observed. A model-checker pass is evidence about its stated model and bounds; it is not a blanket proof of the implementation. A failed, skipped, unavailable, or unrun check is never "passed."

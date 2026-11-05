@@ -1,4 +1,4 @@
-# visual-refinement — 截图还原、视觉精修、像素级对齐
+# visual-refinement: 截图还原、视觉精修、像素级对齐
 
 > **适用**：照设计稿还原、像素级对齐、视觉精修。**主导 skill**：oil-ui（设计判断）、oil-frontend（实现）。
 

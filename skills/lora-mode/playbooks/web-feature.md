@@ -1,4 +1,4 @@
-# web-feature — 前端 / 全栈 Web 功能与页面
+# web-feature: 前端 / 全栈 Web 功能与页面
 
 > **适用**：新建或改造 Web 应用、页面、组件、交互。**主导 skill**：oil-frontend（实现）、oil-ui（设计判断）。
 

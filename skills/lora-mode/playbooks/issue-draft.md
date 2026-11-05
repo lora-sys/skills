@@ -1,4 +1,4 @@
-# issue-draft — 起草可执行的 Issue
+# issue-draft: 起草可执行的 Issue
 
 > **适用**：用户要创建或整理 GitHub / GitLab Issue 描述。**主导 skill**：目标 tracker 的官方 CLI 或现有 GitHub skill。
 

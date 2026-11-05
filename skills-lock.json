@@ -1,6 +1,21 @@
 {
   "version": 1,
   "skills": {
+    "council": {
+      "source": ".",
+      "sourceType": "local",
+      "computedHash": "9c41a734fb9b3655eb32b00060e562b53ab581579f35c131be62332d0809c765"
+    },
+    "leaving-pr-comments": {
+      "source": ".",
+      "sourceType": "local",
+      "computedHash": "a4a8e33ee025b693c25aab9973eebe1d7a6bb87bad2da088dfc18d61964172a5"
+    },
+    "modernize": {
+      "source": ".",
+      "sourceType": "local",
+      "computedHash": "78e8abc9c5d7243297bf110520fb389bb4eb374a87f29b6d9fab1dd3fac56219"
+    },
     "presentation-builder": {
       "source": ".",
       "sourceType": "local",

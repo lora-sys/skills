@@ -1,6 +1,6 @@
 ---
 name: engineering-writing
-description: Write or edit pull request and issue text, technical documents, code review comments, and engineering replies. Use for concise, evidence-based engineering communication.
+description: Draft and revise pull requests, issues, review comments, and technical documentation using concise, evidence-based engineering communication.
 ---
 
 # Engineering writing

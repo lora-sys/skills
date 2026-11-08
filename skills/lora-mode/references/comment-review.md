@@ -1,6 +1,6 @@
 # Comment review
 
-Use this review on every code diff. If the user asks to clean comments, cover the affected files. Do not expand the scope to unrelated files.
+Use this review on every code diff, or when explicitly triggered by requests for comment cleanup (triggers: `注释清理`, `清理注释`, `no-comment`, `comment-review`). If comment cleanup is requested, cover the affected files. Do not expand the scope to unrelated files.
 
 ## Review
 

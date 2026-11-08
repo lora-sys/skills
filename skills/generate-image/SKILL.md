@@ -1,6 +1,6 @@
 ---
 name: generate-image
-description: 使用七牛云 Modelink（GPT Image 2 / Gemini 图像模型）生成或编辑图片。凡是要文生图、改图、去水印、扩图、风格迁移、生成海报/封面/插画/透明底素材/项目配图，或用户提到"生成图片、画一张、做张图、generate image、text-to-image、image editing"时都应使用。只要用户想得到一张位图输出，就用本 skill；只有代码级 SVG/图表才不用它。
+description: 使用七牛云 Modelink 生成、编辑或合成位图图像；代码级 SVG 与矢量图表除外。
 license: MIT
 metadata:
   version: "1.2"

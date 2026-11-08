@@ -1,6 +1,6 @@
 ---
 name: lora-mode
-description: lora 的开发流程路由器。用于功能开发、修复/重构、仓库调查、目标评测和所有 PR/Issue；尤其适用于并发 worker/任务调度、claim/lease 过期接管、幂等、状态与数据不变量、资源限制和权限边界验证。用户点名 lora-mode、full-stop/full-send，或要求自主持续完成、接手工作、现代化旧 PR 时也使用。非 bug 的单一交付物若不超过 2 个文件且不影响共享结构，直接调用对应 skill。
+description: lora 的工程流程路由器，用于功能开发、修复/重构、仓库调查、目标评测、PR/Issue 全流程及注释清理（no-comment/comment-review）；用户点名 lora-mode、full-stop/full-send，或要求持续完成、接手工作、现代化旧 PR 时也使用；不超过两个文件且无共享影响的非 bug 改动直接调用对应技能。
 ---
 
 # lora-mode
@@ -10,7 +10,7 @@ description: lora 的开发流程路由器。用于功能开发、修复/重构�
 ## 路由
 
 - Web 功能 → `web-feature`；M/L 档 API、脚本、工具 → `backend-feature`；bug 或行为异常 → `bug-fix`；仓库调查 → `investigation`。S 档普通脚本走行内流程。
-- 代码改动 → 按 `references/comment-review.md` 检查本次差异中的注释；用户要求清理注释时，审查受影响文件。不要把按需审查扩大为全仓清理。
+- 代码改动 → 按 `references/comment-review.md` 检查本次差异中的注释；当用户明确要求“注释清理”、“清理注释”，或输入触发词 `no-comment`、`comment-review` 时，审查并清理受影响文件。不要把按需审查扩大为全仓清理。
 - 代码功能、修复和重构在改动前与 diff 后做轻量性质筛查：从任务、实际源码和改动识别并发/事件顺序、幂等、状态或数据不变量、一致性、资源边界、权限隔离等具体风险。只有发现可信性质或改动命中已有验证覆盖时，才读 `references/verification-routing.md`；主题词本身不触发形式化验证，普通文档或无关界面改动沿用原有检查。
 - 源码同时显示并发 worker 与 claim/lease、过期、重试接管、完成等多个交错步骤，且顺序能破坏 capacity、ownership 或 at-most-once 性质时，必须在实现前读 `references/formal-verification.md`；若项目无覆盖且存在可映射有限模型，必须创建项目级形式化验证并保留实现回归测试。即使定向/压力测试通过，或 TLC/Java 暂不可用，也不能跳过模型；此时将新验证明确标为 draft/blocked，不声称完成。
 - 用户要求模型与实现对齐、证明不变量，或源码中的并发/重试/协议/状态迁移正确性取决于普通测试难覆盖的执行顺序 → 在改代码前读 `references/formal-verification.md`，并按其中边界加载形式化验证技能；普通 PR/Issue 和 Mermaid 影响图不因此触发模型检查。

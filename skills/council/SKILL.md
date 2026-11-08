@@ -1,6 +1,6 @@
 ---
 name: council
-description: 用户明确要求 council 或跨模型评审时使用。并行收集三个不同 provider 的只读意见，核实 findings 后汇总分歧和建议。
+description: 用户明确要求 council 或跨模型评审时收集三个独立 provider 的只读意见；常规代码审查走 code-review 或 review-loop。
 ---
 
 # Council

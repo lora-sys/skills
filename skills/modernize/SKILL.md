@@ -1,6 +1,6 @@
 ---
 name: modernize
-description: 用户要求更新、rebase 或评估一个较旧 PR 是否仍值得保留时使用。核对当前主干与目标后，给出 MODERNIZE、REWORK 或 CLOSE 建议。
+description: 用户要求更新、rebase 或评估旧 PR 时，核对当前主干和目标并给出 MODERNIZE、REWORK 或 CLOSE 建议；不擅自关闭 PR。
 ---
 
 # Modernize

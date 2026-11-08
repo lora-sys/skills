@@ -23,6 +23,7 @@ Load this matrix when a task is specialized, spans workflows, or does not match 
 | Skill authoring | `skill-authoring` |
 | Image generation, GitHub solution search | Direct skill: `lora-visual` / `generate-image`, `github-gem-seeker` |
 | Resume an interrupted task; unattended long task; skill reflection | `session-pickup`, `autonomous-run`, `reflect` |
+| Comment cleanup ("注释清理", "清理注释", "no-comment", "comment-review") | `references/comment-review.md` |
 | Merged PR, or a request to clean repository and local work traces | `post-merge-cleanup` |
 
 ## Direct dispatch

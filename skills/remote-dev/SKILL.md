@@ -1,6 +1,6 @@
 ---
 name: remote-dev
-description: Use when the user explicitly requests dependency installation, tests, or service checks on a configured development host. Not for local-only tests or production deployment.
+description: Execute dependency installation, tests, or service checks on a configured remote development host when explicitly requested; not for local-only tasks or production deployment.
 ---
 
 # Remote development

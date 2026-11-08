@@ -1,6 +1,6 @@
 ---
 name: video-publisher
-description: Prepare and automate video drafts for Xiaohongshu, Douyin, Bilibili, and WeChat Channels with Ego Lite. Use for first-run onboarding, per-user available/default platform selection, video intake, platform copy and tags, parallel upload scheduling, draft recovery, original declarations, optional upload of provided cover assets, custom publishing-workflow extensions, and verification before final publish.
+description: Prepare and automate video drafts across Xiaohongshu, Douyin, Bilibili, and WeChat Channels using Ego Lite; requires explicit user authorization before final publishing.
 ---
 
 # Video Publisher

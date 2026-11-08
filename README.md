@@ -40,31 +40,31 @@ npx skills list --global --agent codex
 
 | Skill | 用途 | 适用场景 |
 |---|---|---|
-| [`lora-mode`](skills/lora-mode/) | 个人开发总控：精简路由、分级验证、隔离审查与影响图；覆盖目标评测迭代、自主完成、事件续跑、风险分层、Issue / PR、合并后清理和接手既有工作 | 前后端开发、目标驱动优化、自主任务与已授权事件跟进、Issue / PR 生命周期、合并后的分支/worktree/产物清理、接手 PR / 分支 / Agent 线程、调试、调查与发布 |
-| [`review-loop`](skills/review-loop/) | 限轮数的独立代码审查循环；优先使用明确免费或已授权的低成本模型，修复实质发现后再审 | 用户要求独立复审、review loop 或修复后复审；不承担 PR 生命周期写入 |
-| [`modernize`](skills/modernize/) | 判断旧 PR 是否仍值得保留，并在授权范围内更新分支或重做实现 | 更新、rebase 或评估旧 PR |
-| [`council`](skills/council/) | 并行收集三个不同 provider 的只读评审意见，核实后汇总分歧 | 用户明确要求 council 或跨模型评审；普通审查仍走 review-loop |
-| [`leaving-pr-comments`](skills/leaving-pr-comments/) | 为代表用户提交的 GitHub 评论和回复标明代理身份，并检查内容与格式 | 撰写或发布 PR / Issue 评论、review 回复；是否发布仍由当前任务授权决定 |
-| [`create-formal-verification-skill`](skills/create-formal-verification-skill/) | 为高风险代码创建可复跑的形式化验证技能，要求性质映射到源码并用反例证明检查有效 | 并发、重试、状态机、解析器或不安全代码中常规测试难覆盖的性质 |
-| [`maintain-formal-verification-skill`](skills/maintain-formal-verification-skill/) | 代码变化后复用项目已有的形式化验证，核对源码覆盖、维护模型并诚实更新验证记录 | 重构或行为变化命中已有验证技能、模型或其覆盖源码 |
-| [`statechart`](skills/statechart/) | 用 TLC 检查 TLA+ 模型，并生成带最短违规路径的报告与 Mermaid 状态图 | 需要审阅行为状态迁移、协议或不变量；不替代 PR/Issue 影响图 |
-| [`remote-dev`](skills/remote-dev/) | 按用户明确要求，在已配置的开发机执行依赖安装、测试或服务检查 | 用户要求远端验证；普通本机测试走 lora-mode，需本地配置目标 |
-| [`engineering-writing`](skills/engineering-writing/) | PR、Issue、技术文档和工程评论的证据化写作标准；英文技术文本含 STE 启发式检查 | 起草或修改 PR / Issue 正文、工程文档、代码审查评论和回复 |
-| [`presentation-builder`](skills/presentation-builder/) | PPTD 格式的演示文稿创建、编辑与 PPTX/图片导出 | 幻灯片、PPT/PPTX、海报、infographic、教学演示 |
-| [`short-video-director`](skills/short-video-director/) | Samuel 风格的短视频导演 Skill：分镜、台词、拍摄指导、AI 过渡与共鸣设计 | 抖音、TikTok、Reels、Shorts、Bilibili、YouTube 前期策划 |
-| [`generate-image`](skills/generate-image/) | 使用七牛云 Modelink（GPT Image 2 / Gemini）生成或编辑图片 | 文生图、图编辑、多图合成、风格迁移、海报封面插画、透明底素材 |
-| [`static-site-experience-release`](skills/static-site-experience-release/) | 静态个人站体验审查、交互精修、质量验证与 GitHub Pages 发布 | Astro / 静态作品集、博客、GitHub Pages 上线前验收 |
-| [`html-communication`](skills/html-communication/) | 通过 Postplan 发布或更新 HTML draft，并返回公开链接 | 需要给 HTML 报告、教学页、图表或静态页面一个可访问的链接 |
-| [`chinese-ai-resume`](skills/chinese-ai-resume/) | 中文 AI Agent / LLM / 全栈简历的事实核验与 ATS 交付 | 由 GitHub 项目、经历和证据生成或修订中文简历 |
-| [`github-gem-seeker`](skills/github-gem-seeker/) | 从 GitHub 寻找成熟开源方案 | 下载、格式转换、媒体处理、归档、爬取、CLI 等成熟问题 |
-| [`interactive-teaching-page`](skills/interactive-teaching-page/) | 单文件互动教学故事卡与讲解页 | 技术讲解、产品 walkthrough、课程页、架构可视化、录屏演示 |
-| [`lora-visual`](skills/lora-visual/) | 统一的 lora 风格解释图与透明角色插画 | 概念图、工作流、对比图、Hero 配图和可复用角色素材 |
-| [`unslop`](skills/unslop/) | 去除 AI 腔并增加自然的人类表达 | 文案、说明、博客、技术内容和沟通文本润色 |
-| [`video-publisher`](skills/video-publisher/) | 多平台视频草稿自动化（小红书、抖音、Bilibili、微信视频号），默认停在发布前 | 视频上传、标题标签、原创声明、封面、发布前验收 |
-| [`notion`](skills/notion/) | 通过官方 `ntn` CLI 操作 Notion 工作空间 | 读、搜、建、改 Notion 页面，查询数据源，上传文件，运行 Notion Workers |
-| [`debug`](skills/debug/) | 根因修复纪律：复现→二分定位（git bisect / 路径中点观测 / pstack 栈采样）→假设→验证→最小修复，附真实教训库 | 修 bug、测试失败、接口不通、行为不符预期、性能回退、进程卡死挂起等一切排查场景 |
-| [`oil-frontend`](skills/oil-frontend/) | 前端实现规范：界面、交互、前端状态与数据流、组件与样式组织的实现、修改、重构与评审 | 前端/全栈项目的代码级前端交付；不做视觉设计判断 |
-| [`oil-ui`](skills/oil-ui/) | UI 设计规范：设计方向探索、多风格同屏比较、视觉层级与基于实际画面的迭代 | 新界面设计、风格比较、视觉精修、截图还原、界面评审；与 oil-frontend 分工（设计 vs 实现） |
+| [`lora-mode`](skills/lora-mode/) | 全流程工程路由器：按目标选路由，覆盖开发、调试、审查、PR/Issue 生命周期与合并清理 | 前后端研发、目标评测、自主闭环、PR 接手与跟进、注释清理（no-comment/comment-review） |
+| [`review-loop`](skills/review-loop/) | 限轮数的独立代码审查循环，优先使用低成本模型，修复实质缺陷后再审 | 多轮独立复审、修复后复查 |
+| [`modernize`](skills/modernize/) | 评估旧 PR 价值并给出 MODERNIZE、REWORK 或 CLOSE 建议 | 更新、rebase 或评估分叉已久的历史 PR |
+| [`council`](skills/council/) | 并行收集三个独立 Provider 的只读评审意见并核实汇总分歧 | 明确要求跨模型评审或多方会诊 |
+| [`leaving-pr-comments`](skills/leaving-pr-comments/) | 规范代表用户提交到 GitHub 的评论、回复与代理归属标识 | 撰写或发布 PR / Issue 评论与 review 回复 |
+| [`create-formal-verification-skill`](skills/create-formal-verification-skill/) | 为高风险行为生成项目本地形式化验证模型与可复跑技能 | 并发、状态机、重试或常规测试难覆盖的协议与关键不变量 |
+| [`maintain-formal-verification-skill`](skills/maintain-formal-verification-skill/) | 代码变更命中已有验证覆盖时，核对源码映射并维护模型 | 重构或修改已有形式化验证覆盖的代码 |
+| [`statechart`](skills/statechart/) | 用 TLC 检查 TLA+ 状态机模型，输出最短违规路径与 Mermaid 状态图 | 状态迁移分析、协议检查、用状态路径解释 Bug |
+| [`remote-dev`](skills/remote-dev/) | 在已配置的远端开发机执行依赖安装、测试与服务检查 | 明确要求远端验证或本地环境不具备运行条件 |
+| [`engineering-writing`](skills/engineering-writing/) | 证据化工程写作规范，含英文 STE 启发式检查 | 起草或修改 PR / Issue 正文、技术文档与评审意见 |
+| [`presentation-builder`](skills/presentation-builder/) | 创建与编辑 PPTD 项目，导出本地 PPTX 与图片 | 演示文稿、幻灯片、海报、信息图设计与生成 |
+| [`short-video-director`](skills/short-video-director/) | 叙事类短视频前期策划：故事内核、分镜脚本、拍摄指导与剪辑地图 | 技术讲解、产品演示与自媒体短视频前期设计 |
+| [`generate-image`](skills/generate-image/) | 调用七牛云 Modelink（GPT Image 2 / Gemini）生成、编辑或合成位图 | 文生图、图像修改、风格迁移、海报插画与配图 |
+| [`static-site-experience-release`](skills/static-site-experience-release/) | 基于分支工作流的静态站体验审查、交互精调与发布验收 | 个人站、作品集、博客与 GitHub Pages 上线交付 |
+| [`html-communication`](skills/html-communication/) | 通过 Postplan 发布或更新自包含 HTML 草稿并返回链接 | 在线分享 HTML 报告、教学页、交互图表或静态演示 |
+| [`chinese-ai-resume`](skills/chinese-ai-resume/) | 基于真实项目与工程证据生成中文 ATS 友好的单页简历 | AI Agent、LLM 应用与全栈岗位的简历创建或精修 |
+| [`github-gem-seeker`](skills/github-gem-seeker/) | 在 GitHub 检索高星成熟开源方案，避免重复造轮子 | 格式转换、媒体处理、爬虫、归档与 CLI 工具选型 |
+| [`interactive-teaching-page`](skills/interactive-teaching-page/) | 生成自包含交互式教学 HTML 页面（故事叙事、内嵌 SVG、演示备注） | 技术知识点讲解、架构可视化与产品 Walkthrough |
+| [`lora-visual`](skills/lora-visual/) | 生成统一风格的解释图与透明背景角色插画 | 概念图、架构图、对比图、Hero 插图与素材制作 |
+| [`unslop`](skills/unslop/) | 去除文本中的 AI 套话与冗余表达，还原直接自然的人类文风 | 文案、说明、博客、技术内容和沟通文本润色 |
+| [`video-publisher`](skills/video-publisher/) | 多平台视频草稿准备与上传自动化，发布前由人工确认 | 小红书、抖音、B 站、视频号的视频与文案草稿发布 |
+| [`notion`](skills/notion/) | 通过官方 ntn CLI 操作 Notion 工作区 | 读写页面、检索内容、管理数据库、上传文件与运行 Worker |
+| [`debug`](skills/debug/) | 根因定位与最小修复纪律：二分排查、假设验证、拒绝表面掩盖 | 排查 Bug、崩溃卡死、测试失败、接口异常与性能回退 |
+| [`oil-frontend`](skills/oil-frontend/) | 前端工程实现规范：界面、交互、状态数据流与组件组织 | 前端功能实现、组件重构与代码级交互交付（不负责主视觉设计） |
+| [`oil-ui`](skills/oil-ui/) | UI 视觉设计规范：设计方向探索、同屏多风格对比与视觉层级精修 | 新界面设计、风格探索、截图还原与视觉评审 |
 
 ## Codex 安装提示词
 

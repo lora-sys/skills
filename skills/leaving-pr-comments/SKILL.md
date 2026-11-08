@@ -1,6 +1,6 @@
 ---
 name: leaving-pr-comments
-description: 撰写或发布代表用户提交到 GitHub 的 PR、Issue 评论和回复时使用。负责归属标识与评论格式，不授予发布权限。
+description: 代表用户在 GitHub 提交 PR 或 Issue 评论时规范身份归属标识与格式；不授予直接发布权限。
 ---
 
 # Leaving PR comments

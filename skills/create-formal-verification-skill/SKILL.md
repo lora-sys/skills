@@ -1,6 +1,6 @@
 ---
 name: create-formal-verification-skill
-description: "Generate a project-local skill that formally verifies the code where a bug costs the most and tests reach the least, in any language, with whichever verification tool fits. Use for /create-formal-verification-skill, \"model-check this race\", \"prove this invariant\", or when concurrency, retries, state machines, parsers, or unsafe code need more than tests."
+description: Generate a project-local formal verification skill and model to verify critical invariants, concurrency, or state machines where standard tests are insufficient.
 ---
 
 # Create a formal verification skill

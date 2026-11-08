@@ -1,6 +1,6 @@
 ---
 name: static-site-experience-release
-description: Audit, refine, validate, and release an existing static personal, portfolio, or blog site with a branch-first workflow. Use when users request experience or interaction improvements, content-fact alignment, performance/accessibility review, analytics or GitHub Discussions integration, GitHub Pages deployment, or production acceptance for an Astro/static GitHub repository.
+description: Audit, refine, and release existing static personal, portfolio, or blog sites using a branch-first workflow; not for building new sites from scratch or deploying dynamic backends.
 ---
 
 # Static Site Experience & Release

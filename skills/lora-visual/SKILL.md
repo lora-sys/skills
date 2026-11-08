@@ -1,6 +1,6 @@
 ---
 name: lora-visual
-description: "Create a consistent lora-and-Mochi visual system in two modes: finished explanatory images with bounded text repair, and validated transparent character illustrations produced through chroma-key checks and background removal. Use for concepts, mechanisms, comparisons, workflows, tradeoffs, hero artwork, editorial character scenes, and reusable layout illustrations where lora and Mochi appear together by default."
+description: Create consistent lora-and-Mochi anime-style explanatory images or transparent character illustrations for technical concepts, workflows, and editorial layouts, with both characters included by default.
 ---
 
 # Lora Visual

@@ -1,6 +1,6 @@
 ---
 name: maintain-formal-verification-skill
-description: Maintain a project's existing formal verification when code changes touch its covered behavior. Reuse the current model and evidence, check source mapping, update only what changed, and never weaken a property just to pass.
+description: Update and maintain a project's existing formal verification models and source mappings when code changes touch covered behavior, without weakening verified properties.
 ---
 
 # Maintain formal verification

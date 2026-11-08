@@ -1,6 +1,6 @@
 ---
 name: unslop
-description: Edit prose for natural, direct language when writing or revising documents, PR/Issue text, comments, or user-facing replies. Skip code-only work.
+description: Revise documents, PRs, comments, and replies to remove AI writing patterns and restore a direct voice; skip code-only tasks.
 ---
 
 # Unslop

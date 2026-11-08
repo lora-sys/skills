@@ -1,6 +1,6 @@
 ---
 name: html-communication
-description: Create standalone HTML reports, teaching pages, diagrams, and static pages, and publish them to Postplan as public drafts by default. Use when creating an HTML deliverable unless the user explicitly requests local-only output.
+description: Create standalone HTML reports, diagrams, teaching pages, or static sites; publish to a Postplan public draft by default unless local-only output is requested.
 ---
 
 # HTML communication through Postplan

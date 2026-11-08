@@ -1,6 +1,6 @@
 ---
 name: review-loop
-description: 按预算对代码变更做独立、只读的多轮审查，并逐项修复或有证据地驳回实质发现。用户要求 review loop、独立复审或修复后再审时使用；单轮审查走 code-review。
+description: 用户要求独立多轮代码审查时，按预算只读审查并逐项修复或有证据地驳回发现；单轮审查走 code-review。
 ---
 
 # Review loop

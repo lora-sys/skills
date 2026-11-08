@@ -1,6 +1,6 @@
 ---
 name: chinese-ai-resume
-description: Create or materially revise a one-page Chinese ATS-friendly resume for AI Agent, LLM application, AI engineering, or AI full-stack internships. Use when a user asks to turn GitHub projects, a portfolio, education, experience, and verified technical evidence into a polished Chinese PDF/DOCX resume, especially when they need project selection, human-sounding project descriptions, public links, a blue technology-style layout, or ATS/link validation.
+description: Create or revise a one-page Chinese ATS-friendly PDF or DOCX resume for AI Agent, LLM application, AI engineering, or AI full-stack internships using verified technical evidence.
 ---
 
 # Chinese AI resume

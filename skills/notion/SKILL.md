@@ -1,6 +1,6 @@
 ---
 name: notion
-description: Interact with the user's Notion workspace via the `ntn` CLI (Notion CLI). Use when the user asks to read, search, create, edit, or trash Notion pages, query a data source, upload a file, or run a Notion Worker. If `ntn whoami` fails, stop and ask the user to run `ntn login`.
+description: Use the ntn CLI to search, read, create, edit, or trash Notion pages and manage databases, files, or Workers; if ntn whoami reports no login, ask the user to run ntn login and stop.
 ---
 
 # notion (ntn CLI)

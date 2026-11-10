@@ -91,13 +91,26 @@ lora-skills/
 ├── LICENSE
 ├── docs/
 │   └── CODEX_INSTALL_PROMPT.md
-└── skills/
-    └── <skill-name>/
-        ├── SKILL.md
-        └── optional scripts/, references/, assets/, templates/
+├── skills/
+│   └── <skill-name>/
+│       ├── SKILL.md
+│       └── optional scripts/, references/, assets/, templates/
+└── trace-evals/
+    └── lora-mode 历史轨迹盲测评估集
 ```
 
 Skills CLI 会发现 `skills/<skill-name>/SKILL.md`。每个 `SKILL.md` 的目录名、frontmatter `name` 与安装时使用的 `--skill` 名称保持一致。
+
+## Trace 评测集（trace-evals/）
+
+`trace-evals/` 是从 T3 Code 历史线程轨迹 mined 出的盲测评估集，回归 lora-mode 的路由、权限与流程行为。与技能目录内的 `evals/` 分工：后者是干净会话盲测回归库，守技能自身；前者守「真实轨迹里犯过的错」。
+
+- `lora-mode-trace-evals.md`：24 题评估集，每题含考察规则、历史出处、盲派发 prompt 与 Pass/Fail 判据
+- `test-plan.md`：盲测方法（pi subagent 干净会话，加载 `SKILL.md` 全文加沙箱）与逐轮运行记录
+- `final-report.md`：优化前后正确率、token、调用数对比
+- `fixtures/`：源码夹具与 git 夹具构建配方
+
+修改 lora-mode 后按 `test-plan.md` 跑对应题目；held-out 6 题（Q03/Q08/Q10/Q15/Q17/Q24）不参与优化迭代，只在终验时首跑，用于识别过拟合。
 
 ## 来源与许可证
 

@@ -87,19 +87,32 @@ npx skills list --global --agent codex
 
 ```text
 lora-skills/
-├── README.md
-├── LICENSE
+├── README.md                      # 项目总体文档
+├── AGENTS.md                      # AI Agent 行为规范与操作守则
+├── LICENSE                        # 开源许可证
+├── skills-lock.json               # Skills CLI 锁文件
 ├── docs/
-│   └── CODEX_INSTALL_PROMPT.md
+│   └── CODEX_INSTALL_PROMPT.md    # Codex 安装提示词
 ├── skills/
 │   └── <skill-name>/
-│       ├── SKILL.md
+│       ├── SKILL.md               # 技能核心指令（含 YAML Frontmatter）
 │       └── optional scripts/, references/, assets/, templates/
 └── trace-evals/
     └── lora-mode 历史轨迹盲测评估集
 ```
 
 Skills CLI 会发现 `skills/<skill-name>/SKILL.md`。每个 `SKILL.md` 的目录名、frontmatter `name` 与安装时使用的 `--skill` 名称保持一致。
+
+## Agent 规范（AGENTS.md）
+
+本项目为所有协助维护、测试与扩展本仓库的 AI Coding Agent（Codex、Claude Code、Cursor、Windsurf、Antigravity 等）制定了统一的操作守则与行为护栏 [`AGENTS.md`](AGENTS.md)。Agent 进入本仓库时请务必遵守：
+
+- **唯一事实来源 (SSOT)**：仓库是所有技能的权威来源。禁止脱离版本控制直接在生产/本机目录盲改；本地修改必须经 diff 确认后回写。
+- **镜像保护**：`skills/oil-frontend/` 与 `skills/oil-ui/` 为上游全量同步镜像，**严禁手动修改**。
+- **结构契约**：保证 `SKILL.md` 顶层存在、YAML frontmatter 格式完备、目录名与 `name` 严格一致。
+- **工程表达质量（ASD-STE100 达标 80%）**：英文技术文档、PR/Issue、审查评论与代码注释必须满足 ASD-STE100 启发式规则 80% 以上（短句、单句单动作、主动语态、术语统一、清晰名词短语、消歧指代至少达标 5/6 项）；结合 `unslop` 杜绝 AI 套话。
+- **报告诚实与凭据绝密**：不提交 API 凭据或构建缓存产物；测试与审查结论基于真实命令执行，严禁编造虚假通过。
+
 
 ## Trace 评测集（trace-evals/）
 
@@ -160,4 +173,4 @@ for s in skills/*/; do
 done
 ```
 
-规则：`skills/<skill-name>/SKILL.md` 在目录顶层、目录名与 frontmatter `name` 一致；提交前不允许有 `__pycache__/` 等未清理产物；同步时永远先 diff、确认差异来源（是仓库新改动还是安装副本的临时修改），再决定方向。
+规则：`skills/<skill-name>/SKILL.md` 在目录顶层、目录名与 frontmatter `name` 一致；提交前不允许有 `__pycache__/` 等未清理产物；同步时永远先 diff、确认差异来源（是仓库新改动还是安装副本的临时修改），再决定方向。完整 Agent 护栏与规范详见 [`AGENTS.md`](AGENTS.md)。

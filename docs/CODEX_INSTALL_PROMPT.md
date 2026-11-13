@@ -17,10 +17,10 @@ npx skills list --global --agent codex
 如果只需要一个技能，请替换 `--skill '*'`：
 
 ```text
-请全局安装 lora-sys/skills 中的 static-site-experience-release 到 Codex。
+请全局安装 lora-sys/skills 中的 lora-mode 到 Codex。
 
 执行：
-npx skills add lora-sys/skills --skill static-site-experience-release --agent codex --global --yes
+npx skills add lora-sys/skills --skill lora-mode --agent codex --global --yes
 
 完成后执行：
 npx skills list --global --agent codex

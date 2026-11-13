@@ -21,11 +21,6 @@
       "sourceType": "local",
       "computedHash": "a91e5643382caf5c0c5d6c41dd31c9d991f4a29f3365fc61eb318db988532199"
     },
-    "short-video-director": {
-      "source": ".",
-      "sourceType": "local",
-      "computedHash": "bfc8031b3f262cdb67387341cd2b9f6d4950f8d9bf29522831a63d928c5c5bc1"
-    },
     "video-publisher": {
       "source": ".",
       "sourceType": "local",

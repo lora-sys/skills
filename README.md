@@ -16,7 +16,7 @@ npx skills add lora-sys/skills --list
 
 ```bash
 npx skills add lora-sys/skills \
-  --skill static-site-experience-release \
+  --skill lora-mode \
   --agent codex
 ```
 
@@ -51,17 +51,13 @@ npx skills list --global --agent codex
 | [`remote-dev`](skills/remote-dev/) | 在已配置的远端开发机执行依赖安装、测试与服务检查 | 明确要求远端验证或本地环境不具备运行条件 |
 | [`engineering-writing`](skills/engineering-writing/) | 证据化工程写作规范，含英文 STE 启发式检查 | 起草或修改 PR / Issue 正文、技术文档与评审意见 |
 | [`presentation-builder`](skills/presentation-builder/) | 创建与编辑 PPTD 项目，导出本地 PPTX 与图片 | 演示文稿、幻灯片、海报、信息图设计与生成 |
-| [`short-video-director`](skills/short-video-director/) | 叙事类短视频前期策划：故事内核、分镜脚本、拍摄指导与剪辑地图 | 技术讲解、产品演示与自媒体短视频前期设计 |
 | [`generate-image`](skills/generate-image/) | 调用七牛云 Modelink（GPT Image 2 / Gemini）生成、编辑或合成位图 | 文生图、图像修改、风格迁移、海报插画与配图 |
-| [`static-site-experience-release`](skills/static-site-experience-release/) | 基于分支工作流的静态站体验审查、交互精调与发布验收 | 个人站、作品集、博客与 GitHub Pages 上线交付 |
 | [`html-communication`](skills/html-communication/) | 通过 Postplan 发布或更新自包含 HTML 草稿并返回链接 | 在线分享 HTML 报告、教学页、交互图表或静态演示 |
-| [`chinese-ai-resume`](skills/chinese-ai-resume/) | 基于真实项目与工程证据生成中文 ATS 友好的单页简历 | AI Agent、LLM 应用与全栈岗位的简历创建或精修 |
 | [`github-gem-seeker`](skills/github-gem-seeker/) | 在 GitHub 检索高星成熟开源方案，避免重复造轮子 | 格式转换、媒体处理、爬虫、归档与 CLI 工具选型 |
 | [`interactive-teaching-page`](skills/interactive-teaching-page/) | 生成自包含交互式教学 HTML 页面（故事叙事、内嵌 SVG、演示备注） | 技术知识点讲解、架构可视化与产品 Walkthrough |
 | [`lora-visual`](skills/lora-visual/) | 生成统一风格的解释图与透明背景角色插画 | 概念图、架构图、对比图、Hero 插图与素材制作 |
 | [`unslop`](skills/unslop/) | 去除文本中的 AI 套话与冗余表达，还原直接自然的人类文风 | 文案、说明、博客、技术内容和沟通文本润色 |
 | [`video-publisher`](skills/video-publisher/) | 多平台视频草稿准备与上传自动化，发布前由人工确认 | 小红书、抖音、B 站、视频号的视频与文案草稿发布 |
-| [`notion`](skills/notion/) | 通过官方 ntn CLI 操作 Notion 工作区 | 读写页面、检索内容、管理数据库、上传文件与运行 Worker |
 | [`debug`](skills/debug/) | 根因定位与最小修复纪律：二分排查、假设验证、拒绝表面掩盖 | 排查 Bug、崩溃卡死、测试失败、接口异常与性能回退 |
 | [`oil-frontend`](skills/oil-frontend/) | 前端工程实现规范：界面、交互、状态数据流与组件组织 | 前端功能实现、组件重构与代码级交互交付（不负责主视觉设计） |
 | [`oil-ui`](skills/oil-ui/) | UI 视觉设计规范：设计方向探索、同屏多风格对比与视觉层级精修 | 新界面设计、风格探索、截图还原与视觉评审 |
@@ -87,19 +83,32 @@ npx skills list --global --agent codex
 
 ```text
 lora-skills/
-├── README.md
-├── LICENSE
+├── README.md                      # 项目总体文档
+├── AGENTS.md                      # AI Agent 行为规范与操作守则
+├── LICENSE                        # 开源许可证
+├── skills-lock.json               # Skills CLI 锁文件
 ├── docs/
-│   └── CODEX_INSTALL_PROMPT.md
+│   └── CODEX_INSTALL_PROMPT.md    # Codex 安装提示词
 ├── skills/
 │   └── <skill-name>/
-│       ├── SKILL.md
+│       ├── SKILL.md               # 技能核心指令（含 YAML Frontmatter）
 │       └── optional scripts/, references/, assets/, templates/
 └── trace-evals/
     └── lora-mode 历史轨迹盲测评估集
 ```
 
 Skills CLI 会发现 `skills/<skill-name>/SKILL.md`。每个 `SKILL.md` 的目录名、frontmatter `name` 与安装时使用的 `--skill` 名称保持一致。
+
+## Agent 规范（AGENTS.md）
+
+本项目为所有协助维护、测试与扩展本仓库的 AI Coding Agent（Codex、Claude Code、Cursor、Windsurf、Antigravity 等）制定了统一的操作守则与行为护栏 [`AGENTS.md`](AGENTS.md)。Agent 进入本仓库时请务必遵守：
+
+- **唯一事实来源 (SSOT)**：仓库是所有技能的权威来源。禁止脱离版本控制直接在生产/本机目录盲改；本地修改必须经 diff 确认后回写。
+- **镜像保护**：`skills/oil-frontend/` 与 `skills/oil-ui/` 为上游全量同步镜像，**严禁手动修改**。
+- **结构契约**：保证 `SKILL.md` 顶层存在、YAML frontmatter 格式完备、目录名与 `name` 严格一致。
+- **工程表达质量（ASD-STE100 达标 80%）**：英文技术文档、PR/Issue、审查评论与代码注释必须满足 ASD-STE100 启发式规则 80% 以上（短句、单句单动作、主动语态、术语统一、清晰名词短语、消歧指代至少达标 5/6 项）；结合 `unslop` 杜绝 AI 套话。
+- **报告诚实与凭据绝密**：不提交 API 凭据或构建缓存产物；测试与审查结论基于真实命令执行，严禁编造虚假通过。
+
 
 ## Trace 评测集（trace-evals/）
 
@@ -124,10 +133,8 @@ Skills CLI 会发现 `skills/<skill-name>/SKILL.md`。每个 `SKILL.md` 的目�
 | `lora-mode` | lora-sys 维护；接手流程参考 [t3dotgg/tstack takeover](https://github.com/t3dotgg/tstack/blob/main/skills/takeover/SKILL.md)，注释审查、盲测、变更影响验证和重复问题的结构化修复参考 [backnotprop/pstack](https://github.com/backnotprop/pstack)，均按本仓库流程与授权边界改写。 |
 | `modernize` / `council` / `leaving-pr-comments` | 改编自 [t3dotgg/tstack](https://github.com/t3dotgg/tstack/tree/1085050f3baed1ac724caa4a8166145fb2ac88af/skills)，MIT；各技能目录保留上游 LICENSE，流程按 lora-mode 的审查、授权与 PR 规则改写。 |
 | 其余技能 | 由 lora-sys 策展并作为本个人工作流集合的一部分维护。 |
-| `notion` | 包装官方 [Notion CLI (`ntn`)](https://github.com/makenotion/notion-cli)，MIT；上游版权与许可见技能目录内的 `THIRD_PARTY_NOTICES.md`。 |
 | `generate-image` | lora-sys 创建，MIT；改编自 [K-Dense-AI/claude-scientific-writer](https://github.com/K-Dense-AI/claude-scientific-writer) 的 `generate-image` skill（MIT），后端由 OpenRouter 换为七牛云 Modelink。 |
 | `presentation-builder` | lora-sys 创建，MIT；基于 PPTD 格式 + 浏览器端 WASM PPTX 写入器。 |
-| `short-video-director` | lora-sys 创建，MIT；改编自 Samuel 短视频导演方法论。 |
 | `video-publisher` | 改编自 [oil-oil/video-publisher-skill](https://github.com/oil-oil/video-publisher-skill)，MIT；上游版权与许可见技能目录内的 `LICENSE`。 |
 | `create-formal-verification-skill` / `statechart` | 源自 [Cursor Plugins pstack](https://github.com/cursor/plugins/tree/4dd1d05818d19792e7cd6e818f1667f95f7e1dbe/pstack/skills)，作者 Lauren Tan，MIT；版权与许可见各技能目录中的 `LICENSE`；形式化验证的破坏性复测限定在临时副本；`statechart` 含本地工具路径、整数精度、区间内存与安装授权保护。 |
 | `oil-frontend` | 源自 [oil-oil/oil-frontend](https://github.com/oil-oil/oil-frontend)，MIT；以镜像方式跟踪上游，每日自动同步。 |
@@ -160,4 +167,4 @@ for s in skills/*/; do
 done
 ```
 
-规则：`skills/<skill-name>/SKILL.md` 在目录顶层、目录名与 frontmatter `name` 一致；提交前不允许有 `__pycache__/` 等未清理产物；同步时永远先 diff、确认差异来源（是仓库新改动还是安装副本的临时修改），再决定方向。
+规则：`skills/<skill-name>/SKILL.md` 在目录顶层、目录名与 frontmatter `name` 一致；提交前不允许有 `__pycache__/` 等未清理产物；同步时永远先 diff、确认差异来源（是仓库新改动还是安装副本的临时修改），再决定方向。完整 Agent 护栏与规范详见 [`AGENTS.md`](AGENTS.md)。

@@ -12,7 +12,7 @@
 
    squash/rebase 合并后，head 可能不在默认分支历史中，`git branch --merged` 和 `git branch -d` 不能作为删除依据。以 PR 的 `MERGED` 状态为准；tip 守卫通过后，若 `git merge-base --is-ancestor <branch> origin/main` 为真，使用 `-d`，否则使用 `-D`。未合并分支需要明确理由，不为追求干净而删除。可在仓库设置中启用 *Automatically delete head branches* 自动删除远端分支。
 4. **处置 Issue。** 合并 PR 时用 `Closes #n` / `Fixes #n` / `Resolves #n` 关键字让 GitHub 自动关闭（Settings → General → Issues 的 *Auto-close issues with merged linked pull requests* 默认开启）；这种关闭是已授权合并的既定后果，不需要再单独授权。手动关闭遗留 Issue 需要授权，并写明剩余工作再交回队列。长期不动的 Issue/PR 靠 stale 策略兜底（如 `actions/stale`：静默 N 天打标签，再 M 天关闭，有活动就重置计时），不凭记忆猜哪些过期。
-5. **更新文档。** 按实际改动核对 README、CHANGELOG、API/架构文档、用户指南和配置示例；功能或安装方式变了就必须改，只改受影响的段落并链接对应 Issue/PR。版本号、徽章、发布 tag 仅在用户要求或正式发布时动。
+5. **更新文档并清理过期内容。** 按实际改动核对 README、CHANGELOG、API/架构文档、用户指南和配置示例；功能或安装方式变了就必须改，只改受影响的段落并链接对应 Issue/PR。定期核对代码与文档的一致性并修订过期信息。保留历史架构决策时，明确标记其已被哪个新决策替代，避免与当前规范混在一起。版本号、徽章、发布 tag 仅在用户要求或正式发布时动。
 6. **清产物与缓存。** 删本任务产生的临时目录、日志、验证副本和 scratch 文件；逐项标为已清理、为审查保留（写位置与用途）或未确认，不能只报一句「已清理」。生成物不进库：`__pycache__/`、`*.pyc`、`*.py[cod]`、构建输出写进 `.gitignore`；已误提交的用 `git rm -r --cached <path>` 移出索引再补 `.gitignore`。只在仓库内清忽略文件用 `git clean -d -f -X`，`-x` 会连未忽略的未跟踪文件一起删，执行前先确认没有要留的东西。
 7. **校验。** `git status --short` 无未跟踪/已修改残留、`git worktree list` 无 prunable 条目、`gh pr list --state open` 里没有本任务已合并的 PR、`git diff --check` 干净。清理后重跑一次受影响检查，确认清理没有顺手改坏行为或掩盖失败。
 

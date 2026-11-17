@@ -11,6 +11,8 @@
 - **本地环境关系**：本地运行时环境（如 `~/.agents/skills/<skill-name>/` 或 `~/.codex/skills/`）仅为安装副本。
   - **发布流程（仓库 → 本机）**：在仓库完成修改、测试与提交后，通过 `npx skills add . --skill <name>` 或全局安装覆盖至本地。
   - **回写流程（本机 → 仓库）**：若在外部会话中临时调试或修改了本地已安装技能，必须先 `diff` 对照排查，确认无误后再回写至本仓库并提交，严防被后续发布覆盖。
+  - **安装完成判定**：只把技能同步到 `~/.agents/skills/<skill-name>/` 不算安装完成。共享副本只是技能源，每个 agent 还要有自己的发现入口。新增或更新技能后必须逐个确认：`~/.claude/skills/<skill-name>` 已存在且 Claude Code 技能列表可见；`npx skills list --global --agent codex` 能看到该技能；`~/.config/opencode/skills/<skill-name>` 可解析；项目级 `.claude/skills/<skill-name>` 存在时也要核对。缺任一入口时不得宣布「已同步」。
+  - **CLI 覆盖后复核**：`npx skills add ... --global` 会用远端版本覆盖 `~/.agents/skills/`。安装完成后必须重跑第 4 节漂移检测；若刚合并的本地版本被覆盖，用仓库 `skills/<skill-name>/` 整目录覆盖回来，再复核所有发现入口。
 
 ---
 

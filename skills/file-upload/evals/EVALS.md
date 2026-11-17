@@ -77,12 +77,12 @@
 
 ## 运行记录
 
-| 轮次 | 日期 | 技能版本 | F01 | F02 | F03 | F04 | F05 | 备注 |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| R0 | 2026-11-17 | 初版 | — | — | — | — | — | 定义题目，未运行 |
-| R1 | 2026-11-17 | 初版 | PASS | PASS | PASS | PASS | PASS | 模型 hy4flash-free；mock signer 127.0.0.1:8787；5/5 通过 |
-| R2 | 2026-11-17 | 优化版 | PASS | PASS | PASS | PASS | PASS | 模型 hy4flash-free；mock GET 校验生效；5/5 通过 |
-| R3 | 2026-11-17 | 成本安全版 | PASS | PASS | PASS | PASS | PASS | 模型 hy4flash-free；新增 F06/F07；7/7 通过 |
+| 轮次 | 日期 | 技能版本 | F01 | F02 | F03 | F04 | F05 | F06 | F07 | 备注 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| R0 | 2026-11-17 | 初版 | — | — | — | — | — | — | — | 定义题目，未运行 |
+| R1 | 2026-11-17 | 初版 | PASS | PASS | PASS | PASS | PASS | — | — | 模型 hy4flash-free；mock signer 127.0.0.1:8787；5/5 通过 |
+| R2 | 2026-11-17 | 优化版 | PASS | PASS | PASS | PASS | PASS | — | — | 模型 hy4flash-free；mock GET 校验生效；5/5 通过 |
+| R3 | 2026-11-17 | 成本安全版 | PASS | PASS | PASS | PASS | PASS | PASS | PASS | 模型 hy4flash-free；新增 F06/F07；7/7 通过 |
 
 ### R1 观察
 

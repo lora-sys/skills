@@ -72,7 +72,7 @@ test("run(): presign -> PUT -> public URL end to end", async () => {
   assert.equal(out.size, 8);
   assert.equal(out.url, "https://assets.example.com/temp/shot-abc.png");
   assert.equal(out.verified, true);
-  assert.equal(calls.length, 3, "expect presign, PUT, and public URL GET");
+  assert.equal(calls.length, 3, "expect presign, PUT, and public URL HEAD");
 });
 
 test("run(): rejects unsupported files before any network call", async () => {

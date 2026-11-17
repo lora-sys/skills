@@ -71,11 +71,6 @@ function makeS3(env) {
   });
 }
 
-/** UTC timestamp + short random suffix; safe for object keys. */
-function stamp() {
-  return new Date().toISOString().replace(/[:.]/g, "-");
-}
-
 function randomSuffix() {
   const bytes = new Uint8Array(6);
   crypto.getRandomValues(bytes);

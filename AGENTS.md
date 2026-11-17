@@ -103,3 +103,17 @@ diff -u -r "skills/<skill-name>" "$HOME/.agents/skills/<skill-name>"
   - `fix(<skill-name>): correct xxx behavior`
   - `docs(<skill-name>|repo): update xxx documentation`
   - `chore(...): sync upstream / cleanup`
+
+---
+
+## 6. 运行验证与证据上传 (Verification Evidence & Upload)
+
+> 本节是供其他项目复制的规范示例，也是本仓库在产生可运行产物时的默认流程。纯文档或技能文本改动不触发录屏要求。
+
+- **实际运行**：涉及 UI 或桌面产物时，必须启动应用并完成真实操作；单元测试通过不等于验收。
+- **证据形态**：动效与多步交互必须录屏；静态界面截图覆盖窄屏与宽屏。
+- **上传**：用 `file-upload` 上传上述媒体，默认 `--retention temp`（90 天）。只上传验证媒体，禁止上传密钥、私有数据或未授权内容。
+- **贴 PR**：用 lora-mode 的 `file-pr` 把链接和对应验证结果写入 PR 正文的 `Evidence` 段。
+- **链接真实性**：链接必须来自本次真实上传，不得编造或复用过期链接。上传受阻时写「未上传：<原因>」，不隐瞒失败。
+- **阻塞处理**：缺少上传环境或签名服务不可用时按外部阻塞处理，其余验证与 PR 草稿照常完成。
+- **密钥**：`UPLOAD_TOKEN`、`R2_*` 只存于环境变量或 Worker Secret，不写入仓库、命令行参数或 PR 正文。

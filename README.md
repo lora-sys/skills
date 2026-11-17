@@ -45,6 +45,7 @@ npx skills list --global --agent codex
 | [`modernize`](skills/modernize/) | 评估旧 PR 价值并给出 MODERNIZE、REWORK 或 CLOSE 建议 | 更新、rebase 或评估分叉已久的历史 PR |
 | [`council`](skills/council/) | 并行收集三个独立 Provider 的只读评审意见并核实汇总分歧 | 明确要求跨模型评审或多方会诊 |
 | [`leaving-pr-comments`](skills/leaving-pr-comments/) | 规范代表用户提交到 GitHub 的评论、回复与代理归属标识 | 撰写或发布 PR / Issue 评论与 review 回复 |
+| [`file-upload`](skills/file-upload/) | 把截图、录屏和指定文件直传 Cloudflare R2，返回可放进 PR 的公开链接 | lora-mode 验证证据上传、用户指定上传媒体（密钥走 env，默认 90 天，大文件预签名直传） |
 | [`create-formal-verification-skill`](skills/create-formal-verification-skill/) | 为高风险行为生成项目本地形式化验证模型与可复跑技能 | 并发、状态机、重试或常规测试难覆盖的协议与关键不变量 |
 | [`maintain-formal-verification-skill`](skills/maintain-formal-verification-skill/) | 代码变更命中已有验证覆盖时，核对源码映射并维护模型 | 重构或修改已有形式化验证覆盖的代码 |
 | [`statechart`](skills/statechart/) | 用 TLC 检查 TLA+ 状态机模型，输出最短违规路径与 Mermaid 状态图 | 状态迁移分析、协议检查、用状态路径解释 Bug |

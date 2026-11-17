@@ -1,0 +1,17 @@
+{
+  "name": "asset-upload-signer",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev",
+    "typecheck": "node --check src/index.mjs && node --check ../shared/policy.mjs"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.900.0",
+    "@aws-sdk/s3-request-presigner": "^3.900.0"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}

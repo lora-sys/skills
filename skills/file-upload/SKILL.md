@@ -150,7 +150,9 @@ ffmpeg -i input.mov -c:v libx264 -pix_fmt yuv420p -crf 26 -preset veryfast -movf
 - 文件：flow.webm        → 链接：<url>（temp，90 天）
 ```
 
-`file-pr` 将它们放进 PR 正文的证据区。链接必须是本次上传真实返回的值，不得编造或复用过期链接。
+- 截图链接交给 `file-pr` 时必须写成 `![alt](url)`，不要写成普通链接；否则 PR 不渲染图片。
+- 视频链接交给 `file-pr` 时写成可点击链接。GitHub 评论中的远程视频链接不保证内联播放，因此不得声称“已内联播放”。
+- `file-pr` 将它们放进 PR 正文的证据区。链接必须是本次上传真实返回的值，不得编造或复用过期链接。
 
 ## 失败处理
 

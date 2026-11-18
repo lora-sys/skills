@@ -99,8 +99,11 @@ ffmpeg -i input.mov -c:v libx264 -pix_fmt yuv420p -crf 26 -preset veryfast -movf
 
 | 变量 | 说明 |
 | --- | --- |
-| `UPLOAD_SIGNER_URL` | 签名 Worker 根地址，如 `https://asset-upload-signer.<sub>.workers.dev` |
-| `UPLOAD_TOKEN` | 调用 `/presign` 的 Bearer 令牌，与 Worker Secret 同值 |
+| `UPLOAD_TOKEN` | 调用 `/presign` 的 Bearer 令牌；优先读环境变量，macOS 上缺省时读取 Keychain 的 `lora-file-upload` 项 |
+
+`UPLOAD_SIGNER_URL` 默认指向本仓库部署的签名服务；其他部署可通过环境变量覆盖。签名 Worker 同时接受兼容令牌 `UPLOAD_TOKEN` 和按使用者命名的 Worker Secrets（例如 `UPLOAD_TOKEN_LORA`）。给个人配置令牌时新增专属 Secret，不要覆盖仍供其他客户端使用的 `UPLOAD_TOKEN`。
+
+macOS 上的 `lora-file-upload` Keychain 项必须允许 `/usr/bin/security` 读取，避免日常上传弹出钥匙串密码提示。设置了标准代理环境变量时，上传脚本会自动启用 Node 的代理支持。
 
 可选：
 

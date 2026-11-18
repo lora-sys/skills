@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { readFile, stat } from "node:fs/promises";
+import { execFileSync } from "node:child_process";
 import { basename } from "node:path";
 import { fileURLToPath } from "node:url";
 import { validateUploadRequest, mimeFor } from "../shared/policy.mjs";
@@ -7,10 +8,56 @@ import { validateUploadRequest, mimeFor } from "../shared/policy.mjs";
 const MAX_ATTEMPTS = 3;
 const BASE_BACKOFF_MS = 1000;
 const HTTP_TIMEOUT_MS = 30_000;
+const DEFAULT_UPLOAD_SIGNER_URL =
+  "https://asset-upload-signer.3526039967.workers.dev";
+const KEYCHAIN_SERVICE = "lora-file-upload";
+const PROXY_ENV_NAMES = [
+  "HTTP_PROXY",
+  "HTTPS_PROXY",
+  "ALL_PROXY",
+  "http_proxy",
+  "https_proxy",
+  "all_proxy",
+];
+
+// Node fetch needs this flag before its first request to honor proxy variables.
+if (
+  process.env.NODE_USE_ENV_PROXY === undefined &&
+  PROXY_ENV_NAMES.some((name) => process.env[name])
+) {
+  process.env.NODE_USE_ENV_PROXY = "1";
+}
+
+let keychainTokenRead = false;
+let keychainTokenValue = "";
+
+function readKeychainToken() {
+  if (keychainTokenRead) return keychainTokenValue;
+  keychainTokenRead = true;
+  if (process.platform !== "darwin") return "";
+
+  const account = process.env.USER || process.env.LOGNAME;
+  if (!account) return "";
+  try {
+    keychainTokenValue = execFileSync(
+      "/usr/bin/security",
+      ["find-generic-password", "-a", account, "-s", KEYCHAIN_SERVICE, "-w"],
+      { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], timeout: 10_000 },
+    ).trim();
+  } catch {
+    keychainTokenValue = "";
+  }
+  return keychainTokenValue;
+}
 
 function env(name) {
-  const v = process.env[name];
-  if (!v) fail(`missing environment variable ${name} (see references/setup.md)`);
+  let v = process.env[name];
+  if (!v && name === "UPLOAD_SIGNER_URL") v = DEFAULT_UPLOAD_SIGNER_URL;
+  if (!v && name === "UPLOAD_TOKEN") v = readKeychainToken();
+  if (!v) {
+    const source = name === "UPLOAD_TOKEN" ? ` or macOS Keychain item ${KEYCHAIN_SERVICE}` : "";
+    fail(`missing environment variable ${name}${source} (see references/setup.md)`);
+  }
   return v;
 }
 
@@ -25,8 +72,8 @@ function usage() {
 
 Uploads one file via a presigned R2 PUT URL and prints a public link.
 
-Env (required): UPLOAD_SIGNER_URL, UPLOAD_TOKEN
-Env (optional): R2_PUBLIC_BASE_URL (fallback when signer omits publicUrl)
+Env (required): UPLOAD_TOKEN (or macOS Keychain item "lora-file-upload")
+Env (optional): UPLOAD_SIGNER_URL (defaults to the lora-sys signer), R2_PUBLIC_BASE_URL
 `;
 }
 

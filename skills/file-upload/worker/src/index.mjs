@@ -105,15 +105,25 @@ async function handlePresign(request, env, ctx) {
     return json({ error: "method not allowed; use POST" }, 405, cors);
   }
 
-  // 1. Auth. Constant-time compare; a missing configured token fails closed.
-  const configured = env.UPLOAD_TOKEN;
+  // 1. Auth. Accept the compatibility token and named personal tokens.
+  const configured = Object.entries(env)
+    .filter(
+      ([name, value]) =>
+        (name === "UPLOAD_TOKEN" || /^UPLOAD_TOKEN_[A-Z0-9_]+$/.test(name)) &&
+        typeof value === "string" &&
+        value.length > 0,
+    )
+    .map(([, value]) => value);
   const provided = request.headers.get("Authorization")?.replace(/^Bearer\s+/i, "") ?? "";
-  if (!configured || !provided || !tolerantEqual(provided, configured)) {
+  const authorized = configured.reduce(
+    (matches, token) => tolerantEqual(provided, token) || matches,
+    false,
+  );
+  if (!configured.length || !provided || !authorized) {
     return json({ error: "unauthorized" }, 401, cors);
   }
 
-  // 2. Rate limit per client IP. With one shared token, the token cannot
-  // distinguish callers; IP gives each personal machine its own allowance.
+  // 2. Rate limit per client IP, so tokens from one machine share an allowance.
   // Cloudflare docs note IP keys can be shared behind NAT — acceptable here.
   if (env.UPLOAD_RATE_LIMITER) {
     const { success } = await env.UPLOAD_RATE_LIMITER.limit({

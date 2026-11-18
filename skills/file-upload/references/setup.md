@@ -12,9 +12,11 @@
 | 公开域名 | `https://assets.lorasys.de5.net` |
 | 签名服务 | `https://asset-upload-signer.3526039967.workers.dev` |
 | 生命周期 | `temp/` 前缀 90 天后删除；`release/` 长期保留 |
-| 认证 | Bearer `UPLOAD_TOKEN`（Worker Secret + 本地 env） |
+| 认证 | Bearer `UPLOAD_TOKEN` 或个人 Worker Secret（例如 `UPLOAD_TOKEN_LORA`） |
 
-日常上传前导出（令牌从本机安全存储读取，不要写进 shell 历史）：
+日常上传时，签名服务地址默认从上表读取。令牌优先从环境变量读取；macOS 未设置环境变量时，脚本读取当前用户 Keychain 中 service 为 `lora-file-upload` 的项目。其他平台通过 shell 环境设置 `UPLOAD_TOKEN`。
+
+macOS Keychain 项应允许 `/usr/bin/security` 持续读取，避免每次上传都触发钥匙串密码提示。脚本检测到标准代理环境变量后，会自动启用 Node 的代理支持。
 
 ```bash
 export UPLOAD_SIGNER_URL="https://asset-upload-signer.3526039967.workers.dev"
@@ -38,7 +40,8 @@ export UPLOAD_TOKEN="<本地保管的 UPLOAD_TOKEN>"
 | `R2_ACCESS_KEY_ID` | Worker Secret | R2 API Token 的 Access Key ID |
 | `R2_SECRET_ACCESS_KEY` | Worker Secret | R2 API Token 的 Secret |
 | `R2_BUCKET` | Worker Secret | 桶名 |
-| `UPLOAD_TOKEN` | Worker Secret + 本地 env | 调用 `/presign` 的 Bearer 令牌 |
+| `UPLOAD_TOKEN` | Worker Secret + 本地 env | 兼容令牌；调用 `/presign` 的 Bearer 令牌 |
+| `UPLOAD_TOKEN_<OWNER>` | Worker Secret | 个人令牌；不覆盖其他客户端使用的 `UPLOAD_TOKEN` |
 | `UPLOAD_RELEASE_TOKEN` | Worker Secret + 仅发布时本地 env | 使用 `release` 永久保留时必须单独提供的令牌 |
 | `R2_PUBLIC_BASE_URL` | Worker var（wrangler.toml）+ 可选本地 env | 拼接公开链接的域名根 |
 | `UPLOAD_SIGNER_URL` | 本地 env | Worker 根地址，例如 `https://asset-upload-signer.<subdomain>.workers.dev` |
@@ -148,11 +151,13 @@ npx wrangler secret put R2_ACCESS_KEY_ID
 npx wrangler secret put R2_SECRET_ACCESS_KEY
 npx wrangler secret put R2_BUCKET
 npx wrangler secret put UPLOAD_TOKEN
+# Add a separate personal token when a client must not share UPLOAD_TOKEN.
+npx wrangler secret put UPLOAD_TOKEN_LORA
 # 可选但推荐：发布资产的独立令牌；不设置则 release 上传一律失败
 npx wrangler secret put UPLOAD_RELEASE_TOKEN
 ```
 
-把第 5 步生成的令牌值用于 `UPLOAD_TOKEN`，并在本地 shell 保存同一值供客户端使用。`UPLOAD_RELEASE_TOKEN` 应使用另一个随机值，只在需要永久保留资产时导出给客户端；日常验证流程不要设置它。
+把第 5 步生成的令牌值用于 Worker Secret。个人令牌使用 `UPLOAD_TOKEN_<OWNER>`，例如 `UPLOAD_TOKEN_LORA`；脚本仍通过 `UPLOAD_TOKEN` 环境变量或 macOS Keychain 发送它。`UPLOAD_RELEASE_TOKEN` 应使用另一个随机值，只在需要永久保留资产时导出给客户端；日常验证流程不要设置它。
 
 ## 7. 部署签名服务
 
@@ -167,7 +172,7 @@ npx wrangler deploy
 
 ## 8. 配置本地客户端环境
 
-在当前 shell 导出（或写进 gitignored 的 `.env` 后再 source）：
+在当前 shell 导出（或写进 gitignored 的 `.env` 后再 source）。macOS 也可将专属令牌保存在 Keychain 的 generic password 项中，service 名称为 `lora-file-upload`，account 为当前系统用户名：
 
 ```bash
 export UPLOAD_SIGNER_URL="https://asset-upload-signer.<subdomain>.workers.dev"

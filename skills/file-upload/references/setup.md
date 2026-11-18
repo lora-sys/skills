@@ -16,7 +16,7 @@
 
 日常上传时，签名服务地址默认从上表读取。令牌优先从环境变量读取；macOS 未设置环境变量时，脚本读取当前用户 Keychain 中 service 为 `lora-file-upload` 的项目。其他平台通过 shell 环境设置 `UPLOAD_TOKEN`。
 
-macOS Keychain 项应允许 `/usr/bin/security` 持续读取，避免每次上传都触发钥匙串密码提示。脚本检测到标准代理环境变量后，会自动启用 Node 的代理支持。
+macOS Keychain 项必须允许当前用户在无交互提示下读取。上传脚本禁用钥匙串认证弹窗；如果读取权限不足，它会报错退出。脚本检测到标准代理环境变量后，会自动启用 Node 的代理支持。
 
 ```bash
 export UPLOAD_SIGNER_URL="https://asset-upload-signer.3526039967.workers.dev"
@@ -172,7 +172,7 @@ npx wrangler deploy
 
 ## 8. 配置本地客户端环境
 
-在当前 shell 导出（或写进 gitignored 的 `.env` 后再 source）。macOS 也可将专属令牌保存在 Keychain 的 generic password 项中，service 名称为 `lora-file-upload`，account 为当前系统用户名：
+macOS 配好当前用户的 Keychain 项后无需导出 `UPLOAD_TOKEN`。其他平台可在当前 shell 导出，或写进 gitignored 的 `.env` 后再 source。Keychain 项的 service 名称为 `lora-file-upload`，account 为当前系统用户名：
 
 ```bash
 export UPLOAD_SIGNER_URL="https://asset-upload-signer.<subdomain>.workers.dev"

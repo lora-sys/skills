@@ -103,7 +103,7 @@ ffmpeg -i input.mov -c:v libx264 -pix_fmt yuv420p -crf 26 -preset veryfast -movf
 
 `UPLOAD_SIGNER_URL` 默认指向本仓库部署的签名服务；其他部署可通过环境变量覆盖。签名 Worker 同时接受兼容令牌 `UPLOAD_TOKEN` 和按使用者命名的 Worker Secrets（例如 `UPLOAD_TOKEN_LORA`）。给个人配置令牌时新增专属 Secret，不要覆盖仍供其他客户端使用的 `UPLOAD_TOKEN`。
 
-macOS 上的 `lora-file-upload` Keychain 项必须允许 `/usr/bin/security` 读取，避免日常上传弹出钥匙串密码提示。设置了标准代理环境变量时，上传脚本会自动启用 Node 的代理支持。
+macOS 上的 `lora-file-upload` Keychain 项通过非交互式系统 API 读取。上传脚本不会弹出钥匙串密码提示；如果读取权限不足，它会报错退出。设置了标准代理环境变量时，上传脚本会自动启用 Node 的代理支持。
 
 可选：
 

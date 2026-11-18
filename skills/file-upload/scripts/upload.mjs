@@ -11,6 +11,30 @@ const HTTP_TIMEOUT_MS = 30_000;
 const DEFAULT_UPLOAD_SIGNER_URL =
   "https://asset-upload-signer.3526039967.workers.dev";
 const KEYCHAIN_SERVICE = "lora-file-upload";
+const KEYCHAIN_READ_SCRIPT = String.raw`
+import Foundation
+import Security
+import LocalAuthentication
+
+let context = LAContext()
+context.interactionNotAllowed = true
+let query: [String: Any] = [
+  kSecClass as String: kSecClassGenericPassword,
+  kSecAttrService as String: "${KEYCHAIN_SERVICE}",
+  kSecAttrAccount as String: NSUserName(),
+  kSecMatchLimit as String: kSecMatchLimitOne,
+  kSecReturnData as String: true,
+  kSecUseAuthenticationContext as String: context,
+]
+var item: CFTypeRef?
+guard SecItemCopyMatching(query as CFDictionary, &item) == errSecSuccess,
+      let data = item as? Data,
+      let token = String(data: data, encoding: .utf8),
+      !token.isEmpty else {
+  exit(1)
+}
+print(token)
+`;
 const PROXY_ENV_NAMES = [
   "HTTP_PROXY",
   "HTTPS_PROXY",
@@ -36,14 +60,12 @@ function readKeychainToken() {
   keychainTokenRead = true;
   if (process.platform !== "darwin") return "";
 
-  const account = process.env.USER || process.env.LOGNAME;
-  if (!account) return "";
   try {
-    keychainTokenValue = execFileSync(
-      "/usr/bin/security",
-      ["find-generic-password", "-a", account, "-s", KEYCHAIN_SERVICE, "-w"],
-      { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], timeout: 10_000 },
-    ).trim();
+    keychainTokenValue = execFileSync("/usr/bin/swift", ["-e", KEYCHAIN_READ_SCRIPT], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+      timeout: 20_000,
+    }).trim();
   } catch {
     keychainTokenValue = "";
   }

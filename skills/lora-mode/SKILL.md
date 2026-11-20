@@ -1,6 +1,6 @@
 ---
 name: lora-mode
-description: lora 的工程流程路由器，用于功能开发、修复/重构、仓库调查、目标评测、PR/Issue 全流程及注释清理（no-comment/comment-review）；用户点名 lora-mode、full-stop/full-send，或要求持续完成、接手工作、现代化旧 PR 时也使用；不超过两个文件且无共享影响的非 bug 改动直接调用对应技能。
+description: lora 的工程流程路由器，用于功能开发、修复/重构、代码库治理、目标评测、PR/Issue 全流程及注释清理（no-comment/comment-review）；用户点名 lora-mode、full-stop/full-send，或要求持续完成、接手工作、现代化旧 PR 时也使用；不超过两个文件且无共享影响的非 bug 改动直接调用对应技能。
 ---
 
 # lora-mode
@@ -14,7 +14,7 @@ description: lora 的工程流程路由器，用于功能开发、修复/重构�
 - 改动前与 diff 后做性质筛查：发现并发交错、租约/过期接管、重试、状态或数据不变量、幂等等可信性质，或改动命中已有验证覆盖时，读 `references/verification-routing.md` 与 `references/formal-verification.md` 并按其中门槛执行。主题词不触发建模；普通文档或无关界面改动沿用原有检查。
 - 满足形式化门槛且项目无覆盖时必须创建项目级验证并保留回归测试；refactor 命中已有覆盖时按相邻 `maintain-formal-verification-skill` 复核模型。TLC/Java 缺失只将模型标为 draft/blocked 并留下命令，不跳过、不声称完成。其余风险选能回答问题的最低成本验证；PR 创建与审查需核对当前 head 的验证证据。
 - Issue 起草/分诊 → `issue-draft` / `issue-triage`；PR 创建或现有 PR 正文/Change map 更新 → `pr-open`；PR 正文需要放入上传的验证媒体链接（或用户说 file-pr）→ `file-pr`，其 Change map、审查与创建仍走 `pr-open`；PR 检查与评论跟进 → `pr-babysit`；PR 审查 → `pr-review`；旧 PR 现代化 → `modernize`；接手 PR、分支或 Agent → `takeover`。
-- 接手新仓库、新增或修改项目 `AGENTS.md` → 按 `references/project-agents-md.md`：常驻文件只写项目事实，并先核对项目约束与默认流程的冲突。
+- 项目初始化、接手既有项目、代码库治理、新增或修改项目 `AGENTS.md` → 按 `references/codebase-governance.md` 与 `references/project-agents-md.md`：先定义系统正确性（核心对象、状态变化、数据归属、不变量与不可违反事实）、划清架构所有权与公开契约、禁止循环依赖与接口穿透，规则分硬规则/过程规则/判断规则三类，常驻文件只写项目特有事实并保持 ≤150 行。
 - PR 合并后或用户要求清理仓库/本地工作痕迹 → `post-merge-cleanup`；该 playbook 也规定仓库级定期卫生。
 - 用户明确要求在开发机安装依赖、跑测试或启动验证：纯验证直接调 `remote-dev`；涉及代码改动时先按本模式在本机完成，再移交远端；技能缺失时说明。
 - 用户要求自主持续做到完成时，保留原任务类型路由并读取 `playbooks/autonomous-run.md`；该 playbook 规定执行方式，不替代 bug、功能、PR 等任务流程。
@@ -33,7 +33,7 @@ description: lora 的工程流程路由器，用于功能开发、修复/重构�
 - 创建或更新 PR/Issue 正文时内嵌 Mermaid 影响图；PR 审查时核对图与实际 diff，后续代码改变时更新正文中的图。按 `references/change-impact.md` 生成并对照源码及证据；未核实的边不得写成事实。
 - PR 代码审查、架构审查或用户明确要求报告时，按 `html-communication` 默认发布/更新 Postplan 公开 draft，无需逐次确认；公开前完成敏感内容检查并安全删减，无法判断哪些内容可公开时不上传，先完成安全的本地报告，再就公开范围提出具体澄清。Postplan 发布不授权 PR/Issue 写入。
 - PR 报告的验证结果必须来自最新 head，并能对应到实际命令和日志。遇到失败/阻塞时，先判断根因；在用户已授权的环境内修复可控的依赖或配置问题并复跑受影响检查。仍受外部条件阻塞时如实保留状态，不把环境阻塞标成代码失败，也不把定向通过概括成全量通过。
-- 复用测试前确认它能观察本次预期行为；若测试只检查未变化的边界（例如只查动画起终点，却不采样能区分曲线的中间点），补充最小的有效断言后再报告该行为已验证。
+- 复用测试前确认它能观察本次预期行为；若测试只检查未变化的边界，补充最小的有效断言后再报告该行为已验证。
 - 撰写 GitHub 评论或回复时使用 `leaving-pr-comments`，发布仍按当前流程授权；其他 PR/Issue、技术文档和 prose 加载 `engineering-writing` 后再加载 `unslop`。代码任务不加载写作技能。行为与预期不符时用 `debug` 复现，不声称未验证的结果。
 - 用户明确要求跨模型评审时使用 `council`；普通评审不自动启动多个 provider。`review-loop` 是单模型循环评审的默认入口。
 - 草拟不等于远端写入。未获本任务授权，不创建 PR、不提交代码。
@@ -43,22 +43,25 @@ description: lora 的工程流程路由器，用于功能开发、修复/重构�
 - 部署、生产发布、关闭 Issue 和删除数据各需单独授权；Postplan 公开 draft 遵循 `html-communication` 的默认发布授权；凭据不得写入文件或命令行参数。
 - 破坏性或不可逆操作（删除版本受控的文件或目录、清空非衍生数据、覆盖生产配置、`--force` 推送、`rsync --delete` 等）执行前必须先列出精确操作清单并取得用户对该清单的确认。若删除范围由含糊类别决定（如「与开发无关的技能」），先列出全部候选，逐项说明用途和边界项，暂停等待用户圈定；不得自行解释标准、直接删除部分项目，或删后再汇报。用户说「删掉/清理」不构成对具体清单的确认；确认后也只能执行清单中逐项列明的操作。任务过程中自产的临时产物、构建缓存（如 `__pycache__`）和测试衍生文件的清理除外，但须在收尾汇报中列出已删项。抢救性恢复（如从 reflog 找回提交）除外，但须在汇报中说明。
 
-## 方案、审查与质量流程
+## 方案、审查与双循环质量流程
 
-按任务路由到对应 playbook 执行：方案与测试见功能 playbook，代码审查看 `pr-review.md`，重复问题和规则沉淀见 `reflect.md`，文档维护见 `post-merge-cleanup.md`，发布门禁见 `publish.md`。
+- 按任务路由到对应 playbook 执行：方案与测试见功能 playbook，代码审查看 `pr-review.md`，重复问题和规则沉淀见 `reflect.md`，文档维护见 `post-merge-cleanup.md`，发布门禁见 `publish.md`。
+- 采用双循环研发体系：
+  - **环 A（功能交付）**：日常开发默认执行。明确需求 → 局部实现 → 分层验证（按数据/业务/权限/集成/用户操作/异常/回归 7 级）→ 修复失败 → 提交证据。
+  - **循环 B（工程体系改进）**：环 A 交付完成后条件触发。当出现代表通用风险、高代价违规（如循环依赖、跨层私自调用、核心不变量受损）或同类问题重复出现时，由 `playbooks/reflect.md` 触发 6 步工程闭环（定位根因 → 规则沉淀 → 自动检查 → 回归用例 → 约束继承），严禁为偶发小错增加永久规则。
 
 ## 迭代
 
-不按任务频次写使用台账。只在路由、权限或行为规则出现可复现缺口时记录对应 case；用户明确要求复盘，或同类问题再次出现时，进入 `playbooks/reflect.md`。EVALS 不在普通任务中加载；修改了对应行为时定位并仅读相关 case。
+不按任务频次写使用台账，也不为偶发小错增加永久规则。只在路由、权限、边界或系统不变量出现可复现缺口时记录对应 case；用户明确要求复盘、高代价违规或同类问题积累复现时，在环 A 交付后进入 `playbooks/reflect.md` 执行循环 B 闭环。EVALS 不在普通任务中加载；修改了对应行为时定位并仅读相关 case。
 
 ## 自主推进与完成
 
-- 明确可执行的目标默认做到全部验收项。开始时列出可检查的完成条件；多阶段任务维护 todo。阶段进度、找到根因或单次失败都不等于完成。每阶段汇报后更新 todo 并继续原任务中的下一项，不要询问是否继续。后续纠正补充当前验收，不要求用户重复目标。
+- 明确可执行的目标默认做到全部验收项。开始时列出可检查的完成条件与系统不变量；多阶段任务维护 todo。阶段进度、找到根因或单次失败都不等于完成。每阶段汇报后更新 todo 并继续原任务中的下一项，不要询问是否继续。后续纠正补充当前验收，不要求用户重复目标。
 - 失败先定位根因，修复授权范围内可控的问题，并继续不依赖阻塞项的工作。等 CI、PR 或其他外部事件时，检查能否唤醒当前任务并从持久化检查点续跑。没有事件入口时，留下进度和下一步，不承诺会话结束后自动恢复。
 - 只在权限边界、必须由用户决定的实质选择（如批量删除与范围性清理的具体清单）、真正的外部阻塞或用户要求停止时暂停。自主执行不扩大写入、部署、发布、付费或删除权限。
-- 收尾逐项报告已验证、未验证或受阻的项目及证据。确认交付物存在，并按最新工作区状态说明改动、检查和遗留事项。配额、凭据、服务不可用或客户端取消等外部问题如实记录；可继续的独立工作照常完成。
+- 收尾逐项报告已验证、未验证或受阻的项目及分层证据。确认交付物存在，并按最新工作区状态说明改动、检查和遗留事项。配额、凭据、服务不可用或客户端取消等外部问题如实记录；可继续的独立工作照常完成。
 
-专项路由见 `references/routing-matrix.md`；项目 `AGENTS.md` 模板见 `references/project-agents-md.md`；注释审查见 `references/comment-review.md`；PR 风险和事故反馈见 `references/pr-review-policy.md`；报告发布见 `references/postplan-reports.md`；L 档隔离审查看 `references/review-protocol.md`；M/L 质量门见 `references/web/quality-gates.md`。
+专项路由见 `references/routing-matrix.md`；代码库治理详见 `references/codebase-governance.md`；项目 `AGENTS.md` 模板见 `references/project-agents-md.md`；注释审查见 `references/comment-review.md`；PR 风险和事故反馈见 `references/pr-review-policy.md`；报告发布见 `references/postplan-reports.md`；L 档隔离审查看 `references/review-protocol.md`；M/L 质量门见 `references/web/quality-gates.md`。
 
 ## 阶段变化与收尾
 

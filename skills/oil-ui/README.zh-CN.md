@@ -1,8 +1,8 @@
 [English](README.md) · 中文 · [日本語](README.ja.md) · [한국어](https://ui.oiloil.org/ko/?utm_source=github&utm_medium=referral&utm_campaign=readme-zh&utm_content=lang-bar) · [Deutsch](https://ui.oiloil.org/de/?utm_source=github&utm_medium=referral&utm_campaign=readme-zh&utm_content=lang-bar) · [Español](https://ui.oiloil.org/es/?utm_source=github&utm_medium=referral&utm_campaign=readme-zh&utm_content=lang-bar)
 
-[![GitHub Stars](https://img.shields.io/github/stars/oil-oil/oil-ui?style=flat-square&color=292e2b)](https://github.com/oil-oil/oil-ui/stargazers) [![skills.sh](https://img.shields.io/badge/skills.sh-4.6K%2B_安装-4a5d4e?style=flat-square)](https://www.skills.sh/oil-oil/oil-ui/oil-ui) [![Live Gallery](https://img.shields.io/badge/在线画廊-117_件真实作品-3d5a45?style=flat-square)](https://ui.oiloil.org/?utm_source=github&utm_medium=referral&utm_campaign=readme-zh&utm_content=hero-gallery) [![Blind Benchmark](https://img.shields.io/badge/15次盲测均分-87.0%2F100-5b533b?style=flat-square)](https://ui.oiloil.org/guide/ui-design-skills-tested/?utm_source=github&utm_medium=referral&utm_campaign=readme-zh&utm_content=guide-benchmark) [![License: MIT](https://img.shields.io/badge/license-MIT-60675f?style=flat-square)](LICENSE)
+[![GitHub Stars](https://img.shields.io/github/stars/oil-oil/oil-ui?style=flat-square&color=292e2b)](https://github.com/oil-oil/oil-ui/stargazers) [![skills.sh](https://img.shields.io/badge/skills.sh-4.6K%2B_安装-4a5d4e?style=flat-square)](https://www.skills.sh/oil-oil/oil-ui/oil-ui) [![Live Gallery](https://img.shields.io/badge/在线画廊-143_件真实作品-3d5a45?style=flat-square)](https://ui.oiloil.org/?utm_source=github&utm_medium=referral&utm_campaign=readme-zh&utm_content=hero-gallery) [![Blind Benchmark](https://img.shields.io/badge/15次盲测均分-87.0%2F100-5b533b?style=flat-square)](https://ui.oiloil.org/guide/ui-design-skills-tested/?utm_source=github&utm_medium=referral&utm_campaign=readme-zh&utm_content=guide-benchmark) [![License: MIT](https://img.shields.io/badge/license-MIT-60675f?style=flat-square)](LICENSE)
 
-**Oil UI** 是给 AI 编程 Agent 用的界面与 UI/UX 设计 Skill：默认推荐一个明确的设计方向并对照真实浏览器截图打磨；需要比较时，可并排生成 3 套构图、字体与配色真正拉开差距的方案。网站、App、后台和组件都能做，117 件在线作品见 [ui.oiloil.org](https://ui.oiloil.org/?utm_source=github&utm_medium=referral&utm_campaign=readme-zh&utm_content=intro-text)。
+**Oil UI** 是给 AI 编程 Agent 用的界面与 UI/UX 设计 Skill：默认推荐一个明确的设计方向并对照真实浏览器截图打磨；需要比较时，可并排生成 3 套构图、字体与配色真正拉开差距的方案。网站、App、后台和组件都能做，143 件在线作品见 [ui.oiloil.org](https://ui.oiloil.org/?utm_source=github&utm_medium=referral&utm_campaign=readme-zh&utm_content=intro-text)。
 
 ```bash
 npx skills add oil-oil/oil-ui
@@ -10,17 +10,20 @@ npx skills add oil-oil/oil-ui
 
 **兼容宿主：** Claude Code, Cursor, Codex, Windsurf, Cline, Antigravity, OpenCode, GitHub Copilot, Roo Code, DeepSeek Harness（[dsh-oil-ui](https://github.com/oil-oil/dsh-oil-ui)）, Kimi Code, Trae 及任意支持 `SKILL.md` 的 Agent。
 
-| 不装 Skill 默认输出（同模型同题目 · 83/100，5/6 通过） | 使用 Oil UI（同模型同题目 · 88/100，6/6 全过） |
-| :---: | :---: |
-| <a href="https://ui.oiloil.org/guide/ui-design-skills-tested/?utm_source=github&utm_medium=referral&utm_campaign=readme-zh&utm_content=hero-compare"><img src="https://ui.oiloil.org/comparisons/ui-design-skills-tested/shots/no-skill-run-1-desktop-initial.png" width="100%" alt="不装 Skill 的默认输出：大号口号把工具目录挤到下方，小号淡色元信息偏多，精确提示校验未通过"></a> | <a href="https://ui.oiloil.org/guide/ui-design-skills-tested/?utm_source=github&utm_medium=referral&utm_campaign=readme-zh&utm_content=hero-compare"><img src="https://ui.oiloil.org/comparisons/ui-design-skills-tested/shots/oil-ui-run-1-desktop-initial.png" width="100%" alt="装上 Oil UI 后的同题输出：首屏直接进入搜索与分类筛选，卡片主次清楚，6 项功能验收全部通过"></a> |
-| 开场大口号把高频工具检索挤到下方，淡色小字偏多、手机长弹窗按钮落出首屏（[看 15 次公开盲测 →](https://ui.oiloil.org/guide/ui-design-skills-tested/?utm_source=github&utm_medium=referral&utm_campaign=readme-zh&utm_content=hero-compare)）。 | 首屏直接把搜索与分类筛选交给用户，编辑感目录层级清晰，3 次独立运行功能验收全部 6/6 通过（盲评均分 `87.0`）。 |
-
 <p align="center">
   <img src="./assets/readme/hero.webp" width="100%" alt="oil-ui：把 AI 的 UI 设计能力推到极限。插画里的人把黄色图钉按在三张风格不同的小样中间那张上">
 </p>
 
 <p align="center">
   <a href="https://ui.oiloil.org/?utm_source=github&utm_medium=referral&utm_campaign=readme-zh&utm_content=showcase-banner"><img src="./assets/readme/showcase.webp" width="100%" alt="先看效果：画廊里的部分作品，包括学英语 App、音乐年度报告、硬件官网、组件库官网、项目管理工具、打车 App、语音助手、结账流程和胶片相机"></a>
+</p>
+
+### 把官网做出艺术感（Oil UI Pro 免费附赠 `oil-art-landing`）
+
+除了日常产品界面与后台工作台，**Oil UI Pro** 还免费附赠独立配套 Skill **`oil-art-landing`**：内置**涵盖桌面与移动 App 的丰富视觉锚点**（红外胶片、极地冰川、X 光暗房、温室龟背竹、暗岩苔藓、长虹玻璃、棉纸压凹、陶土沙丘、冰块兰花、靛蓝扎染等）与按业务派生语法，先并排挑方向再按你的产品适配出图，并还原成带前景遮挡层次与滚动动效的真实网页。[查看 20 套可交互实测案例 →](https://ui.oiloil.org/art-landing/?utm_source=github&utm_medium=referral&utm_campaign=readme-zh&utm_content=art-landing-banner)
+
+<p align="center">
+  <a href="https://ui.oiloil.org/art-landing/?utm_source=github&utm_medium=referral&utm_campaign=readme-zh&utm_content=art-landing-banner"><img src="./assets/readme/art-landing.webp" width="100%" alt="Oil Art Landing 实测作品精选：包含 Kova、Aperture、Cairn、Helixa、Riso、Aquarelle 六套桌面官网与 Duna、Kryo、Aizome 三套移动 App 视觉风格"></a>
 </p>
 
 ## 安装
@@ -109,8 +112,9 @@ npx skills add oil-oil/oil-ui
 | 19 套卡片原型和代码、空间折展容器 | | ✓ |
 | 流光、点阵、流动渐变这类特效 | | ✓ |
 | 小游戏的场景布局、视觉和状态检查 | | ✓ |
+| 免费附赠 `oil-art-landing`：丰富的桌面与移动 App 艺术官网视觉锚点 + 按业务派生，支持前景遮挡落地 | | ✓ |
 
-Oil UI Pro 99 元，一次买断，永久更新（送 100 生图积分），在 [ui.oiloil.org/pro](https://ui.oiloil.org/pro/?utm_source=github&utm_medium=referral&utm_campaign=readme-zh&utm_content=comparison-table-pro) 购买，或运行 `npx github:oil-oil/oil-cli install oil-ui-pro` 由 Agent 带你登录、付款并装好。
+Oil UI Pro 99 元，一次买断，永久更新（送 100 生图积分并免费附赠 `oil-art-landing`），在 [ui.oiloil.org/pro](https://ui.oiloil.org/pro/?utm_source=github&utm_medium=referral&utm_campaign=readme-zh&utm_content=comparison-table-pro) 购买，或运行 `npx github:oil-oil/oil-cli install oil-ui-pro` 由 Agent 带你登录、付款并装好。
 
 ## 版本检查
 

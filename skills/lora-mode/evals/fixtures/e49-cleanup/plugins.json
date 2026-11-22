@@ -1,0 +1,3 @@
+[
+  {"name": "legacy-report", "handler": "plugins.legacy_report"}
+]

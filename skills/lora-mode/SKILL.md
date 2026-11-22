@@ -1,6 +1,6 @@
 ---
 name: lora-mode
-description: lora 的工程流程路由器，用于功能开发、修复/重构、代码库治理、目标评测、PR/Issue 全流程及注释清理（no-comment/comment-review）；用户点名 lora-mode、full-stop/full-send，或要求持续完成、接手工作、现代化旧 PR 时也使用；不超过两个文件且无共享影响的非 bug 改动直接调用对应技能。
+description: lora 的工程流程路由器，用于功能开发、修复/重构、代码库治理、AI slop 与死代码清理、目标评测、PR/Issue 全流程及注释清理；用户点名 lora-mode、full-stop/full-send，或要求持续完成、接手工作、现代化旧 PR 时也使用；不超过两个文件且无共享影响的非 bug 改动直接调用对应技能。
 ---
 
 # lora-mode
@@ -10,9 +10,11 @@ description: lora 的工程流程路由器，用于功能开发、修复/重构�
 ## 路由
 
 - Web 功能 → `web-feature`；M/L 档 API、脚本、工具 → `backend-feature`；bug 或行为异常 → `bug-fix`；仓库调查 → `investigation`。S 档普通脚本走行内流程。
-- 代码改动 → 按 `references/comment-review.md` 检查本次差异中的注释；当用户明确要求“注释清理”、“清理注释”，或输入触发词 `no-comment`、`comment-review` 时，审查并清理受影响文件。不要把按需审查扩大为全仓清理。
+- 用户明确要求清理 AI slop、死代码、过期文档/注释或无用抽象 → `playbooks/code-cleanup.md`。其他流程仅在准备 PR 时审查本次功能 diff，走 `pr-open.md` 局部清理门，不扩大为全仓审计。
+- 代码改动 → 按 `references/comment-review.md` 检查本次差异中的注释；当用户明确要求「注释清理」或「清理注释」，或输入触发词 `no-comment`、`comment-review` 时，审查并清理受影响文件。不得将按需审查扩大为全仓清理。
 - 改动前与 diff 后做性质筛查：发现并发交错、租约/过期接管、重试、状态或数据不变量、幂等等可信性质，或改动命中已有验证覆盖时，读 `references/verification-routing.md` 与 `references/formal-verification.md` 并按其中门槛执行。主题词不触发建模；普通文档或无关界面改动沿用原有检查。
 - 满足形式化门槛且项目无覆盖时必须创建项目级验证并保留回归测试；refactor 命中已有覆盖时按相邻 `maintain-formal-verification-skill` 复核模型。TLC/Java 缺失只将模型标为 draft/blocked 并留下命令，不跳过、不声称完成。其余风险选能回答问题的最低成本验证；PR 创建与审查需核对当前 head 的验证证据。
+- 功能准备提 PR 前，先按 `pr-open.md` 审查本次功能 diff；若执行了清理，重跑受影响测试并确认通过后再建 PR。此门不触发全仓扫描。
 - Issue 起草/分诊 → `issue-draft` / `issue-triage`；PR 创建或现有 PR 正文/Change map 更新 → `pr-open`；PR 正文需要放入上传的验证媒体链接（或用户说 file-pr）→ `file-pr`，其 Change map、审查与创建仍走 `pr-open`；PR 检查与评论跟进 → `pr-babysit`；PR 审查 → `pr-review`；旧 PR 现代化 → `modernize`；接手 PR、分支或 Agent → `takeover`。
 - 项目初始化、接手既有项目、代码库治理、新增或修改项目 `AGENTS.md` → 按 `references/codebase-governance.md` 与 `references/project-agents-md.md`：先定义系统正确性（核心对象、状态变化、数据归属、不变量与不可违反事实）、划清架构所有权与公开契约、禁止循环依赖与接口穿透，规则分硬规则/过程规则/判断规则三类，常驻文件只写项目特有事实并保持 ≤150 行。
 - PR 合并后或用户要求清理仓库/本地工作痕迹 → `post-merge-cleanup`；该 playbook 也规定仓库级定期卫生。

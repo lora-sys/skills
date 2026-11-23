@@ -1,6 +1,6 @@
 ---
 name: lora-mode
-description: 新建或修改 Web 页面/界面及可见布局、交互、状态、动效时，必须先用 lora-mode，再加载 frontend-design、oil-ui、oil-frontend 等专项技能（含单文件任务）。也用于功能、bug/重构、治理、清理、eval、PR/Issue、full-stop/full-send 与接手工作；仅步骤明确、≤2 文件且无共享影响的纯机械改动可直调。
+description: 新建或修改 Web 页面/界面及可见布局、交互、状态、动效时，必须先用 lora-mode，再加载必需的 oil-ui 与 oil-frontend；frontend-design 可选补方向（含单文件任务）。也用于功能、bug/重构、治理、清理、eval、PR/Issue、full-stop/full-send 与接手工作；仅步骤明确、≤2 文件且无共享影响的纯机械改动可直调。
 ---
 
 # lora-mode

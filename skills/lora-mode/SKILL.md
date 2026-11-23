@@ -1,6 +1,6 @@
 ---
 name: lora-mode
-description: lora 的工程流程路由器，用于功能开发、修复/重构、代码库治理、AI slop 与死代码清理、目标评测、PR/Issue 全流程及注释清理；新建网页/界面或修改可见交互与状态的 Web 功能也使用；用户点名 lora-mode、full-stop/full-send，或要求持续完成、接手工作、现代化旧 PR 时也使用；不超过两个文件且无共享影响的纯机械非 bug 改动可直接调用对应技能。
+description: 新建或修改 Web 页面/界面、布局、交互、状态、动效时必须先用 lora-mode，再加载 oil-ui/oil-frontend 等专项技能（含单文件小任务）；也用于功能、bug/重构、治理、清理、eval、PR/Issue；用户点名 lora-mode、full-stop/full-send 或要求持续完成、接手工作、现代化旧 PR 时使用。≤2 文件、步骤明确且无共享影响的纯机械改动可直调。
 ---
 
 # lora-mode
@@ -11,7 +11,7 @@ description: lora 的工程流程路由器，用于功能开发、修复/重构�
 
 ## 路由
 
-- 新建网页/界面，或涉及可见布局、交互、状态、动效的 Web 功能，无论改动文件数多少，都先走 `lora-mode → web-feature`；不得因单文件或改动很小而绕过总路由。`web-feature`：加载仓库内的 `oil-ui` 处理页面方向、设计系统与一致性，加载 `oil-frontend` 实施；若运行时已安装 `frontend-design`，可用它补充页面方向，但不得把它当作必需依赖。组件初稿完成后若有可见交互、状态反馈或动效，必须进入后置精修：通过原生技能机制加载 `emil-design-eng`，用其流程检查和精修，再验收；不可调用时，此阶段读取仓库内 `SKILL.md` 并按其检查项执行。提前读取或自行打磨不替代这一步。用户要求多文档共识并保存 `context.md` 时加载 `grill-me-with-docs`。在本仓库中，若必需路由技能未出现在运行时列表，从 `skills/<name>/SKILL.md` 读取，不跳过该职责。M/L 档 API、脚本、工具 → `backend-feature`；bug 或行为异常 → `bug-fix`；仓库调查 → `investigation`。S 档普通脚本走行内流程。只有不超过两个文件、无共享影响且步骤已明确的纯机械非 bug 改动，才可直调对应技能。
+- 新建 Web 页面/界面，或改可见布局、交互、状态、动效：必须先加载本技能，再走 `web-feature`；单文件、小改也不例外。`web-feature` 加载仓库内的 `oil-ui` 处理页面方向、设计系统与一致性，加载 `oil-frontend` 实施；运行时若有 `frontend-design`，可补充页面方向，但它不是必需依赖。初稿后有可见交互、状态反馈或动效时，再通过原生机制加载 `emil-design-eng` 精修并验收；不可调用时，在后置阶段读仓库内 `SKILL.md` 并照其检查。提前读取或自行打磨不替代后置步骤。用户要求多文档共识并保存 `context.md` 时加载 `grill-me-with-docs`。必需技能不在运行时列表时，读 `skills/<name>/SKILL.md`，不跳过职责。M/L 档 API、脚本、工具 → `backend-feature`；bug/异常 → `bug-fix`；仓库调查 → `investigation`。S 档普通脚本走行内流程。完全明确、≤2 文件、无共享影响的纯机械改动才可直调对应技能。
 - 用户明确要求清理 AI slop、死代码、过期文档/注释或无用抽象 → `playbooks/code-cleanup.md`。其他流程仅在准备 PR 时审查本次功能 diff，走 `pr-open.md` 局部清理门，不扩大为全仓审计。
 - 代码改动 → 按 `references/comment-review.md` 检查本次差异中的注释；当用户明确要求「注释清理」或「清理注释」，或输入触发词 `no-comment`、`comment-review` 时，审查并清理受影响文件。不得将按需审查扩大为全仓清理。
 - 改动前与 diff 后做性质筛查：发现并发交错、租约/过期接管、重试、状态或数据不变量、幂等等可信性质，或改动命中已有验证覆盖时，读 `references/verification-routing.md` 与 `references/formal-verification.md` 并按其中门槛执行。主题词不触发建模；普通文档或无关界面改动沿用原有检查。

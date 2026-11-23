@@ -872,10 +872,10 @@ Fail when：复述前调用工具或输出前言、未复述、照抄原句、�
 
 派发 prompt（夹具 `fixtures/e52-web-polish/`）：
 
-请在夹具里完成 webhook 处理看板。先根据项目语境选整体视觉方向；queued、running、succeeded、failed 要能一眼区分，筛选器需要按下、聚焦、打开和关闭反馈。状态尽量用直观的视觉呈现。不要添加依赖。
+请在夹具里完成 webhook 处理看板。先根据项目语境选整体视觉方向；queued、running、succeeded、failed 要能一眼区分，状态筛选控件本身需要按下、聚焦、展开和收拢反馈。状态尽量用直观的视觉呈现。不要添加依赖。
 
-Pass only when：先通过原生技能机制调用 lora-mode，再由其路由到 web-feature；若该机制不可用，则读取候选 `lora-mode/SKILL.md` 并执行该路由。之后加载必需的 oil-ui 与 oil-frontend；frontend-design 可选补充页面方向。初稿后若运行时技能目录列出 emil-design-eng，必须通过原生 Skill 工具调用它并按流程精修；只有目录未列出或无原生技能工具时才读取本地 SKILL.md 作为 fallback。修正或替换夹具中的 Help tooltip：不得保留 `transition: all` 或 `scale(0)`，并实际验证其 hover/focus 打开与关闭；状态不只依赖颜色；不引入新依赖；报告实现与验证证据。
-Fail when：先调 frontend-design、oil-ui、oil-frontend 等专项技能而跳过 lora-mode；未进入 web-feature；运行时目录列出 emil-design-eng 却未在组件初稿后调用，或未按可用的 fallback 流程精修；Help tooltip 仍用 `transition: all`/`scale(0)` 或未验证 hover/focus；缺少整体方向/组件一致性、未实现界面、引入不必要依赖，或只泛泛评审。环境未安装 frontend-design 不判失败。
+Pass only when：先通过原生技能机制调用 lora-mode，再由其路由到 web-feature；若该机制不可用，则读取候选 `lora-mode/SKILL.md` 并执行该路由。之后加载必需的 oil-ui 与 oil-frontend；frontend-design 可选补充页面方向。初稿后若运行时技能目录列出 emil-design-eng，必须通过原生 Skill 工具调用它并按流程精修；只有目录未列出或无原生技能工具时才读取本地 SKILL.md 作为 fallback。状态筛选控件本身须有按下、聚焦、展开和收拢反馈，并实际操作验证开合；Sort 排序菜单的开合不算筛选器开合。修正或替换夹具中的 Help tooltip：不得保留 `transition: all` 或 `scale(0)`，并实际验证其 hover/focus 打开与关闭；状态不只依赖颜色；不引入新依赖；报告实现与验证证据。
+Fail when：先调 frontend-design、oil-ui、oil-frontend 等专项技能而跳过 lora-mode；未进入 web-feature；运行时目录列出 emil-design-eng 却未在组件初稿后调用，或未按可用的 fallback 流程精修；状态筛选控件本身不支持展开/收拢、缺少按下或聚焦反馈、未实际操作验证开合，或将 Sort 排序菜单开合误计为筛选器开合；Help tooltip 仍用 `transition: all`/`scale(0)` 或未验证 hover/focus；缺少整体方向/组件一致性、未实现界面、引入不必要依赖，或只泛泛评审。环境未安装 frontend-design 不判失败。
 
 ## E53: 多文件共识写入 context.md
 
@@ -919,6 +919,6 @@ Fail when：仅因存在文件或代码上下文就进入共识访谈、创建 c
 - **HY4 复测（e7f9252）：E52 路由未通过。** Agent 先调用全局 `frontend-design`，再预读夹具中的 oil-ui、oil-frontend 与 emil-design-eng；从未调用/读取候选 lora-mode 或 web-feature，且 Emil 未在初稿后执行精修。产物交互与响应式检查达标。候选 SKILL.md 已复制到项目级目录，但总路由未被选中；本次显式禁止专项技能先行，并要求 Emil 作为独立后置阶段，再盲测。产物仅在隔离目录。
 - **HY4 复测（a858f49）：E52 未通过。** 隔离运行时目录和会话技能目录均列出 `emil-design-eng`，且 `Skill` 工具可用；Agent 仍声称技能不可用，初稿后只读取 `SKILL.md`，再按清单做了六处修改。按本轮路由判据，目录可见时必须原生调用，因此该路径不通过。Agent 未找到浏览器，tooltip 的 hover/focus 开合和实际视觉交互未验证；页面只做了静态检查。产物仅在隔离目录；该轮用量为 50,519 输入 / 27,186 输出 token。
 - **HY4 首轮复测（2a284ec，隔离目录未提供 agent-browser）：浏览器验证受阻。** Agent 先调用 lora-mode，再进入 web-feature，调用 oil-ui、oil-frontend，并在初稿后原生调用 emil-design-eng。它修复了 tooltip 动效；被测会话未能运行浏览器。评审者确认 tooltip 与筛选器行为，但在该产物的 390px 视口发现约 13px 横向溢出。此轮不作为完整浏览器验收通过。产物只在隔离目录；用量为 43,505 输入、619,136 缓存读取、22,445 输出 token。
-- **HY4 浏览器复测（2a284ec）：E52 PASS。** 隔离目录补入 agent-browser 与可用的 Chrome。Agent 按 lora-mode → web-feature → oil-ui / oil-frontend → 初稿 → 原生调用 emil-design-eng 的顺序执行；真实浏览器检查通过，无新依赖，390px 视口无横向溢出。Agent 测试了 tooltip 点击开合；独立评审另实测 hover/focus 打开与关闭。截图和录屏只留在隔离目录。该会话用量为 116,407 输入、2,789,120 缓存读取、33,646 输出 token。
+- **HY4 浏览器复测（2a284ec）：主要路由与界面行为通过，筛选器开合未通过完整验收。** 隔离目录补入 agent-browser 与可用的 Chrome。Agent 按 lora-mode → web-feature → oil-ui / oil-frontend → 初稿 → 原生调用 emil-design-eng 的顺序执行；真实浏览器检查通过，无新依赖，390px 视口无横向溢出。Agent 测试了 tooltip 点击开合；独立评审另实测 hover/focus 打开与关闭。后续复核发现，状态筛选是带 `aria-pressed` 的常驻按钮，展开/收拢的是 Sort 排序菜单，没有验证状态筛选控件自身的开合，因此该运行不能判完整 E52 PASS。截图和录屏只留在隔离目录。该会话用量为 116,407 输入、2,789,120 缓存读取、33,646 输出 token。
 - **E02 路由负控：PASS。** 单文件 off-by-one 请求进入 `bug-fix` / `debug`，仅修改夹具中的循环边界；复现红、修复后 4/4 断言通过，未创建 `context.md`。该运行基于 `dec96b8`；后续路由修订仅涉及 Web 与文档技能加载。
 - **Token 优化代理指标：** 两个新技能合计从 629 词 / 4,266 字符降至 491 词 / 3,314 字符，减少 138 词 / 952 字符（约 22%）。平台未提供实际 token 用量；字符与词数仅作文本长度代理，不代表运行时 token 节省。

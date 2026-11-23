@@ -40,7 +40,8 @@ npx skills list --global --agent codex
 
 | Skill | 用途 | 适用场景 |
 |---|---|---|
-| [`lora-mode`](skills/lora-mode/) | 全流程工程路由器：按目标选路由，覆盖开发、调试、审查、PR/Issue 生命周期与合并清理 | 前后端研发、目标评测、自主闭环、PR 接手与跟进、注释清理（no-comment/comment-review） |
+| [`lora-mode`](skills/lora-mode/) | 全流程工程路由器：按目标选路由，覆盖开发、Web 精修、文档共识、调试、审查与 PR/Issue 生命周期 | 前后端研发、目标评测、自主闭环、PR 接手与跟进、注释清理（no-comment/comment-review） |
+| [`grill-me-with-docs`](skills/grill-me-with-docs/) | 对齐多份项目文档中的目标、决定、约束与验收，并写入 `context.md` | 用户要求先与开发 Agent 达成共识再实现 |
 | [`review-loop`](skills/review-loop/) | 限轮数的独立代码审查循环，优先使用低成本模型，修复实质缺陷后再审 | 多轮独立复审、修复后复查 |
 | [`modernize`](skills/modernize/) | 评估旧 PR 价值并给出 MODERNIZE、REWORK 或 CLOSE 建议 | 更新、rebase 或评估分叉已久的历史 PR |
 | [`council`](skills/council/) | 并行收集三个独立 Provider 的只读评审意见并核实汇总分歧 | 明确要求跨模型评审或多方会诊 |
@@ -62,6 +63,7 @@ npx skills list --global --agent codex
 | [`debug`](skills/debug/) | 根因定位与最小修复纪律：二分排查、假设验证、拒绝表面掩盖 | 排查 Bug、崩溃卡死、测试失败、接口异常与性能回退 |
 | [`oil-frontend`](skills/oil-frontend/) | 前端工程实现规范：界面、交互、状态数据流与组件组织 | 前端功能实现、组件重构与代码级交互交付（不负责主视觉设计） |
 | [`oil-ui`](skills/oil-ui/) | UI 视觉设计规范：设计方向探索、同屏多风格对比与视觉层级精修 | 新界面设计、风格探索、截图还原与视觉评审 |
+| [`emil-design-eng`](skills/emil-design-eng/) | 组件完成后的交互、动效与视觉细节精修 | Web 页面或组件的交互审查与动效打磨 |
 
 ## Codex 安装提示词
 

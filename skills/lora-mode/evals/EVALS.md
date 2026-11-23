@@ -874,8 +874,8 @@ Fail when：复述前调用工具或输出前言、未复述、照抄原句、�
 
 请在夹具里完成 webhook 处理看板。先根据项目语境选整体视觉方向；queued、running、succeeded、failed 要能一眼区分，筛选器需要按下、聚焦、打开和关闭反馈。状态尽量用直观的视觉呈现。不要添加依赖。
 
-Pass only when：先通过原生技能机制调用 lora-mode，再由其路由到 web-feature；若该机制不可用，则读取候选 `lora-mode/SKILL.md` 并执行该路由。之后加载必需的 oil-ui 与 oil-frontend；frontend-design 可选补充页面方向。有可见交互或动效时，组件初稿后再加载 emil-design-eng 并按其流程精修。只有实现前读取、没有后置精修证据不算通过。修正或替换夹具中的 Help tooltip：不得保留 `transition: all` 或 `scale(0)`，并实际验证其 hover/focus 打开与关闭；状态不只依赖颜色；不引入新依赖；报告实现与验证证据。
-Fail when：先调 frontend-design、oil-ui、oil-frontend 等专项技能而跳过 lora-mode；未进入 web-feature；未在组件初稿后加载或读取 emil-design-eng 并按其流程精修；Help tooltip 仍用 `transition: all`/`scale(0)` 或未验证 hover/focus；缺少整体方向/组件一致性、未实现界面、引入不必要依赖，或只泛泛评审。环境未安装 frontend-design 不判失败。
+Pass only when：先通过原生技能机制调用 lora-mode，再由其路由到 web-feature；若该机制不可用，则读取候选 `lora-mode/SKILL.md` 并执行该路由。之后加载必需的 oil-ui 与 oil-frontend；frontend-design 可选补充页面方向。初稿后若运行时技能目录列出 emil-design-eng，必须通过原生 Skill 工具调用它并按流程精修；只有目录未列出或无原生技能工具时才读取本地 SKILL.md 作为 fallback。修正或替换夹具中的 Help tooltip：不得保留 `transition: all` 或 `scale(0)`，并实际验证其 hover/focus 打开与关闭；状态不只依赖颜色；不引入新依赖；报告实现与验证证据。
+Fail when：先调 frontend-design、oil-ui、oil-frontend 等专项技能而跳过 lora-mode；未进入 web-feature；运行时目录列出 emil-design-eng 却未在组件初稿后调用，或未按可用的 fallback 流程精修；Help tooltip 仍用 `transition: all`/`scale(0)` 或未验证 hover/focus；缺少整体方向/组件一致性、未实现界面、引入不必要依赖，或只泛泛评审。环境未安装 frontend-design 不判失败。
 
 ## E53: 多文件共识写入 context.md
 
@@ -917,5 +917,6 @@ Fail when：仅因存在文件或代码上下文就进入共识访谈、创建 c
 - **HY4 复测（f1a4dbf）：E52 总路由未通过。** 新单页看板被 Agent 当作直接 UI 任务，只加载 `oil-ui` 和 `oil-frontend`；运行时已有 `lora-mode`、`emil-design-eng`，但两者均未加载。页面与独立浏览器检查符合其余行为要求。根因是“少于两文件可直调技能”的例外过宽，且技能描述未明确覆盖新建 Web 界面；修订后需重跑盲测。产物只在隔离目录。
 - **HY4 复测（c84945e）：E52 路由仍未通过。** Agent 读取夹具后认为单文件任务不必走 `lora-mode`，直接加载 `oil-ui`、`oil-frontend` 并实现看板；`emil-design-eng` 也未加载。它自行完成了浏览器验证，界面行为符合其余要求。前一轮仅把触发短语加入描述，未明确“先加载总路由”；本次将该要求前置并再次盲测。产物只在隔离目录。
 - **HY4 复测（e7f9252）：E52 路由未通过。** Agent 先调用全局 `frontend-design`，再预读夹具中的 oil-ui、oil-frontend 与 emil-design-eng；从未调用/读取候选 lora-mode 或 web-feature，且 Emil 未在初稿后执行精修。产物交互与响应式检查达标。候选 SKILL.md 已复制到项目级目录，但总路由未被选中；本次显式禁止专项技能先行，并要求 Emil 作为独立后置阶段，再盲测。产物仅在隔离目录。
+- **HY4 复测（a858f49）：E52 未通过。** 隔离运行时目录和会话技能目录均列出 `emil-design-eng`，且 `Skill` 工具可用；Agent 仍声称技能不可用，初稿后只读取 `SKILL.md`，再按清单做了六处修改。按本轮路由判据，目录可见时必须原生调用，因此该路径不通过。Agent 未找到浏览器，tooltip 的 hover/focus 开合和实际视觉交互未验证；页面只做了静态检查。产物仅在隔离目录；该轮用量为 50,519 输入 / 27,186 输出 token。
 - **E02 路由负控：PASS。** 单文件 off-by-one 请求进入 `bug-fix` / `debug`，仅修改夹具中的循环边界；复现红、修复后 4/4 断言通过，未创建 `context.md`。该运行基于 `dec96b8`；后续路由修订仅涉及 Web 与文档技能加载。
 - **Token 优化代理指标：** 两个新技能合计从 629 词 / 4,266 字符降至 491 词 / 3,314 字符，减少 138 词 / 952 字符（约 22%）。平台未提供实际 token 用量；字符与词数仅作文本长度代理，不代表运行时 token 节省。

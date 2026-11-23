@@ -1,20 +1,19 @@
 ---
 name: grill-me-with-docs
-description: Align a user and development agent on a multi-file task. Use when the user asks to reconcile documents or agree on scope, decisions, and acceptance, then save the shared context to context.md.
+description: Align a user and development agent on a document-driven, multi-file task. Use when the user asks to reconcile project docs or agree on scope and acceptance, then save context.md.
 ---
 
 # Grill Me with Docs
 
-Use when the user asks to align on a document-heavy task before development. Do not trigger on file count alone or when the request and source documents already agree.
+Use only when the user asks to align project documents before development. File count alone is not a trigger.
 
 ## Workflow
 
-1. Read the supplied files, relevant project instructions, and only the nearby sources needed to resolve the task. Map each important statement to its file and heading.
-2. Separate confirmed facts, conflicting requirements, assumptions, and decisions. Do not ask questions that the sources already answer.
-3. Ask one material question at a time. Explain the conflict briefly and offer clear choices when possible. Do not edit implementation files while a consequential decision is open.
-4. Summarize the agreed goal, scope, non-goals, constraints, decisions, and acceptance criteria. Mark unresolved items as open; never present an assumption as an agreement.
-5. After the user confirms the summary or explicitly approves the stated assumptions, create or update context.md at the requested location. If no location is given, use the project root. Read an existing context.md first and preserve unrelated content. Use references/context-template.md when creating the file.
-6. Keep context.md compact. Link to source paths and headings instead of copying long passages. Exclude secrets and unrelated personal data.
-7. Give the development agent a handoff to read context.md and its cited sources. User instructions and project rules remain authoritative; report any conflict before implementation.
+1. Read project instructions and only the relevant source documents. Map important claims to file paths and headings.
+2. Separate facts, conflicts, assumptions, and decisions. Ask only a question that blocks the next step, one at a time. Do not ask what the sources already answer.
+3. While a material choice is open, do not implement or create/update context.md. Leave source documents unchanged unless the user asks to edit them.
+4. After confirmation, record the goal, scope, decisions, constraints, acceptance criteria, and open questions. Never present an assumption as an agreement.
+5. By default, create or update project-root context.md. Read it first and preserve unrelated content. Use references/context-template.md for new files.
+6. Keep context concise. Link sources instead of copying them. Exclude secrets and unrelated personal data. Give the development agent a brief handoff to read context.md and its sources.
 
-Do not send messages to external people or services. The handoff is a local task brief.
+Do not message external people or services. User decisions and project rules remain authoritative.

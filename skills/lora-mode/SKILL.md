@@ -11,7 +11,7 @@ description: 新建或修改 Web 页面/界面及可见布局、交互、状态�
 
 ## 路由
 
-- Web UI（新页面或可见布局/交互/状态/动效）：先调用本技能，再走 `web-feature`；不得先调设计/前端专项技能，单文件也不例外。之后加载仓库内 `oil-ui`（方向与系统）和 `oil-frontend`（实现）；`frontend-design` 仅可补充方向，不能替代总路由。初稿后若有可见交互、状态或动效，运行时技能目录列出 `emil-design-eng` 时必须调用它做后置精修；仅目录未列出或无原生技能工具时，才读本地 `SKILL.md` 并执行检查。提前读取或自行打磨不算。多文档共识并保存 `context.md` 时加载 `grill-me-with-docs`；必需技能不可调用时读 `skills/<name>/SKILL.md`。M/L API、脚本、工具 → `backend-feature`；bug/异常 → `bug-fix`；仓库调查 → `investigation`；S 档普通脚本走行内流程。只有完全明确、≤2 文件、无共享影响的纯机械改动才可直调。
+- Web UI（新页面或可见布局/交互/状态/动效）：先调用本技能，再走 `web-feature`；不得先调设计/前端专项技能，单文件也不例外。之后加载仓库内 `oil-ui`（方向与系统）和 `oil-frontend`（实现）；`frontend-design` 仅可补充方向，不能替代总路由。初稿后若有可见交互、状态或动效，运行时技能目录列出 `emil-design-eng` 时必须调用它做后置精修；仅目录未列出或无原生技能工具时，才读本地 `SKILL.md` 并执行检查。提前读取或自行打磨不算。多文档共识并保存 `context.md` 时加载 `grill-me-with-docs`；必需技能无法原生调用时，以当前 `lora-mode/SKILL.md` 所在目录为基准读取同级技能 `../<name>/SKILL.md`，不要相对用户项目目录解析；该路径不存在时报告技能未安装并停止对应步骤。M/L API、脚本、工具 → `backend-feature`；bug/异常 → `bug-fix`；仓库调查 → `investigation`；S 档普通脚本走行内流程。只有完全明确、≤2 文件、无共享影响的纯机械改动才可直调。
 - 用户明确要求清理 AI slop、死代码、过期文档/注释或无用抽象 → `playbooks/code-cleanup.md`。其他流程仅在准备 PR 时审查本次功能 diff，走 `pr-open.md` 局部清理门，不扩大为全仓审计。
 - 代码改动 → 按 `references/comment-review.md` 检查本次差异中的注释；当用户明确要求「注释清理」或「清理注释」，或输入触发词 `no-comment`、`comment-review` 时，审查并清理受影响文件。不得将按需审查扩大为全仓清理。
 - 改动前与 diff 后做性质筛查：发现并发交错、租约/过期接管、重试、状态或数据不变量、幂等等可信性质，或改动命中已有验证覆盖时，读 `references/verification-routing.md` 与 `references/formal-verification.md` 并按其中门槛执行。主题词不触发建模；普通文档或无关界面改动沿用原有检查。

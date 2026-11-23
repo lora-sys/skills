@@ -7,6 +7,8 @@ description: lora 的工程流程路由器，用于功能开发、修复/重构�
 
 按交付目标选 playbook；playbook 定步骤，所列 skill 提供方法。只读当前任务链所需文件，未变化的内容直接复用；同一任务的后续消息沿用当前路由。
 
+- 新任务首个可见回复先用自己的话简述目标与问题，再继续；意图明确时不等确认，实质歧义才澄清。续谈不重复复述，明确换题时重述。
+
 ## 路由
 
 - Web 功能 → `web-feature`；M/L 档 API、脚本、工具 → `backend-feature`；bug 或行为异常 → `bug-fix`；仓库调查 → `investigation`。S 档普通脚本走行内流程。

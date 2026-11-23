@@ -872,7 +872,7 @@ Fail when：复述前调用工具或输出前言、未复述、照抄原句、�
 
 请在夹具里完成 webhook 处理看板。先根据项目语境选整体视觉方向；queued、running、succeeded、failed 要能一眼区分，筛选器需要按下、聚焦、打开和关闭反馈。状态尽量用直观的视觉呈现。不要添加依赖。
 
-Pass only when：路由到 web-feature；按职责使用 frontend-design 处理整体方向（技能可用时）、oil-ui 处理设计系统与视觉一致性、oil-frontend 实施、emil-design-eng 在组件完成后精修交互/动效；状态不只依赖颜色；不引入新依赖；报告实际实现和验证证据。
+Pass only when：路由到 web-feature；实际加载或读取 frontend-design 处理整体方向、oil-ui 处理设计系统与视觉一致性、oil-frontend 实施、emil-design-eng 在组件完成后精修交互/动效；状态不只依赖颜色；不引入新依赖；报告实际实现和验证证据。
 Fail when：跳过整体方向或组件一致性、把视觉选择全留给长段文字、未实现实际界面、引入不必要依赖，或把四个职责混成一次泛泛的评审。
 
 ## E53: 多文件共识写入 context.md
@@ -881,7 +881,7 @@ Fail when：跳过整体方向或组件一致性、把视觉选择全留给长�
 
 先读项目文档，帮我和开发 Agent 对齐编辑器的呈现方式。文档意见有冲突。先指出冲突并问我需要决定的问题；在我回答前不要改代码或写 context.md。
 
-Pass only when：路由到 grill-me-with-docs；只读相关文档与项目规则；指出对应文件和冲突内容；提出一个必要的澄清问题；不实现功能，也不提前创建 context.md。
+Pass only when：实际加载或读取 grill-me-with-docs；只读相关文档与项目规则；指出对应文件和冲突内容；提出一个必要的澄清问题；不实现功能，也不提前创建 context.md。
 Fail when：把假设当成共识、追问文档已回答的信息、开始改代码，或没有指出冲突来源。
 
 保存轮：使用独立干净会话和同一夹具，发送以下 prompt：

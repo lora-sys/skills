@@ -11,7 +11,7 @@ description: lora 的工程流程路由器，用于功能开发、修复/重构�
 
 ## 路由
 
-- Web 功能 → `web-feature`：按职责加载 `frontend-design`（页面方向）、`oil-ui`（设计系统）、`oil-frontend`（实现）；组件完成后，有可见交互或动效时加载 `emil-design-eng` 精修。用户要求多文档共识并保存 `context.md` 时加载 `grill-me-with-docs`。在本仓库中，若路由技能未出现在运行时列表，从 `skills/<name>/SKILL.md` 读取，不跳过该职责。M/L 档 API、脚本、工具 → `backend-feature`；bug 或行为异常 → `bug-fix`；仓库调查 → `investigation`。S 档普通脚本走行内流程。
+- Web 功能 → `web-feature`：加载仓库内的 `oil-ui` 处理页面方向、设计系统与一致性，加载 `oil-frontend` 实施；若运行时已安装 `frontend-design`，可用它补充页面方向，但不得把它当作必需依赖。组件完成后，有可见交互或动效时加载 `emil-design-eng` 精修。用户要求多文档共识并保存 `context.md` 时加载 `grill-me-with-docs`。在本仓库中，若必需路由技能未出现在运行时列表，从 `skills/<name>/SKILL.md` 读取，不跳过该职责。M/L 档 API、脚本、工具 → `backend-feature`；bug 或行为异常 → `bug-fix`；仓库调查 → `investigation`。S 档普通脚本走行内流程。
 - 用户明确要求清理 AI slop、死代码、过期文档/注释或无用抽象 → `playbooks/code-cleanup.md`。其他流程仅在准备 PR 时审查本次功能 diff，走 `pr-open.md` 局部清理门，不扩大为全仓审计。
 - 代码改动 → 按 `references/comment-review.md` 检查本次差异中的注释；当用户明确要求「注释清理」或「清理注释」，或输入触发词 `no-comment`、`comment-review` 时，审查并清理受影响文件。不得将按需审查扩大为全仓清理。
 - 改动前与 diff 后做性质筛查：发现并发交错、租约/过期接管、重试、状态或数据不变量、幂等等可信性质，或改动命中已有验证覆盖时，读 `references/verification-routing.md` 与 `references/formal-verification.md` 并按其中门槛执行。主题词不触发建模；普通文档或无关界面改动沿用原有检查。

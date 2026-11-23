@@ -1,11 +1,11 @@
 ---
 name: emil-design-eng
-description: Refine completed web components through interaction, motion, and visual-detail review. Use after implementation, not for page direction, design systems, or pure logic.
+description: After the first implementation of a web component with visible interaction, state, or motion, always invoke this as a separate refinement pass. Not for page direction, design systems, or pure logic.
 ---
 
 # Emil Design Eng
 
-Use after a visible component exists. Keep the approved page direction and design system.
+After the first visible implementation, run this skill once as a separate refinement phase. Pre-reading or self-review does not replace this pass. Keep the approved page direction and design system.
 
 ## Refine
 

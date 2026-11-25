@@ -1,0 +1,202 @@
+{
+  "lang": "zh-CN",
+  "title": "产物与生命周期 · 文件、回复、记录",
+  "subtitle": "同一次运行可产生工作区文件、用户可见响应和供 Harness 管理的运行数据",
+  "width": 1160,
+  "layers": [
+    {
+      "id": "0",
+      "label": "入口与输入",
+      "color": "blue"
+    },
+    {
+      "id": "1",
+      "label": "控制与编排",
+      "color": "cyan"
+    },
+    {
+      "id": "2",
+      "label": "执行与状态",
+      "color": "green"
+    },
+    {
+      "id": "3",
+      "label": "外部边界",
+      "color": "purple"
+    }
+  ],
+  "flows": [
+    {
+      "id": "调用",
+      "label": "调用 / 输入",
+      "color": "text"
+    },
+    {
+      "id": "返回",
+      "label": "反馈 / 返回",
+      "color": "amber",
+      "dash": true
+    }
+  ],
+  "nodes": [
+    {
+      "id": "query",
+      "layer": "0",
+      "title": "对话循环",
+      "sub": "query.ts",
+      "lines": [
+        "输出模型事件并派发工具"
+      ],
+      "x": 28,
+      "y": 155,
+      "w": 294,
+      "h": 94
+    },
+    {
+      "id": "gate",
+      "layer": "1",
+      "title": "工具执行边界",
+      "sub": "services/tools/toolExecution.ts",
+      "lines": [
+        "校验、权限、执行及结果包装"
+      ],
+      "x": 433,
+      "y": 155,
+      "w": 294,
+      "h": 94
+    },
+    {
+      "id": "write",
+      "layer": "2",
+      "title": "写入工具",
+      "sub": "FileWriteTool.ts",
+      "lines": [
+        "写工作区路径并维护读取状态"
+      ],
+      "x": 838,
+      "y": 155,
+      "w": 294,
+      "h": 94
+    },
+    {
+      "id": "render",
+      "layer": "2",
+      "title": "交付通道",
+      "sub": "screens/REPL.tsx · cli/print.ts",
+      "lines": [
+        "终端文本、JSON 或流式 JSON"
+      ],
+      "x": 28,
+      "y": 315,
+      "w": 294,
+      "h": 94
+    },
+    {
+      "id": "result",
+      "layer": "2",
+      "title": "工具返回",
+      "sub": "utils/toolResultStorage.ts",
+      "lines": [
+        "结果或持久化输出引用"
+      ],
+      "x": 433,
+      "y": 315,
+      "w": 294,
+      "h": 94
+    },
+    {
+      "id": "file",
+      "layer": "2",
+      "title": "工作区文件",
+      "sub": "Write / Edit",
+      "lines": [
+        "文件路径即产物位置"
+      ],
+      "x": 838,
+      "y": 315,
+      "w": 294,
+      "h": 94
+    },
+    {
+      "id": "user",
+      "layer": "3",
+      "title": "用户或 SDK",
+      "sub": "终端 / stdout",
+      "lines": [
+        "接收回复、事件及结果状态"
+      ],
+      "x": 28,
+      "y": 475,
+      "w": 294,
+      "h": 94
+    },
+    {
+      "id": "records",
+      "layer": "2",
+      "title": "Harness 运行记录",
+      "sub": "utils/sessionStorage.ts",
+      "lines": [
+        "会话及 Agent 记录支持续跑"
+      ],
+      "x": 433,
+      "y": 475,
+      "w": 294,
+      "h": 94
+    }
+  ],
+  "edges": [
+    {
+      "from": "query.r",
+      "to": "gate.l",
+      "label": "工具请求",
+      "flow": "调用"
+    },
+    {
+      "from": "gate.r",
+      "to": "write.l",
+      "label": "获准写入",
+      "flow": "调用"
+    },
+    {
+      "from": "query.b",
+      "to": "render.t",
+      "label": "模型与执行事件",
+      "flow": "调用"
+    },
+    {
+      "from": "gate.b",
+      "to": "result.t",
+      "label": "工具结果",
+      "flow": "调用"
+    },
+    {
+      "from": "write.b",
+      "to": "file.t",
+      "label": "写文件",
+      "flow": "调用"
+    },
+    {
+      "from": "render.b",
+      "to": "user.t",
+      "label": "交付消息",
+      "flow": "调用"
+    },
+    {
+      "from": "render.r",
+      "to": "records.l",
+      "label": "会话写入",
+      "flow": "调用",
+      "mid": 378,
+      "labelPos": [
+        365,
+        423
+      ]
+    }
+  ],
+  "log": {
+    "title": "数据流演示",
+    "live": {
+      "rows": 6
+    }
+  }
+}

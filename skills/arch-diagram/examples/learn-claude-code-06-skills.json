@@ -1,0 +1,180 @@
+{
+  "lang": "zh-CN",
+  "title": "技能 · 发现、预算、按需加载与隔离执行",
+  "subtitle": "普通路径先给模型有限的技能目录；调用时才取技能正文",
+  "width": 1160,
+  "layers": [
+    {
+      "id": "0",
+      "label": "入口与输入",
+      "color": "blue"
+    },
+    {
+      "id": "1",
+      "label": "控制与编排",
+      "color": "cyan"
+    },
+    {
+      "id": "2",
+      "label": "执行与状态",
+      "color": "green"
+    },
+    {
+      "id": "3",
+      "label": "外部边界",
+      "color": "purple"
+    }
+  ],
+  "flows": [
+    {
+      "id": "调用",
+      "label": "调用 / 输入",
+      "color": "text"
+    },
+    {
+      "id": "返回",
+      "label": "反馈 / 返回",
+      "color": "amber",
+      "dash": true
+    }
+  ],
+  "nodes": [
+    {
+      "id": "source",
+      "layer": "0",
+      "title": "技能来源",
+      "sub": "skills/loadSkillsDir.ts · commands.ts",
+      "lines": [
+        "本地、内置、插件及 MCP 技能"
+      ],
+      "x": 28,
+      "y": 155,
+      "w": 294,
+      "h": 94
+    },
+    {
+      "id": "listing",
+      "layer": "1",
+      "title": "技能目录预算",
+      "sub": "tools/SkillTool/prompt.ts",
+      "lines": [
+        "经验预算约为窗口的 1%"
+      ],
+      "x": 433,
+      "y": 155,
+      "w": 294,
+      "h": 94
+    },
+    {
+      "id": "invoke",
+      "layer": "1",
+      "title": "显式或模型触发",
+      "sub": "tools/SkillTool/SkillTool.ts",
+      "lines": [
+        "解析技能名及参数"
+      ],
+      "x": 838,
+      "y": 155,
+      "w": 294,
+      "h": 94
+    },
+    {
+      "id": "resolve",
+      "layer": "1",
+      "title": "组装技能正文",
+      "sub": "getPromptForCommand",
+      "lines": [
+        "从已解析技能生成提示消息"
+      ],
+      "x": 838,
+      "y": 315,
+      "w": 294,
+      "h": 94
+    },
+    {
+      "id": "inline",
+      "layer": "2",
+      "title": "主会话执行",
+      "sub": "SkillTool · inline",
+      "lines": [
+        "将技能指令交给当前上下文"
+      ],
+      "x": 28,
+      "y": 475,
+      "w": 294,
+      "h": 94
+    },
+    {
+      "id": "fork",
+      "layer": "2",
+      "title": "隔离执行",
+      "sub": "SkillTool · context: fork",
+      "lines": [
+        "独立上下文和 token 预算"
+      ],
+      "x": 433,
+      "y": 475,
+      "w": 294,
+      "h": 94
+    },
+    {
+      "id": "output",
+      "layer": "2",
+      "title": "委派结果",
+      "sub": "runAgent.ts",
+      "lines": [
+        "把结果返回给父会话"
+      ],
+      "x": 838,
+      "y": 475,
+      "w": 294,
+      "h": 94
+    }
+  ],
+  "edges": [
+    {
+      "from": "source.r",
+      "to": "listing.l",
+      "label": "技能元数据",
+      "flow": "调用"
+    },
+    {
+      "from": "listing.r",
+      "to": "invoke.l",
+      "label": "有限的名称与描述",
+      "flow": "调用"
+    },
+    {
+      "from": "invoke.b",
+      "to": "resolve.t",
+      "label": "技能调用",
+      "flow": "调用"
+    },
+    {
+      "from": "resolve.b@0.24",
+      "to": "inline.t",
+      "label": "内联指令",
+      "flow": "调用",
+      "mid": 443
+    },
+    {
+      "from": "resolve.b@0.52",
+      "to": "fork.t",
+      "label": "隔离指令",
+      "flow": "调用",
+      "mid": 470
+    },
+    {
+      "from": "fork.r",
+      "to": "output.l",
+      "label": "执行结果",
+      "flow": "返回"
+    }
+  ],
+  "log": {
+    "title": "数据流演示",
+    "live": {
+      "rows": 6
+    }
+  }
+}

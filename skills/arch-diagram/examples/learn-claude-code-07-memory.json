@@ -1,0 +1,172 @@
+{
+  "lang": "zh-CN",
+  "title": "记忆 · 持久化内容与本轮上下文",
+  "subtitle": "项目规则、长期记忆、会话摘要及会话记录各有独立用途",
+  "width": 1160,
+  "layers": [
+    {
+      "id": "0",
+      "label": "入口与输入",
+      "color": "blue"
+    },
+    {
+      "id": "1",
+      "label": "控制与编排",
+      "color": "cyan"
+    },
+    {
+      "id": "2",
+      "label": "执行与状态",
+      "color": "green"
+    },
+    {
+      "id": "3",
+      "label": "外部边界",
+      "color": "purple"
+    }
+  ],
+  "flows": [
+    {
+      "id": "调用",
+      "label": "调用 / 输入",
+      "color": "text"
+    },
+    {
+      "id": "返回",
+      "label": "反馈 / 返回",
+      "color": "amber",
+      "dash": true
+    }
+  ],
+  "nodes": [
+    {
+      "id": "rules",
+      "layer": "0",
+      "title": "项目规则",
+      "sub": "context.ts · CLAUDE.md",
+      "lines": [
+        "按上下文来源读入指令"
+      ],
+      "x": 28,
+      "y": 155,
+      "w": 294,
+      "h": 94
+    },
+    {
+      "id": "index",
+      "layer": "0",
+      "title": "长期记忆索引",
+      "sub": "memdir/memdir.ts · MEMORY.md",
+      "lines": [
+        "索引上限 200 行及 25,000 字节"
+      ],
+      "x": 433,
+      "y": 155,
+      "w": 294,
+      "h": 94
+    },
+    {
+      "id": "session",
+      "layer": "0",
+      "title": "历史会话记录",
+      "sub": "utils/sessionStorage.ts",
+      "lines": [
+        "记录消息与子代理历史"
+      ],
+      "x": 838,
+      "y": 155,
+      "w": 294,
+      "h": 94
+    },
+    {
+      "id": "context",
+      "layer": "1",
+      "title": "本轮上下文",
+      "sub": "query.ts · utils/attachments.ts",
+      "lines": [
+        "合并上下文并附加命中的资料"
+      ],
+      "x": 28,
+      "y": 315,
+      "w": 294,
+      "h": 94
+    },
+    {
+      "id": "topics",
+      "layer": "2",
+      "title": "记忆主题文件",
+      "sub": "memdir/findRelevantMemories.ts",
+      "lines": [
+        "按关联度选取并限制摘录"
+      ],
+      "x": 433,
+      "y": 315,
+      "w": 294,
+      "h": 94
+    },
+    {
+      "id": "extract",
+      "layer": "1",
+      "title": "会话记忆提取",
+      "sub": "services/SessionMemory/",
+      "lines": [
+        "条件触发；隔离写入记忆文件"
+      ],
+      "x": 838,
+      "y": 315,
+      "w": 294,
+      "h": 94
+    },
+    {
+      "id": "resume",
+      "layer": "2",
+      "title": "摘要复用",
+      "sub": "compact/sessionMemoryCompact.ts",
+      "lines": [
+        "符合条件时复用会话记忆"
+      ],
+      "x": 838,
+      "y": 475,
+      "w": 294,
+      "h": 94
+    }
+  ],
+  "edges": [
+    {
+      "from": "rules.b",
+      "to": "context.t",
+      "label": "项目指令",
+      "flow": "调用"
+    },
+    {
+      "from": "index.b",
+      "to": "topics.t",
+      "label": "索引指向细节",
+      "flow": "调用"
+    },
+    {
+      "from": "topics.l",
+      "to": "context.r",
+      "label": "相关摘录",
+      "flow": "调用"
+    },
+    {
+      "from": "session.b",
+      "to": "extract.t",
+      "label": "主会话消息",
+      "flow": "调用"
+    },
+    {
+      "from": "extract.b",
+      "to": "resume.t",
+      "label": "已有摘要",
+      "flow": "调用"
+    }
+  ],
+  "log": {
+    "title": "数据流演示",
+    "live": {
+      "rows": 6
+    }
+  }
+}

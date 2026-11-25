@@ -1,0 +1,257 @@
+{
+  "lang": "zh-CN",
+  "title": "Learn Claude Code · 一次对话如何驱动工具执行",
+  "subtitle": "来源：cnlnlhb/learn-claude-code @ 71dfcea · Claude Code 2.1.88 重建源码与研究笔记",
+  "width": 1160,
+  "layers": [
+    {
+      "id": "entry",
+      "label": "会话入口",
+      "color": "blue"
+    },
+    {
+      "id": "core",
+      "label": "对话运行时",
+      "color": "cyan"
+    },
+    {
+      "id": "tool",
+      "label": "工具与权限",
+      "color": "green"
+    },
+    {
+      "id": "external",
+      "label": "外部服务",
+      "color": "purple"
+    }
+  ],
+  "flows": [
+    {
+      "id": "调用",
+      "label": "调用",
+      "color": "text",
+      "dash": false
+    },
+    {
+      "id": "返回",
+      "label": "返回结果",
+      "color": "amber",
+      "dash": true
+    }
+  ],
+  "log": {
+    "title": "交互示意 · 数据流",
+    "live": {
+      "rows": 7
+    }
+  },
+  "nodes": [
+    {
+      "id": "repl",
+      "layer": "entry",
+      "x": 28,
+      "y": 150,
+      "w": 260,
+      "h": 92,
+      "title": "交互会话",
+      "sub": "screens/REPL.tsx",
+      "lines": [
+        "接收提示并展示流式输出"
+      ]
+    },
+    {
+      "id": "print",
+      "layer": "entry",
+      "x": 450,
+      "y": 150,
+      "w": 260,
+      "h": 92,
+      "title": "非交互会话",
+      "sub": "cli/print.ts",
+      "lines": [
+        "处理打印模式的输入和输出"
+      ]
+    },
+    {
+      "id": "bridge",
+      "layer": "entry",
+      "x": 872,
+      "y": 150,
+      "w": 260,
+      "h": 92,
+      "title": "远程会话",
+      "sub": "bridge/ · remote/",
+      "lines": [
+        "会话传输与审批回传"
+      ]
+    },
+    {
+      "id": "query",
+      "layer": "core",
+      "x": 450,
+      "y": 321,
+      "w": 260,
+      "h": 92,
+      "title": "对话循环",
+      "sub": "query.ts",
+      "lines": [
+        "累积消息与工具结果"
+      ]
+    },
+    {
+      "id": "api",
+      "layer": "external",
+      "x": 872,
+      "y": 321,
+      "w": 260,
+      "h": 92,
+      "title": "模型调用",
+      "sub": "services/api/claude.ts",
+      "lines": [
+        "请求模型并读取流式事件"
+      ]
+    },
+    {
+      "id": "auth",
+      "layer": "core",
+      "x": 872,
+      "y": 488,
+      "w": 260,
+      "h": 92,
+      "title": "身份凭据",
+      "sub": "utils/auth.ts · OAuth",
+      "lines": [
+        "管理 OAuth 和 API 密钥"
+      ]
+    },
+    {
+      "id": "tools",
+      "layer": "tool",
+      "x": 450,
+      "y": 488,
+      "w": 260,
+      "h": 92,
+      "title": "工具编排",
+      "sub": "services/tools/",
+      "lines": [
+        "调度工具并收集返回值"
+      ]
+    },
+    {
+      "id": "permission",
+      "layer": "tool",
+      "x": 28,
+      "y": 488,
+      "w": 260,
+      "h": 92,
+      "title": "权限判定",
+      "sub": "hooks/useCanUseTool.tsx",
+      "lines": [
+        "按策略决定允许、拒绝或询问"
+      ]
+    },
+    {
+      "id": "builtin",
+      "layer": "tool",
+      "x": 450,
+      "y": 655,
+      "w": 260,
+      "h": 92,
+      "title": "内置工具",
+      "sub": "tools/",
+      "lines": [
+        "文件、终端及子代理任务"
+      ]
+    },
+    {
+      "id": "mcp",
+      "layer": "external",
+      "x": 872,
+      "y": 655,
+      "w": 260,
+      "h": 92,
+      "title": "MCP 客户端",
+      "sub": "services/mcp/client.ts",
+      "lines": [
+        "连接服务并调用 MCP 工具"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "to": "query.l",
+      "label": "交互提示",
+      "flow": "调用",
+      "mid": 360,
+      "from": "repl.r"
+    },
+    {
+      "to": "query.t",
+      "label": "批处理输入",
+      "flow": "调用",
+      "from": "print.b"
+    },
+    {
+      "to": "repl.t",
+      "label": "远程交互",
+      "flow": "调用",
+      "rail": "y:126",
+      "packet": false,
+      "log": false,
+      "from": "bridge.b"
+    },
+    {
+      "to": "api.l@0.30",
+      "label": "发送消息",
+      "flow": "调用",
+      "from": "query.r@0.30"
+    },
+    {
+      "to": "query.r@0.70",
+      "label": "文本与工具请求",
+      "flow": "返回",
+      "labelSide": "below",
+      "from": "api.l@0.70"
+    },
+    {
+      "to": "api.b",
+      "label": "提供凭据",
+      "flow": "调用",
+      "from": "auth.t"
+    },
+    {
+      "to": "tools.t@0.30",
+      "label": "工具请求",
+      "flow": "调用",
+      "labelSide": "left",
+      "from": "query.b@0.30"
+    },
+    {
+      "to": "query.b@0.70",
+      "label": "tool_result",
+      "flow": "返回",
+      "labelSide": "right",
+      "from": "tools.t@0.70"
+    },
+    {
+      "to": "permission.r",
+      "label": "请求权限判定",
+      "flow": "调用",
+      "arrow": "both",
+      "from": "tools.l"
+    },
+    {
+      "to": "builtin.t",
+      "label": "派发本地工具",
+      "flow": "调用",
+      "from": "tools.b"
+    },
+    {
+      "to": "mcp.l",
+      "label": "派发 MCP 工具",
+      "flow": "调用",
+      "mid": 790,
+      "from": "tools.r@0.74"
+    }
+  ]
+}

@@ -1,0 +1,218 @@
+{
+  "lang": "zh-CN",
+  "title": "使用链路 · 一次请求如何跑完",
+  "subtitle": "从源码向上追：工具返回值 → 调度器 → query.ts → 终端或打印模式",
+  "width": 1160,
+  "layers": [
+    {
+      "id": "0",
+      "label": "入口与输入",
+      "color": "blue"
+    },
+    {
+      "id": "1",
+      "label": "控制与编排",
+      "color": "cyan"
+    },
+    {
+      "id": "2",
+      "label": "执行与状态",
+      "color": "green"
+    },
+    {
+      "id": "3",
+      "label": "外部边界",
+      "color": "purple"
+    }
+  ],
+  "flows": [
+    {
+      "id": "调用",
+      "label": "调用 / 输入",
+      "color": "text"
+    },
+    {
+      "id": "返回",
+      "label": "反馈 / 返回",
+      "color": "amber",
+      "dash": true
+    }
+  ],
+  "nodes": [
+    {
+      "id": "entry",
+      "layer": "0",
+      "title": "会话前端",
+      "sub": "screens/REPL.tsx · cli/print.ts",
+      "lines": [
+        "接收提示并消费输出"
+      ],
+      "x": 28,
+      "y": 155,
+      "w": 294,
+      "h": 94
+    },
+    {
+      "id": "query",
+      "layer": "1",
+      "title": "对话循环",
+      "sub": "query.ts",
+      "lines": [
+        "保存当前轮消息与执行上下文"
+      ],
+      "x": 433,
+      "y": 155,
+      "w": 294,
+      "h": 94
+    },
+    {
+      "id": "model",
+      "layer": "3",
+      "title": "流式模型调用",
+      "sub": "services/api/claude.ts",
+      "lines": [
+        "读取文本、停止原因和 tool_use"
+      ],
+      "x": 838,
+      "y": 155,
+      "w": 294,
+      "h": 94
+    },
+    {
+      "id": "compact",
+      "layer": "2",
+      "title": "上下文预算",
+      "sub": "services/compact/autoCompact.ts",
+      "lines": [
+        "根据预算压缩历史"
+      ],
+      "x": 28,
+      "y": 315,
+      "w": 294,
+      "h": 94
+    },
+    {
+      "id": "dispatch",
+      "layer": "1",
+      "title": "工具调度",
+      "sub": "StreamingToolExecutor · runTools",
+      "lines": [
+        "流式执行或批量调度"
+      ],
+      "x": 433,
+      "y": 315,
+      "w": 294,
+      "h": 94
+    },
+    {
+      "id": "approve",
+      "layer": "1",
+      "title": "权限回调",
+      "sub": "hooks/useCanUseTool.tsx",
+      "lines": [
+        "返回允许、拒绝或发起审批"
+      ],
+      "x": 838,
+      "y": 315,
+      "w": 294,
+      "h": 94
+    },
+    {
+      "id": "builtins",
+      "layer": "2",
+      "title": "实现与适配器",
+      "sub": "tools/ · services/mcp/client.ts",
+      "lines": [
+        "内置工具或 MCP 客户端"
+      ],
+      "x": 28,
+      "y": 475,
+      "w": 294,
+      "h": 94
+    },
+    {
+      "id": "result",
+      "layer": "2",
+      "title": "工具结果",
+      "sub": "services/tools/toolExecution.ts",
+      "lines": [
+        "按 tool_use ID 回传 tool_result"
+      ],
+      "x": 433,
+      "y": 475,
+      "w": 294,
+      "h": 94
+    }
+  ],
+  "edges": [
+    {
+      "from": "entry.r",
+      "to": "query.l",
+      "label": "提示与输出",
+      "flow": "调用",
+      "arrow": "both"
+    },
+    {
+      "from": "query.r",
+      "to": "model.l",
+      "label": "消息与事件",
+      "flow": "调用",
+      "arrow": "both"
+    },
+    {
+      "from": "compact.r",
+      "to": "query.l@0.77",
+      "label": "压缩后的历史",
+      "flow": "返回",
+      "mid": 366,
+      "labelPos": [
+        365,
+        279
+      ]
+    },
+    {
+      "from": "query.b@0.35",
+      "to": "dispatch.t@0.35",
+      "label": "tool_use",
+      "flow": "调用",
+      "labelSide": "left"
+    },
+    {
+      "from": "dispatch.r",
+      "to": "approve.l",
+      "label": "请求权限",
+      "flow": "调用",
+      "arrow": "both"
+    },
+    {
+      "from": "dispatch.b@0.23",
+      "to": "builtins.t@0.72",
+      "label": "获准后执行",
+      "flow": "调用",
+      "mid": 441
+    },
+    {
+      "from": "builtins.r",
+      "to": "result.l",
+      "label": "输出或错误",
+      "flow": "调用"
+    },
+    {
+      "from": "result.t@0.82",
+      "to": "query.b@0.82",
+      "label": "下一轮消息",
+      "flow": "返回",
+      "rail": "x:750",
+      "labelPos": [
+        768,
+        480
+      ]
+    }
+  ],
+  "log": {
+    "title": "数据流演示",
+    "live": {
+      "rows": 6
+    }
+  }
+}

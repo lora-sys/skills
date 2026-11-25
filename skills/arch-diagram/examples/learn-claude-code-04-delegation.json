@@ -1,0 +1,220 @@
+{
+  "lang": "zh-CN",
+  "title": "使用链路 · 子代理、团队与远程会话",
+  "subtitle": "子代理是委派执行，团队增加协作状态；远程会话是独立的传输与控制路径",
+  "width": 1160,
+  "layers": [
+    {
+      "id": "0",
+      "label": "入口与输入",
+      "color": "blue"
+    },
+    {
+      "id": "1",
+      "label": "控制与编排",
+      "color": "cyan"
+    },
+    {
+      "id": "2",
+      "label": "执行与状态",
+      "color": "green"
+    },
+    {
+      "id": "3",
+      "label": "外部边界",
+      "color": "purple"
+    }
+  ],
+  "flows": [
+    {
+      "id": "调用",
+      "label": "调用 / 输入",
+      "color": "text"
+    },
+    {
+      "id": "返回",
+      "label": "反馈 / 返回",
+      "color": "amber",
+      "dash": true
+    }
+  ],
+  "nodes": [
+    {
+      "id": "parent",
+      "layer": "0",
+      "title": "主对话",
+      "sub": "query.ts",
+      "lines": [
+        "通过工具调用发起委派"
+      ],
+      "x": 28,
+      "y": 155,
+      "w": 294,
+      "h": 94
+    },
+    {
+      "id": "agent",
+      "layer": "1",
+      "title": "AgentTool",
+      "sub": "tools/AgentTool/AgentTool.tsx",
+      "lines": [
+        "按参数选择子代理或团队路径"
+      ],
+      "x": 433,
+      "y": 155,
+      "w": 294,
+      "h": 94
+    },
+    {
+      "id": "remote",
+      "layer": "0",
+      "title": "远程交互入口",
+      "sub": "screens/REPL.tsx",
+      "lines": [
+        "显示远程事件与审批请求"
+      ],
+      "x": 838,
+      "y": 155,
+      "w": 294,
+      "h": 94
+    },
+    {
+      "id": "child",
+      "layer": "2",
+      "title": "子代理运行",
+      "sub": "tools/AgentTool/runAgent.ts",
+      "lines": [
+        "运行子代理查询并产生输出"
+      ],
+      "x": 28,
+      "y": 315,
+      "w": 294,
+      "h": 94
+    },
+    {
+      "id": "team",
+      "layer": "2",
+      "title": "团队成员",
+      "sub": "tools/shared/spawnMultiAgent.ts",
+      "lines": [
+        "可选进程内或 tmux 执行"
+      ],
+      "x": 433,
+      "y": 315,
+      "w": 294,
+      "h": 94
+    },
+    {
+      "id": "manager",
+      "layer": "1",
+      "title": "远程会话管理",
+      "sub": "remote/RemoteSessionManager.ts",
+      "lines": [
+        "订阅事件、维护待审批请求"
+      ],
+      "x": 838,
+      "y": 315,
+      "w": 294,
+      "h": 94
+    },
+    {
+      "id": "tasks",
+      "layer": "2",
+      "title": "任务状态",
+      "sub": "tools/TaskCreateTool/",
+      "lines": [
+        "创建团队任务记录"
+      ],
+      "x": 28,
+      "y": 475,
+      "w": 294,
+      "h": 94
+    },
+    {
+      "id": "messages",
+      "layer": "2",
+      "title": "协作消息",
+      "sub": "tools/SendMessageTool/",
+      "lines": [
+        "定向发送协作与控制消息"
+      ],
+      "x": 433,
+      "y": 475,
+      "w": 294,
+      "h": 94
+    },
+    {
+      "id": "ccr",
+      "layer": "3",
+      "title": "远程运行时",
+      "sub": "remote/SessionsWebSocket.ts",
+      "lines": [
+        "传输会话消息与控制响应"
+      ],
+      "x": 838,
+      "y": 475,
+      "w": 294,
+      "h": 94
+    }
+  ],
+  "edges": [
+    {
+      "from": "parent.r",
+      "to": "agent.l",
+      "label": "Agent 工具调用",
+      "flow": "调用"
+    },
+    {
+      "from": "agent.b@0.25",
+      "to": "child.t@0.75",
+      "label": "普通委派",
+      "flow": "调用",
+      "mid": 280
+    },
+    {
+      "from": "child.t",
+      "to": "parent.b",
+      "label": "子代理输出",
+      "flow": "返回"
+    },
+    {
+      "from": "agent.b@0.70",
+      "to": "team.t@0.70",
+      "label": "具名团队成员",
+      "flow": "调用"
+    },
+    {
+      "from": "team.b@0.25",
+      "to": "tasks.t@0.75",
+      "label": "任务协作",
+      "flow": "调用",
+      "mid": 442
+    },
+    {
+      "from": "team.b@0.7",
+      "to": "messages.t@0.7",
+      "label": "成员通信",
+      "flow": "调用"
+    },
+    {
+      "from": "remote.b",
+      "to": "manager.t",
+      "label": "事件与审批",
+      "flow": "调用",
+      "arrow": "both"
+    },
+    {
+      "from": "manager.b",
+      "to": "ccr.t",
+      "label": "消息与控制响应",
+      "flow": "调用",
+      "arrow": "both"
+    }
+  ],
+  "log": {
+    "title": "数据流演示",
+    "live": {
+      "rows": 6
+    }
+  }
+}

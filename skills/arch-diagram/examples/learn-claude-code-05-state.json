@@ -1,0 +1,206 @@
+{
+  "lang": "zh-CN",
+  "title": "状态面 · 会话持久化、恢复与上下文压缩",
+  "subtitle": "持久化记录、重新加载的会话和本轮模型上下文各有自己的生命周期",
+  "width": 1160,
+  "layers": [
+    {
+      "id": "0",
+      "label": "入口与输入",
+      "color": "blue"
+    },
+    {
+      "id": "1",
+      "label": "控制与编排",
+      "color": "cyan"
+    },
+    {
+      "id": "2",
+      "label": "执行与状态",
+      "color": "green"
+    },
+    {
+      "id": "3",
+      "label": "外部边界",
+      "color": "purple"
+    }
+  ],
+  "flows": [
+    {
+      "id": "调用",
+      "label": "调用 / 输入",
+      "color": "text"
+    },
+    {
+      "id": "返回",
+      "label": "反馈 / 返回",
+      "color": "amber",
+      "dash": true
+    }
+  ],
+  "nodes": [
+    {
+      "id": "frontend",
+      "layer": "0",
+      "title": "会话入口",
+      "sub": "screens/REPL.tsx · cli/print.ts",
+      "lines": [
+        "消费事件并管理展示与会话"
+      ],
+      "x": 28,
+      "y": 155,
+      "w": 294,
+      "h": 94
+    },
+    {
+      "id": "query",
+      "layer": "1",
+      "title": "对话状态",
+      "sub": "query.ts",
+      "lines": [
+        "维护当前轮的消息序列"
+      ],
+      "x": 433,
+      "y": 155,
+      "w": 294,
+      "h": 94
+    },
+    {
+      "id": "model",
+      "layer": "3",
+      "title": "模型请求",
+      "sub": "services/api/claude.ts",
+      "lines": [
+        "消费当前可见的上下文"
+      ],
+      "x": 838,
+      "y": 155,
+      "w": 294,
+      "h": 94
+    },
+    {
+      "id": "store",
+      "layer": "2",
+      "title": "会话持久化",
+      "sub": "utils/sessionStorage.ts",
+      "lines": [
+        "定位会话与子代理记录"
+      ],
+      "x": 28,
+      "y": 315,
+      "w": 294,
+      "h": 94
+    },
+    {
+      "id": "budget",
+      "layer": "1",
+      "title": "压缩触发",
+      "sub": "services/compact/autoCompact.ts",
+      "lines": [
+        "按上下文预算判断是否压缩"
+      ],
+      "x": 433,
+      "y": 315,
+      "w": 294,
+      "h": 94
+    },
+    {
+      "id": "summary",
+      "layer": "2",
+      "title": "压缩上下文",
+      "sub": "services/compact/compact.ts",
+      "lines": [
+        "产生压缩后的上下文材料"
+      ],
+      "x": 838,
+      "y": 315,
+      "w": 294,
+      "h": 94
+    },
+    {
+      "id": "disk",
+      "layer": "2",
+      "title": "会话记录",
+      "sub": "项目会话 · Agent transcript",
+      "lines": [
+        "历史与元数据具备各自的路径"
+      ],
+      "x": 28,
+      "y": 475,
+      "w": 294,
+      "h": 94
+    }
+  ],
+  "edges": [
+    {
+      "from": "frontend.r",
+      "to": "query.l",
+      "label": "会话消息",
+      "flow": "调用",
+      "arrow": "both"
+    },
+    {
+      "from": "query.r",
+      "to": "model.l",
+      "label": "有效上下文",
+      "flow": "调用"
+    },
+    {
+      "from": "frontend.b",
+      "to": "store.t",
+      "label": "记录与恢复",
+      "flow": "调用",
+      "arrow": "both"
+    },
+    {
+      "from": "store.b",
+      "to": "disk.t",
+      "label": "读写历史",
+      "flow": "调用",
+      "arrow": "both"
+    },
+    {
+      "from": "query.b@0.3",
+      "to": "budget.t@0.3",
+      "label": "预算检查",
+      "flow": "调用",
+      "labelSide": "left"
+    },
+    {
+      "from": "budget.r",
+      "to": "summary.l",
+      "label": "需要压缩",
+      "flow": "调用"
+    },
+    {
+      "from": "summary.t",
+      "to": "query.r@0.78",
+      "label": "上下文回写",
+      "flow": "返回",
+      "via": [
+        [
+          985,
+          283
+        ],
+        [
+          777,
+          283
+        ],
+        [
+          777,
+          228
+        ]
+      ],
+      "labelPos": [
+        895,
+        272
+      ]
+    }
+  ],
+  "log": {
+    "title": "数据流演示",
+    "live": {
+      "rows": 6
+    }
+  }
+}

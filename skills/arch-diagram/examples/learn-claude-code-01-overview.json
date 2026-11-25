@@ -1,0 +1,272 @@
+{
+  "lang": "zh-CN",
+  "title": "Claude Code Harness · 分层总览",
+  "subtitle": "2.1.88 · 从会话进入，到模型请求、受控执行与状态回写",
+  "width": 1160,
+  "layers": [
+    {
+      "id": "0",
+      "label": "入口与输入",
+      "color": "blue"
+    },
+    {
+      "id": "1",
+      "label": "控制与编排",
+      "color": "cyan"
+    },
+    {
+      "id": "2",
+      "label": "执行与状态",
+      "color": "green"
+    },
+    {
+      "id": "3",
+      "label": "外部边界",
+      "color": "purple"
+    }
+  ],
+  "flows": [
+    {
+      "id": "调用",
+      "label": "调用 / 输入",
+      "color": "text"
+    },
+    {
+      "id": "返回",
+      "label": "反馈 / 返回",
+      "color": "amber",
+      "dash": true
+    }
+  ],
+  "nodes": [
+    {
+      "id": "cli",
+      "layer": "0",
+      "title": "终端交互",
+      "sub": "screens/REPL.tsx",
+      "lines": [
+        "提示输入、流式显示与审批"
+      ],
+      "x": 28,
+      "y": 155,
+      "w": 294,
+      "h": 94
+    },
+    {
+      "id": "print",
+      "layer": "0",
+      "title": "非交互与 SDK",
+      "sub": "cli/print.ts",
+      "lines": [
+        "打印模式 · SDK 消息与控制请求"
+      ],
+      "x": 433,
+      "y": 155,
+      "w": 294,
+      "h": 94
+    },
+    {
+      "id": "remote",
+      "layer": "3",
+      "title": "远程会话",
+      "sub": "remote/ · bridge/",
+      "lines": [
+        "会话连接、事件和审批回传"
+      ],
+      "x": 838,
+      "y": 155,
+      "w": 294,
+      "h": 94
+    },
+    {
+      "id": "controls",
+      "layer": "1",
+      "title": "配置与策略",
+      "sub": "utils/settings/ · policyLimits/",
+      "lines": [
+        "身份、配置来源与组织约束"
+      ],
+      "x": 28,
+      "y": 315,
+      "w": 294,
+      "h": 94
+    },
+    {
+      "id": "loop",
+      "layer": "1",
+      "title": "对话运行时",
+      "sub": "query.ts",
+      "lines": [
+        "上下文 → 模型 → 工具 → 继续"
+      ],
+      "x": 433,
+      "y": 315,
+      "w": 294,
+      "h": 94
+    },
+    {
+      "id": "api",
+      "layer": "3",
+      "title": "模型服务适配",
+      "sub": "services/api/claude.ts",
+      "lines": [
+        "模型流式事件与工具请求"
+      ],
+      "x": 838,
+      "y": 315,
+      "w": 294,
+      "h": 94
+    },
+    {
+      "id": "extensions",
+      "layer": "2",
+      "title": "扩展装配",
+      "sub": "skills/ · plugins/ · services/mcp/",
+      "lines": [
+        "发现技能、插件与 MCP 能力"
+      ],
+      "x": 28,
+      "y": 475,
+      "w": 294,
+      "h": 94
+    },
+    {
+      "id": "tools",
+      "layer": "2",
+      "title": "受控工具执行",
+      "sub": "services/tools/",
+      "lines": [
+        "校验、审批、调度及结果封装"
+      ],
+      "x": 433,
+      "y": 475,
+      "w": 294,
+      "h": 94
+    },
+    {
+      "id": "context",
+      "layer": "2",
+      "title": "会话与上下文",
+      "sub": "sessionStorage.ts · compact/",
+      "lines": [
+        "会话记录与上下文预算"
+      ],
+      "x": 838,
+      "y": 475,
+      "w": 294,
+      "h": 94
+    },
+    {
+      "id": "agents",
+      "layer": "2",
+      "title": "子代理与团队",
+      "sub": "tools/AgentTool/",
+      "lines": [
+        "独立运行及团队协作分支"
+      ],
+      "x": 433,
+      "y": 635,
+      "w": 294,
+      "h": 94
+    }
+  ],
+  "edges": [
+    {
+      "from": "cli.b",
+      "to": "loop.l@0.25",
+      "label": "交互提示",
+      "flow": "调用",
+      "via": [
+        [
+          175,
+          274
+        ],
+        [
+          365,
+          274
+        ],
+        [
+          365,
+          339
+        ]
+      ],
+      "labelPos": [
+        268,
+        262
+      ]
+    },
+    {
+      "from": "print.b",
+      "to": "loop.t",
+      "label": "非交互输入",
+      "flow": "调用"
+    },
+    {
+      "from": "remote.l",
+      "to": "cli.t",
+      "label": "远程事件",
+      "flow": "调用",
+      "rail": "y:130",
+      "labelPos": [
+        760,
+        119
+      ]
+    },
+    {
+      "from": "controls.r",
+      "to": "loop.l@0.67",
+      "label": "有效配置",
+      "flow": "调用"
+    },
+    {
+      "from": "loop.r",
+      "to": "api.l",
+      "label": "模型往返",
+      "flow": "调用",
+      "arrow": "both"
+    },
+    {
+      "from": "loop.b@0.3",
+      "to": "tools.t@0.3",
+      "label": "工具请求",
+      "flow": "调用",
+      "labelSide": "left"
+    },
+    {
+      "from": "tools.t@0.72",
+      "to": "loop.b@0.72",
+      "label": "工具结果",
+      "flow": "返回",
+      "labelSide": "right"
+    },
+    {
+      "from": "extensions.r",
+      "to": "tools.l",
+      "label": "工具集合",
+      "flow": "调用"
+    },
+    {
+      "from": "context.t",
+      "to": "loop.r@0.8",
+      "label": "历史与压缩",
+      "flow": "调用",
+      "rail": "y:461",
+      "labelPos": [
+        887,
+        449
+      ]
+    },
+    {
+      "from": "tools.b",
+      "to": "agents.t",
+      "label": "派发 Agent",
+      "flow": "调用"
+    }
+  ],
+  "log": {
+    "title": "数据流演示",
+    "live": {
+      "rows": 6
+    }
+  }
+}
